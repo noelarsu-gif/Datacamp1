@@ -74,6 +74,26 @@
 .extra-options { display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; border-top: 1px solid #f0f0f0; padding-top: 10px; }
 
 /* Icona de lupa */
+.zoom-icon {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    background: rgba(37, 99, 235, 0.9); /* Azul para diferenciar del rojo de borrar */
+    color: white;
+    border-radius: 0 12px 0 0;
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    z-index: 101;
+    cursor: pointer;
+}
+
+.photo-item img {
+    cursor: default; /* Ya no parece cliqueable toda la foto */
+}
 
 
 .btn-back:active {
@@ -286,6 +306,22 @@ input:checked + .slider:before {
                 Així no caldrà que renombris les fotos una a una al PC!
             </p>
         </div>
+
+<div style="background: #f0fdf4; padding: 15px; border-radius: 12px; border: 1px solid #bbf7d0; margin-bottom: 15px;">
+    <b style="color: #166534; display: flex; align-items: center; gap: 8px;">⚡ Vols anar encara més ràpid? Prova la "Foto Directa"</b>
+    <p style="margin: 8px 0 0 0; font-size: 0.9rem;">
+        Dissenyada per a inspeccions d'alta eficiència, aquesta funció permet optimitzar totalment el flux de treball de camp a oficina:
+    </p>
+    <ul style="margin: 10px 0; padding-left: 20px; font-size: 0.85rem; color: #444; line-height: 1.4;">
+        <li style="margin-bottom: 5px;"><b>Traçabilitat Immediata:</b> El sistema genera automàticament la nomenclatura del fitxer (Carretera_PK_Marge) al moment de la captura.</li>
+        <li style="margin-bottom: 5px;"><b>Georeferenciació Visual:</b> Possibilitat d'incrustar un peu de foto tècnic amb les dades de l'inventari directament a la imatge.</li>
+        <li style="margin-bottom: 5px;"><b>Compartició Professional:</b> Pots enviar la foto a l'instant per correu electrònic, WhatsApp o núvol.</li>
+    </ul>
+    
+    <div style="background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #4ade80; margin-top: 10px; font-size: 0.8rem; color: #166534;">
+        <b>💡 Consell de gestió:</b> Per conservar la nomenclatura automàtica del fitxer, <b>recomanem compartir per Correu Electrònic</b>. WhatsApp i altres apps de missatgeria solen renombrar les imatges, fent que es perdi la identificació del PK i la carretera al fitxer original.
+    </div>
+</div>
 
        <div style="background: #fdf2f2; padding: 15px; border-radius: 8px; border-left: 5px solid #f87171; margin-bottom: 15px;">
             <b style="color: #991b1b;">⚠️ Borrat de Dades</b><br>
@@ -859,10 +895,12 @@ function renderPreview() {
     const preview = document.getElementById('preview');
     if(!preview) return;
     preview.innerHTML = tmpFotos.map((f, i) => `
-        <div class="photo-item" style="height: 110px; cursor:pointer;" onclick="obrirVisor(${i})">
-    <img src="${f}">
-    <div class="zoom-icon">🔍</div>            
-     <button class="btn-del-photo" onclick="eliminarFoto(event, ${i})">✕</button>
+        <div class="photo-item" style="height: 110px; position: relative;">
+            <img src="${f}">
+            <!-- Botón de Lupa para ampliar -->
+            <div class="zoom-icon" onclick="obrirVisor(${i})">🔍</div>            
+            <!-- Botón de eliminar -->
+            <button class="btn-del-photo" onclick="eliminarFoto(event, ${i})">✕</button>
         </div>`).join('');
 }
 
@@ -1292,71 +1330,88 @@ function filtrarPunts() {
 }
 
 function clearInputs() {
-    // Netejar inputs de text
-    document.querySelectorAll('.dyn-input').forEach(el => el.value = '');
+    // Netejar inputs de text, PERÒ mantenir el valor si és el camp "Carretera"
+    document.querySelectorAll('.dyn-input').forEach((el, idx) => {
+        // Busquem si l'etiqueta d'aquest camp (field) inclou la paraula "carretera"
+        const isCarretera = fields[idx] && fields[idx].label.toLowerCase().includes('carretera');
+        
+        if (!isCarretera) {
+            el.value = '';
+        }
+        // Si és carretera, no fem res i el valor es manté per al següent punt
+    });
     
-    // Netejar PK
+    // Netejar PK (Això sí que s'ha de netejar sempre)
     document.querySelectorAll('.pk-km').forEach(el => el.value = '');
     document.querySelectorAll('.pk-m').forEach(el => el.value = '');
     
-    // Reset selects
+    // Reset de la resta de camps
     document.querySelectorAll('.dyn-marge').forEach(el => el.selectedIndex = 0);
-    
-    // Textareas
     document.querySelectorAll('.dyn-obs').forEach(el => el.value = '');
     
-    // Fotos
+    // Fotos i edició
     tmpFotos = [];
     renderPreview();
-
-    // Reset edició
     editIdx = -1;
     const btnCancel = document.getElementById('btnCancelarEdicio');
     if (btnCancel) btnCancel.style.display = 'none';
 }
 
 function obrirEditorFotoDirecta(imgData) {
+    const oldScreen = document.getElementById('screen-foto-directa');
+    if (oldScreen) oldScreen.remove();
+
     document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
 
     const screen = document.createElement("div");
+    screen.id = "screen-foto-directa"; 
     screen.className = "screen active";
+
+    const defaultCarr = document.querySelector('.dyn-input[data-idx="0"]')?.value || "";
 
     screen.innerHTML = `
         <div class="screen-header">
-            <button class="btn-back" onclick="ir('home')">←</button>
-            <h3>📸 Nova Foto</h3>
+            <button class="btn-back" onclick="this.parentElement.parentElement.remove(); ir('home')">←</button>
+            <h3>📸 Foto Ràpida</h3>
         </div>
 
-        <img src="${imgData}" style="width:100%; border-radius:10px; margin-bottom:15px;">
+        <div style="position: relative; width: 100%; margin-bottom: 15px;">
+            <img src="${imgData}" style="width:100%; border-radius:10px; border: 2px solid #ddd; display: block;">
+            <button onclick="this.parentElement.parentElement.remove(); modeFotoDirecta();" 
+                    style="position: absolute; top: 10px; right: 10px; background: rgba(198, 12, 48, 0.9); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+                ✕
+            </button>
+        </div>
 
         <div class="form-group">
             <label>Carretera</label>
-            <input type="text" id="fd_carretera">
+            <input type="text" id="fd_carretera" value="${defaultCarr}">
         </div>
 
-        <div class="form-group">
-            <label>PK</label>
-            <input type="text" id="fd_pk">
+        <div style="display: flex; gap: 10px;">
+            <div class="form-group" style="flex: 2;">
+                <label>PK</label>
+                <input type="text" id="fd_pk" placeholder="0+000">
+            </div>
+            <div class="form-group" style="flex: 1;">
+                <label>Marge</label>
+                <select id="fd_marge">
+                    <option>MD</option>
+                    <option>ME</option>
+                    <option>Eix</option>
+                </select>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>Marge</label>
-            <select id="fd_marge">
-                <option>MD</option>
-                <option>ME</option>
-                <option>Eix</option>
-            </select>
-        </div>
-
-        <div style="margin-bottom:15px;">
-            <label>
-                <input type="checkbox" id="fd_watermark" checked>
-                Afegir peu de foto
+        <div style="margin-bottom:15px; background: #f9f9f9; padding: 12px; border-radius: 8px; border: 1px solid #eee;">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size: 0.9rem;">
+                <input type="checkbox" id="fd_watermark" checked style="width: 18px; height: 18px;"> 
+                <span>Afegir dades a la imatge</span>
             </label>
         </div>
 
         <button class="btn btn-main" onclick="guardarFotoDirecta('${imgData}')">
-            💾 Guardar i descarregar
+            💾 GENERAR I BAIXAR
         </button>
     `;
 
@@ -1364,61 +1419,59 @@ function obrirEditorFotoDirecta(imgData) {
 }
 
 async function guardarFotoDirecta(imgData) {
-    const carr = document.getElementById('fd_carretera').value || "C";
+    const carr = document.getElementById('fd_carretera').value || "S_C";
     const pk = document.getElementById('fd_pk').value || "0";
     const marge = document.getElementById('fd_marge').value;
     const wm = document.getElementById('fd_watermark').checked;
 
+    const ara = new Date();
+    const fechaFormat = ara.getDate().toString().padStart(2, '0') + "_" + 
+                        (ara.getMonth() + 1).toString().padStart(2, '0') + "_" + 
+                        ara.getFullYear();
+    const horaFormat = ara.getHours().toString().padStart(2, '0') + "_" + 
+                       ara.getMinutes().toString().padStart(2, '0');
+
     let finalImg = imgData;
 
     if (wm) {
-        const text = `${carr} • PK ${pk} • ${marge}`;
+        const text = `${carr} • PK ${pk} • ${marge} • ${ara.toLocaleDateString('ca-ES')} ${ara.getHours()}:${ara.getMinutes().toString().padStart(2, '0')}`;
         finalImg = await aplicarMarcaAigua(imgData, text);
     }
 
-    const nom = `${carr}_PK${pk}_${marge}.jpg`.replace(/[^a-z0-9]/gi, '_');
+    const nomBase = `${carr}_PK${pk}_${marge}_${fechaFormat}_${horaFormat}`.replace(/[^a-z0-9]/gi, '_');
+    currentFileName = nomBase + ".jpg";
 
-    // 🔥 Convertir a blob
     const res = await fetch(finalImg);
-    const blob = await res.blob();
+    currentBlob = await res.blob();
 
-    // Guardem globals (reutilitzes el teu modal existent)
-    currentBlob = blob;
-    currentFileName = nom;
+    document.getElementById('exportTitle').innerText = "FOTO GENERADA";
+    document.getElementById('exportName').innerText = currentFileName;
 
-    // 👉 Obrim el mateix modal que ja tens
-    document.getElementById('exportTitle').innerText = "FOTO";
-    document.getElementById('exportName').innerText = nom;
-
-    // 🔥 BOTÓ COMPARTIR
-    document.getElementById('btnShare').onclick = async () => {
-        const file = new File([blob], nom, { type: blob.type });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: nom
-                });
-            } catch (err) {
-                console.error("Error compartint:", err);
-            }
-        } else {
-            alert("El teu dispositiu no permet compartir fitxers directament.");
-        }
-
-        closeExportModal();
-    };
-
-    // 🔥 BOTÓ DESCARREGAR
     document.getElementById('btnDownload').onclick = () => {
-        const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(currentBlob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = nom;
+        a.download = currentFileName;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
+        document.getElementById('screen-foto-directa')?.remove();
         closeExportModal();
+        ir('home');
+    };
+
+    document.getElementById('btnShare').onclick = async () => {
+        const file = new File([currentBlob], currentFileName, { type: "image/jpeg" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ files: [file], title: currentFileName });
+        } else {
+            alert("Compartir no disponible");
+        }
+        document.getElementById('screen-foto-directa')?.remove();
+        closeExportModal();
+        ir('home');
     };
 
     document.getElementById('exportModal').style.display = 'flex';
