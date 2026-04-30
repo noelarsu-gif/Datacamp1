@@ -789,28 +789,46 @@ function obrirVisor(index) {
     visor.className = 'full-img-modal';
     visor.style.display = 'flex';
     
-    // Generar nom del fitxer
-    const titol = document.getElementById('titulo').value || "Projecte";
+    // Generar nom del fitxer de forma segura (evitant errors si els elements no existeixen)
+    const titol = document.getElementById('titulo')?.value || "Projecte";
     const carr = document.querySelector('.dyn-input[data-idx="0"]')?.value || "S-C";
     const pk = document.querySelector('.pk-km')?.value || "0";
     const marge = document.querySelector('.dyn-marge')?.value || "Eix";
-    const nomFitxer = `${titol}_${carr}_PK${pk}_${marge}.jpg`.replace(/\s+/g, '_');
+    
+    // Netegem el nom de caràcters estranys
+    const nomFitxer = `${titol}_${carr}_PK${pk}_${marge}.jpg`.replace(/[^a-z0-9]/gi, '_');
 
     visor.innerHTML = `
-        <img src="${fotoData}">
-        <div style="margin-top:20px; display:flex; gap:10px;">
-            <button class="btn btn-main" onclick="descarregarFoto('${fotoData}', '${nomFitxer}')">💾 DESCARREGAR</button>
-            <button class="btn btn-sec" onclick="this.parentElement.parentElement.remove()">TANCAR</button>
+        <img src="${fotoData}" style="max-width: 90%; max-height: 70%;">
+        <div style="margin-top:20px; display:flex; gap:10px; width: 90%; justify-content: center;">
+            <button class="btn btn-main" id="btnBaixarAra" style="flex:1">💾 DESCARREGAR</button>
+            <button class="btn btn-sec" onclick="this.parentElement.parentElement.remove()" style="flex:1">TANCAR</button>
         </div>
     `;
     document.body.appendChild(visor);
+
+    // Assignem l'esdeveniment de descàrrega directament al botó creat
+    document.getElementById('btnBaixarAra').onclick = () => {
+        descarregarFoto(fotoData, nomFitxer);
+    };
 }
 
 function descarregarFoto(data, nom) {
-    const link = document.createElement('a');
-    link.href = data;
-    link.download = nom;
-    link.click();
+    try {
+        const link = document.createElement('a');
+        link.href = data;
+        link.download = nom;
+        document.body.appendChild(link); // Necessari per alguns navegadors mòbils
+        link.click();
+        
+        // Donem un marge de temps abans d'eliminar el link
+        setTimeout(() => {
+            document.body.removeChild(link);
+        }, 100);
+    } catch (err) {
+        console.error("Error descarregant la foto:", err);
+        alert("Falla la descàrrega directa. Prova de mantenir polsada la foto i 'Guardar imatge'.");
+    }
 }
 
 function eliminarFoto(event, index) {
