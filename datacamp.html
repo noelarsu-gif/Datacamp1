@@ -74,7 +74,7 @@
 .extra-options { display: none; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 5px; border-top: 1px solid #f0f0f0; padding-top: 10px; }
 
 /* Icona de lupa */
-.zoom-icon { position: absolute; bottom: 5px; left: 5px; background: rgba(0,0,0,0.5); color: white; border-radius: 4px; padding: 2px 6px; font-size: 0.7rem; pointer-events: none; }
+
 
 .btn-back:active {
     transform: scale(0.9);
@@ -376,8 +376,8 @@ input:checked + .slider:before {
         <button class="btn btn-main" onclick="saveReg()">💾 GUARDAR REGISTRE</button>
         <button id="btnCancelarEdicio" class="btn btn-sec" style="display:none; background:#fff1f2; color:#be123c; border-color:#fecaca;" onclick="cancelarEdicio()">❌ CANCEL·LAR EDICIÓ</button>
         
-        <button class="btn btn-sec" style="margin-top:20px; background: #f9f9f9;" onclick="ir('puntsLlistat')">
-            📍 PUNTS RECOLLITS (<span id="regCountBtn">0</span>)
+        <button class="btn btn-sec" style="margin-top:20px; background: #f9f9f9;" onclick="renderRegs(); ir('puntsLlistat')">
+           (<span id="regCountBtn">0</span>)
         </button>
 
         <button class="btn btn-sec" style="margin-top:20px; border:none" onclick="ir('home')">⬅️ Menú Principal</button>
@@ -493,22 +493,12 @@ let isFotoDirecta = false;
 
 function modeFotoDirecta() {
     isFotoDirecta = true;
-    curId = "temp_" + Date.now();
-    // Configurem només els camps essencials
-    fields = [
-        {type:'carretera', label:'Carretera'}, 
-        {type:'pk', label:'PK'}, 
-        {type:'marge', label:'Marge'}
-    ];
-    
-    document.getElementById('titulo').value = "";
-    renderForm();
-    
-    // Amaguem botons que no fan falta en aquest mode
-    document.querySelector('button[onclick="ir(\'puntsLlistat\')"]').style.display = 'none';
-    document.querySelector('.btn-main[onclick="saveReg()"]').innerText = "💾 GENERAR I DESCARREGAR FOTO";
-    
-    ir('form');
+    tmpFotos = []; // 🔥 IMPORTANT: netejar fotos antigues
+
+    const inputCam = document.getElementById('fCam');
+    if (inputCam) {
+        inputCam.click(); // 👉 obre càmera directa
+    }
 }
 
 function ir(id) {
@@ -599,72 +589,125 @@ async function saveReg() {
     if (isFotoDirecta && tmpFotos.length === 0) return alert("Fes una foto primer.");
 
     // Recollida de dades dels camps
-    let data = { values: [], fotos: [...tmpFotos] };
-    fields.forEach((f, i) => {
+        let data = { values: [], fotos: [] };
+
+// 1. Recollir valors
+fields.forEach((f, i) => {
+    let val = "";
+    const el = document.querySelector(`[data-idx="${i}"]`);
+
+    if (f.type === 'text' || f.type === 'carretera' || f.type === 'marge' || f.type === 'obs') {
+        val = el ? el.value : "";
+    } else if (f.type === 'pk') {
+        const kms = document.querySelector(`.pk-km[data-idx="${i}"]`)?.value || "0";
+        const ms = document.querySelector(`.pk-m[data-idx="${i}"]`)?.value || "000";
+        val = kms + "+" + ms;
+    }
+
+    data.values.push({ label: f.label, val });
+});
+
+// 2. Processar fotos (🔥 AQUÍ està la clau)
+const showWatermark = document.getElementById('checkWatermark').checked;
+
+for (let f of tmpFotos) {
+    if (showWatermark) {
+        const carr = data.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || "";
+        const pk = data.values.find(v => v.label.toLowerCase().includes('pk'))?.val || "";
+        const marge = data.values.find(v => v.label.toLowerCase().includes('marge'))?.val || "";
+
+        const txt = `${carr} • PK ${pk} • ${marge} • ${new Date().toLocaleDateString('ca-ES')}`;
+        const img = await aplicarMarcaAigua(f, txt);
+
+        data.fotos.push(img);
+    } else {
+        data.fotos.push(f);
+    }
+}
+        fields.forEach((f, i) => {
         let val = "";
         const el = document.querySelector(`[data-idx="${i}"]`);
         if (f.type === 'text' || f.type === 'carretera' || f.type === 'marge' || f.type === 'obs') {
             val = el ? el.value : "";
         } else if (f.type === 'pk') {
-            const kms = document.querySelectorAll(`.pk-km[data-idx="${i}"]`)[0].value || "0";
-            const ms = document.querySelectorAll(`.pk-m[data-idx="${i}"]`)[0].value || "000";
+            const kms = document.querySelector(`.pk-km[data-idx="${i}"]`)?.value || "0";
+            const ms = document.querySelector(`.pk-m[data-idx="${i}"]`)?.value || "000";
             val = kms + "+" + ms;
         }
-        data.values.push({ label: f.label, val });
+        
     });
 
     if (isFotoDirecta) {
+        // --- LÒGICA FOTO DIRECTA (DESCARREGA) ---
         const btnSave = document.querySelector('.btn-main[onclick="saveReg()"]');
-        btnSave.innerText = "⏳ GENERANT FOTO TÈCNICA...";
+        btnSave.innerText = "⏳ GENERANT...";
         btnSave.disabled = true;
 
-        const projectTitle = t || "DATACAMP";
         const carr = data.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || "";
         const pk = data.values.find(v => v.label.toLowerCase().includes('pk'))?.val || "";
         const marge = data.values.find(v => v.label.toLowerCase().includes('marge'))?.val || "";
-        
-        // Text que anirà al peu de la foto
         const watermarkText = `${carr} PK ${pk} | ${marge} | ${new Date().toLocaleString()}`;
 
         try {
             if (tmpFotos.length === 1) {
-                // Apliquem el text a la foto si el switch està activat
                 const showWatermark = document.getElementById('checkWatermark').checked;
                 const finalImgData = showWatermark ? await aplicarMarcaAigua(tmpFotos[0], watermarkText) : tmpFotos[0];
-                
-                currentFileName = `${projectTitle}_${carr}_PK${pk}_${marge}`.replace(/\s+/g, '_') + ".jpg";
+                currentFileName = `${t}_${carr}_PK${pk}_${marge}`.replace(/[^a-z0-9]/gi, '_') + ".jpg";
                 const res = await fetch(finalImgData);
                 currentBlob = await res.blob();
             } else {
-                // Múltiples fotos (ZIP)
                 const zip = new JSZip();
                 for (let idx = 0; idx < tmpFotos.length; idx++) {
                     const finalImgData = await aplicarMarcaAigua(tmpFotos[idx], watermarkText);
-                    const imgBase64 = finalImgData.split(',')[1];
-                    zip.file(`${projectTitle}_${carr}_PK${pk}_${idx+1}.jpg`.replace(/\s+/g, '_'), imgBase64, {base64: true});
+                    zip.file(`${t}_PK${pk}_${idx+1}.jpg`.replace(/[^a-z0-9]/gi, '_'), finalImgData.split(',')[1], {base64: true});
                 }
                 currentBlob = await zip.generateAsync({type: "blob"});
-                currentFileName = `Fotos_${projectTitle}.zip`.replace(/\s+/g, '_');
+                currentFileName = `Fotos_${t}.zip`.replace(/[^a-z0-9]/gi, '_');
             }
 
-            document.getElementById('exportTitle').innerText = "FOTO PROCESSADA";
+            // Configurar el botó de descàrrega del modal
+            const btnDownload = document.getElementById('btnDownload');
+            btnDownload.onclick = () => {
+                const url = URL.createObjectURL(currentBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = currentFileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
             document.getElementById('exportName').innerText = currentFileName;
             document.getElementById('exportModal').style.display = 'flex';
 
         } catch (error) {
-            console.error(error);
-            alert("Error processant la imatge.");
+            alert("Error processant la foto.");
         } finally {
             btnSave.innerText = "💾 GENERAR I DESCARREGAR FOTO";
             btnSave.disabled = false;
         }
 
     } else {
-        if (editIdx > -1) regs[editIdx] = data; else regs.push(data);
+        // --- LÒGICA GUARDAR REGISTRE (HISTORIAL) ---
+        if (editIdx > -1) {
+            regs[editIdx] = data;
+        } else {
+            regs.push(data);
+        }
+        
+        // 1. Guardem a la base de dades
         actualizarDB(t);
-        clearInputs();
-        renderRegs();
-        alert("Punt guardat a l'historial");
+        
+        // 2. Netejar formulari i l'array temporal de fotos
+        tmpFotos = []; 
+        clearInputs(); 
+        
+        // 3. Forçar refresc de la llista i el comptador
+        renderRegs(); 
+        
+        alert("Punt guardat correctament");
+        editIdx = -1;
     }
 }
 
@@ -699,22 +742,35 @@ function aplicarMarcaAigua(base64, text) {
 
 function renderRegs() {
     const count = regs.length;
-    document.getElementById('regCountBtn').innerText = count;
+    const btn = document.getElementById('regCountBtn');
+    
+    // Actualitzem el text del botó
+    if (btn) {
+        btn.innerText = `📋 PUNTS RECOLLITS: ${count}`;
+    }
+
     const list = document.getElementById('regList');
-    if(list) {
+    if (list) {
+        if (regs.length === 0) {
+            list.innerHTML = `<p style="text-align:center; padding:20px; color:#666;">No hi ha punts registrats.</p>`;
+            return;
+        }
+
         list.innerHTML = regs.map((r, i) => {
-            const carreteraVal = r.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || r.values[0]?.val || '';
-            const pkVal = r.values.find(v => v.label.toLowerCase().includes('pk'))?.val || r.values[1]?.val || '';
+            const carreteraVal = r.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || "";
+            const pkVal = r.values.find(v => v.label.toLowerCase().includes('pk'))?.val || "";
+            const margeVal = r.values.find(v => v.label.toLowerCase().includes('marge'))?.val || "";
             
             return `
             <div class="card" data-idx="${i}">
-                <div class="drag-handle">☰</div> <!-- Les ratlletes per ordenar -->
-                <div style="flex-grow:1; font-size:0.85rem">
-                    <b>${carreteraVal}</b> ${pkVal}
+                <div class="drag-handle">☰</div>
+                <div style="flex-grow:1; font-size:0.85rem; line-height: 1.2;">
+                    <div style="font-weight:bold; color:var(--primary);">${carreteraVal}</div>
+                    <div style="color:#555;">PK: ${pkVal} | ${margeVal}</div>
                 </div>
                 <div style="display:flex; gap:5px">
-                    <button class="btn-sec btn-hist" onclick="loadE(${i})">Edit</button>
-                    <button class="btn-danger btn-hist" onclick="eliminarPunt(${i})">🗑️</button>
+                    <button class="btn-sec btn-hist" style="padding: 5px 10px;" onclick="loadE(${i})">✏️</button>
+                    <button class="btn-danger btn-hist" style="padding: 5px 10px;" onclick="eliminarPunt(${i})">🗑️</button>
                 </div>
             </div>`;
         }).join('');
@@ -723,9 +779,14 @@ function renderRegs() {
 
 function eliminarPunt(i) {
     if(confirm('Borrar punt?')) {
-        regs.splice(i, 1);
-        actualizarDB(document.getElementById('titulo').value);
-        renderRegs();
+        regs.splice(i, 1); // Elimina de l'array local
+        
+        const titolProjecte = document.getElementById('titulo').value;
+        if (titolProjecte) {
+            actualizarDB(titolProjecte); // Guarda el canvi a IndexedDB
+        }
+        
+        renderRegs(); // Refresca la interfície i el comptador
     }
 }
 
@@ -755,19 +816,41 @@ function loadE(i) {
 async function handleFotos(input) {
     for (let f of Array.from(input.files)) {
         const reader = new FileReader();
+
         reader.onload = e => {
             const img = new Image();
+
             img.onload = () => {
                 const cvs = document.createElement("canvas");
-                const max = 1000; let w = img.width, h = img.height;
-                if (w > max) { h *= max / w; w = max; }
-                cvs.width = w; cvs.height = h;
+                const max = 1000;
+
+                let w = img.width;
+                let h = img.height;
+
+                if (w > max) {
+                    h *= max / w;
+                    w = max;
+                }
+
+                cvs.width = w;
+                cvs.height = h;
                 cvs.getContext("2d").drawImage(img, 0, 0, w, h);
-                tmpFotos.push(cvs.toDataURL("image/jpeg", 0.7));
-                renderPreview();
+
+                const base64 = cvs.toDataURL("image/jpeg", 0.7);
+
+                // 🔥 CLAU TOTAL
+                if (isFotoDirecta) {
+                    tmpFotos = []; // neteja total
+                    obrirEditorFotoDirecta(base64); // 👉 nou flux
+                } else {
+                    tmpFotos.push(base64);
+                    renderPreview();
+                }
             };
+
             img.src = e.target.result;
         };
+
         reader.readAsDataURL(f);
     }
 }
@@ -777,9 +860,9 @@ function renderPreview() {
     if(!preview) return;
     preview.innerHTML = tmpFotos.map((f, i) => `
         <div class="photo-item" style="height: 110px; cursor:pointer;" onclick="obrirVisor(${i})">
-            <img src="${f}">
-            <div class="zoom-icon">🔍</div>
-            <button class="btn-del-photo" onclick="eliminarFoto(event, ${i})">✕</button>
+    <img src="${f}">
+    <div class="zoom-icon">🔍</div>            
+     <button class="btn-del-photo" onclick="eliminarFoto(event, ${i})">✕</button>
         </div>`).join('');
 }
 
@@ -1208,7 +1291,138 @@ function filtrarPunts() {
         </div>`).join('');
 }
 
+function clearInputs() {
+    // Netejar inputs de text
+    document.querySelectorAll('.dyn-input').forEach(el => el.value = '');
+    
+    // Netejar PK
+    document.querySelectorAll('.pk-km').forEach(el => el.value = '');
+    document.querySelectorAll('.pk-m').forEach(el => el.value = '');
+    
+    // Reset selects
+    document.querySelectorAll('.dyn-marge').forEach(el => el.selectedIndex = 0);
+    
+    // Textareas
+    document.querySelectorAll('.dyn-obs').forEach(el => el.value = '');
+    
+    // Fotos
+    tmpFotos = [];
+    renderPreview();
 
+    // Reset edició
+    editIdx = -1;
+    const btnCancel = document.getElementById('btnCancelarEdicio');
+    if (btnCancel) btnCancel.style.display = 'none';
+}
+
+function obrirEditorFotoDirecta(imgData) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+
+    const screen = document.createElement("div");
+    screen.className = "screen active";
+
+    screen.innerHTML = `
+        <div class="screen-header">
+            <button class="btn-back" onclick="ir('home')">←</button>
+            <h3>📸 Nova Foto</h3>
+        </div>
+
+        <img src="${imgData}" style="width:100%; border-radius:10px; margin-bottom:15px;">
+
+        <div class="form-group">
+            <label>Carretera</label>
+            <input type="text" id="fd_carretera">
+        </div>
+
+        <div class="form-group">
+            <label>PK</label>
+            <input type="text" id="fd_pk">
+        </div>
+
+        <div class="form-group">
+            <label>Marge</label>
+            <select id="fd_marge">
+                <option>MD</option>
+                <option>ME</option>
+                <option>Eix</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:15px;">
+            <label>
+                <input type="checkbox" id="fd_watermark" checked>
+                Afegir peu de foto
+            </label>
+        </div>
+
+        <button class="btn btn-main" onclick="guardarFotoDirecta('${imgData}')">
+            💾 Guardar i descarregar
+        </button>
+    `;
+
+    document.querySelector('.container').appendChild(screen);
+}
+
+async function guardarFotoDirecta(imgData) {
+    const carr = document.getElementById('fd_carretera').value || "C";
+    const pk = document.getElementById('fd_pk').value || "0";
+    const marge = document.getElementById('fd_marge').value;
+    const wm = document.getElementById('fd_watermark').checked;
+
+    let finalImg = imgData;
+
+    if (wm) {
+        const text = `${carr} • PK ${pk} • ${marge}`;
+        finalImg = await aplicarMarcaAigua(imgData, text);
+    }
+
+    const nom = `${carr}_PK${pk}_${marge}.jpg`.replace(/[^a-z0-9]/gi, '_');
+
+    // 🔥 Convertir a blob
+    const res = await fetch(finalImg);
+    const blob = await res.blob();
+
+    // Guardem globals (reutilitzes el teu modal existent)
+    currentBlob = blob;
+    currentFileName = nom;
+
+    // 👉 Obrim el mateix modal que ja tens
+    document.getElementById('exportTitle').innerText = "FOTO";
+    document.getElementById('exportName').innerText = nom;
+
+    // 🔥 BOTÓ COMPARTIR
+    document.getElementById('btnShare').onclick = async () => {
+        const file = new File([blob], nom, { type: blob.type });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: nom
+                });
+            } catch (err) {
+                console.error("Error compartint:", err);
+            }
+        } else {
+            alert("El teu dispositiu no permet compartir fitxers directament.");
+        }
+
+        closeExportModal();
+    };
+
+    // 🔥 BOTÓ DESCARREGAR
+    document.getElementById('btnDownload').onclick = () => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nom;
+        a.click();
+        URL.revokeObjectURL(url);
+        closeExportModal();
+    };
+
+    document.getElementById('exportModal').style.display = 'flex';
+}
 
 </script>
 </body>
