@@ -18,9 +18,9 @@
       <style>
           :root { --primary: #c60c30; --dark: #333; --light: #f4f4f4; --border: #ccc; }
           body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: #e0e0e0; display: flex; justify-content: center; color: var(--dark); }
-          .container { width: 100%; max-width: 500px; background: white; min-height: 100vh; border-top: 6px solid var(--primary); box-shadow: 0 0 20px rgba(0,0,0,0.2); position: relative; }
+          .container { width: 100%; max-width: 500px; background: white; min-height: 100vh; border-top: 6px solid var(--primary); box-shadow: 0 0 20px rgba(0,0,0,0.2); position: relative; z-index: 0; }
           
-          header { padding: 20px; border-bottom: 2px solid var(--primary); text-align: center; background: #fff; position: sticky; top: 0; z-index: 10; }
+          header { padding: 20px; border-bottom: 2px solid var(--primary); text-align: center; background: #fff; position: sticky; top: 0; z-index: 1000; }
           .screen { display: none; padding: 20px; padding-bottom: 60px; }
           .active { display: block; animation: fadeIn 0.3s; }
           @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -76,25 +76,27 @@
 /* Icona de lupa */
 .zoom-icon {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    background: rgba(37, 99, 235, 0.9); /* Azul para diferenciar del rojo de borrar */
+    bottom: 0px; 
+    left: 0px; 
+    background: rgba(37, 99, 235, 0.9); /* Blau per diferenciar */
     color: white;
-    border-radius: 0 12px 0 0;
-    width: 35px;
-    height: 35px;
+    border-radius: 0 12px 0 0; /* Forma inversa a la creu */
+    width: 40px;  /* Mida més gran per a dits */
+    height: 40px; 
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.1rem;
-    z-index: 101;
+    font-size: 1.2rem;
+    z-index: 2;
     cursor: pointer;
+    border: none;
+    touch-action: none; /* Evita que el navegador confongui el toc amb scroll */
 }
 
-.photo-item img {
-    cursor: default; /* Ya no parece cliqueable toda la foto */
+/* Protecció extra: evitar que la foto reaccioni al tacte sota el botó */
+.photo-item {
+    touch-action: auto;
 }
-
 
 .btn-back:active {
     transform: scale(0.9);
@@ -163,7 +165,7 @@
         .photo-buttons { display: flex; gap: 10px; }
         .btn-photo { flex: 1; background: #f0f0f0; border: 1px solid #ccc; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 0.8rem; }
         .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
-        .photo-item { position: relative; height: 100px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+        .photo-item { position: relative; height: 100px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; position: relative; }
         .photo-item img { width: 100%; height: 100%; object-fit: cover; }
   .btn-del-photo { 
     position: absolute; 
@@ -246,6 +248,73 @@ input:checked + .slider:before {
   transform: translateX(20px);
 }
 
+/* TARJETA */
+.reg-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    margin-bottom: 10px;
+}
+
+/* MINIATURA */
+.thumb {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #eee;
+}
+
+/* INFO */
+.reg-info {
+    flex: 1;
+}
+
+.reg-title {
+    font-weight: bold;
+    color: #c00;
+    font-size: 16px;
+}
+
+.reg-sub {
+    font-size: 13px;
+    color: #666;
+}
+
+.reg-desc {
+    font-size: 12px;
+    color: #888;
+}
+
+/* DRAG */
+.drag-handle {
+    font-size: 18px;
+    color: #999;
+    cursor: grab;
+}
+
+/* BOTONES */
+.actions {
+    display: flex;
+    gap: 6px;
+}
+
+.actions button {
+    border: none;
+    background: #f5f5f5;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+}
+
+.actions button:hover {
+    background: #eee;
+}
+
     </style>
 </head>
 <body>
@@ -264,22 +333,24 @@ input:checked + .slider:before {
         <div style="width: 20px; height: 2px; background: var(--primary);"></div>
     </button>
     
-    <div id="dropdownMenu" style="display: none; position: absolute; top: 45px; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 180px; z-index: 1000;">
+    <div id="dropdownMenu" style="display: none; position: absolute; top: 45px; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); width: 180px; z-index: 2000;">
         <div style="padding: 10px; border-bottom: 1px solid #eee; font-size: 0.8rem; color: #999; font-weight: bold;">MENÚ</div>
         <button class="btn-menu-item" onclick="navTo('home')">🏠 Inici</button>
-        <button class="btn-menu-item" style="color: #2563eb; font-weight: bold;" onclick="toggleMenu(); modeFotoDirecta();">📸 Foto Directa</button>
+        <button class="btn-menu-item" style="color: #2563eb; font-weight: bold;" onclick="toggleMenu(); modeFotoDirecta();">📸 Foto</button>
         <button class="btn-menu-item" onclick="navTo('list')">📂 Historial</button>
         <button class="btn-menu-item" onclick="navTo('downloads')">📥 Descàrregues</button>
+        <button class="btn-menu-item" onclick="navTo('pantallaAjustos')">⚙️ Configuració</button>
         <button class="btn-menu-item" onclick="navTo('helpScreen')">❓ Ajuda</button>
     </div>   
         </div>
+        
     </header>
 
     <div id="home" class="screen active">
         <button class="btn btn-main" onclick="openProjectModal()">➕ NOU PROJECTE</button>
-        <button class="btn btn-main" style="background: #2563eb;" onclick="modeFotoDirecta()">📸 FOTO DIRECTA (Mode Ràpid)</button>
+        <button class="btn btn-main" style="background: #2563eb;" onclick="modeFotoDirecta()">📸 FOTO AMB NOMENCLATURA</button>
         <button class="btn btn-sec" onclick="historial()">📂 HISTORIAL</button>
-        <button class="btn btn-sec" style="background: #fff8e1; border-color: #ffc107; color: #856404;" onclick="ir('downloads')">📥 DESCÀRREGUES I COMPARTIR</button>
+        <button class="btn btn-sec" style="background: #fff8e1; border-color: #ffc107; color: #856404;" onclick="ir('downloads')">📥 GENERAR PDF I ALTRES FORMATS</button>
         
         <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
             <button class="btn btn-sec" style="border-color:#ccc; color:#666" onclick="exportarBackup()">📤 Exportar Backup Global</button>
@@ -287,6 +358,35 @@ input:checked + .slider:before {
             <input type="file" id="importFile" accept="application/json" hidden onchange="importarBackup(this)">
         </div>
     </div>
+
+<div id="pantallaAjustos" class="screen">
+    <div class="screen-header">
+        <button class="btn-back" onclick="ir('home')">←</button>
+        <h3 style="margin:0">⚙️ Configuració</h3>
+    </div>
+
+    <div style="margin-top: 20px;">
+        <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">
+            Configura els elements corporatius que apareixeran als teus informes PDF. Es recomana imatges sense fons o fons blanc.
+        </p>
+
+        <!-- SECCIÓ DEL LOGO (El Pas 3 que t'he passat abans) -->
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 12px; border: 1px solid #eee;">
+            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: var(--primary);">🏢 LOGO CORPORATIU</label>
+            
+            <div id="logoPreviewContainer" style="background: white; border: 1px dashed #ccc; border-radius: 8px; text-align: center; padding: 15px; margin-bottom: 15px;">
+                <img id="logoActual" src="" style="max-width: 100%; max-height: 80px; display: none;">
+                <div id="noLogoMsg" style="color: #999; font-size: 0.8rem;">No s'ha carregat cap logo encara</div>
+            </div>
+
+            <button class="btn-sec" onclick="document.getElementById('inputLogo').click()" style="width: 100%; margin-bottom: 10px;">📂 SELECCIONAR IMATGE</button>
+            <button class="btn-danger" onclick="eliminarLogo()" style="width: 100%; background: #fff1f1;">🗑️ ELIMINAR LOGO</button>
+            
+            <!-- Input ocult que dispara la càrrega de fitxers -->
+            <input type="file" id="inputLogo" accept="image/*" hidden onchange="handleLogo(this)">
+        </div>
+    </div>
+</div>
 
 <div id="helpScreen" class="screen">
     <h3 style="color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 10px;">Guia i Consells</h3>
@@ -308,7 +408,7 @@ input:checked + .slider:before {
         </div>
 
 <div style="background: #f0fdf4; padding: 15px; border-radius: 12px; border: 1px solid #bbf7d0; margin-bottom: 15px;">
-    <b style="color: #166534; display: flex; align-items: center; gap: 8px;">⚡ Vols anar encara més ràpid? Prova la "Foto Directa"</b>
+    <b style="color: #166534; display: flex; align-items: center; gap: 8px;">⚡ Vols anar encara més ràpid? Prova la "Foto amb nomenclatura"</b>
     <p style="margin: 8px 0 0 0; font-size: 0.9rem;">
         Dissenyada per a inspeccions d'alta eficiència, aquesta funció permet optimitzar totalment el flux de treball de camp a oficina:
     </p>
@@ -385,14 +485,22 @@ input:checked + .slider:before {
         <div class="form-group"><label>Nom del Projecte</label><input type="text" id="titulo" placeholder="Ex: Millora C-55"></div>
         <div id="dynamicFields"></div>
 <div style="display: flex; align-items: center; justify-content: space-between; background: #f0f7ff; padding: 12px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #c7d2fe;">
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 1.2rem;">📝</span>
-        <span style="font-weight: bold; color: #1e40af; font-size: 0.85rem;">Mostrar dades peu foto</span>
-    </div>
-    <label class="switch">
-        <input type="checkbox" id="checkWatermark" checked>
+    
+        <div style="display: flex; align-items: flex-start; gap: 8px;">
+        <span style="font-size: 1.2rem; margin-top: 2px;">📝</span>
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-weight: bold; color: #1e40af; font-size: 0.85rem;">Mostrar dades peu foto</span>
+            <span style="font-size: 0.65rem; color: #d93025; margin-top: 2px; font-weight: normal; line-height: 1.1; max-width: 180px;">
+                ⚠️ No reversible: un cop posades, no es poden treure.
+            </span>
+        </div>
+</div>
+
+        <label class="switch">
+        <input type="checkbox" id="checkWatermark">
         <span class="slider round"></span>
     </label>
+
 </div>
     <div class="form-group">
     <label>Imatges</label>
@@ -473,19 +581,43 @@ input:checked + .slider:before {
         <button class="btn btn-sec" style="margin-top:10px; border:none; color:#999;" onclick="closeExportModal()">Cancel·lar</button>
     </div>
 </div>
+
+<div id="fotoChooserModal" class="modal" onclick="tancarFotoChooser()">
+    <div style="background:white; padding:25px; border-radius:16px; width:90%; max-width:320px; text-align:center;" onclick="event.stopPropagation()">
+        
+        <h3 style="margin-top:0; color:var(--primary);">📸 Afegir imatge</h3>
+        
+        <button class="btn btn-main" style="font-size:1.1rem; padding:18px;" onclick="triarCamara()">
+            📸 CÀMERA
+        </button>
+        
+        <button class="btn btn-sec" style="font-size:1.1rem; padding:18px;" onclick="triarGaleria()">
+            🖼️ GALERIA
+        </button>
+
+        <button class="btn btn-sec" style="margin-top:10px; border:none; color:#999;" onclick="tancarFotoChooser()">
+            Cancel·lar
+        </button>
+    </div>
 </div>
+
+
+</div> 
 
 <script>
 
 let currentBlob = null;
 let currentFileName = "";
 let db, curId = "", regs = [], fields = [], tmpFotos = [], editIdx = -1;
+let logoCorporativo = localStorage.getItem('logo_corp') || null;
+
 
 const req = indexedDB.open("GencatDinaV4", 1);
 req.onupgradeneeded = e => { 
     e.target.result.createObjectStore("projects", { keyPath: "id" }); 
 };
 req.onsuccess = e => { db = e.target.result; };
+mostrarLogoActual();
 
 window.onload = () => {
     const dz = document.getElementById('drop-zone');
@@ -498,43 +630,49 @@ window.onload = () => {
 
     // Sortable per la previsualització de fotos
     const previewEl = document.getElementById('preview');
-    if (previewEl) {
-        Sortable.create(previewEl, { 
-            animation: 150,
-            filter: '.btn-del-photo',
-            preventOnFilter: false 
-        });
-    }
+    if (previewEl) 
+     Sortable.create(previewEl, { 
+    animation: 150,
+    filter: '.btn-del-photo, .zoom-icon', // Afegim .zoom-icon al filtre
+    preventOnFilter: true // Canvia a true per bloquejar l'arrossegament si es toca el botó
+});
     
     // Sortable per la llista de punts
     const regListEl = document.getElementById('regList');
     if (regListEl) {
-        Sortable.create(regListEl, { 
-            animation: 150, 
-            handle: '.drag-handle',
-            onEnd: function() {
-                let nousRegs = [];
-                document.querySelectorAll('#regList .card').forEach(el => {
-                    nousRegs.push(regs[parseInt(el.getAttribute('data-idx'))]);
-                });
+    Sortable.create(regListEl, { 
+        animation: 150, 
+        handle: '.drag-handle',
+        onEnd: function() {
+            let nousRegs = [];
+
+            document.querySelectorAll('#regList .reg-item').forEach(el => {
+                const idx = parseInt(el.getAttribute('data-idx'));
+                if (!isNaN(idx) && regs[idx]) {
+                    nousRegs.push(regs[idx]);
+                }
+            });
+
+            // 🔒 Seguridad: evitar sobrescribir si algo falla
+            if (nousRegs.length === regs.length) {
                 regs = nousRegs;
                 actualizarDB(document.getElementById('titulo').value);
                 renderRegs();
+            } else {
+                console.warn("Error reordenando, no se aplican cambios");
             }
-        });
-    }
+        }
+    });
+}
 };
 
 let isFotoDirecta = false;
 
 function modeFotoDirecta() {
     isFotoDirecta = true;
-    tmpFotos = []; // 🔥 IMPORTANT: netejar fotos antigues
+    tmpFotos = [];
 
-    const inputCam = document.getElementById('fCam');
-    if (inputCam) {
-        inputCam.click(); // 👉 obre càmera directa
-    }
+    document.getElementById('fotoChooserModal').style.display = 'flex';
 }
 
 function ir(id) {
@@ -563,11 +701,46 @@ function ir(id) {
 
 function openProjectModal() { document.getElementById('projectModal').style.display = 'flex'; }
 function closeModal() { document.getElementById('projectModal').style.display = 'none'; }
-function irConfigurador() { closeModal(); fields = []; renderConfig(); ir('config'); }
+function irConfigurador() {
+    closeModal();
+    
+    // Neteja de dades
+    curId = "p_" + Date.now();
+    regs = [];
+    fields = [];
+    tmpFotos = []; // Buidem l'array de fotos
+    editIdx = -1;  // Sortim del mode edició
+    
+    // Neteja de la interfície
+    document.getElementById('titulo').value = "";
+    
+    // FORÇAR LA NETEJA VISUAL
+    renderPreview(); // Això esborrarà les fotos de la pantalla
+    
+    const btnCancel = document.getElementById('btnCancelarEdicio');
+    if (btnCancel) btnCancel.style.display = 'none';
+
+    renderConfig();
+    ir('config');
+}
 
 function addField(type, label = "") {
     let fl = label || prompt("Nom del camp:");
     if(fl) { fields.push({type, label: fl}); renderConfig(); }
+}
+
+function tancarFotoChooser() {
+    document.getElementById('fotoChooserModal').style.display = 'none';
+}
+
+function triarCamara() {
+    tancarFotoChooser();
+    document.getElementById('fCam').click();
+}
+
+function triarGaleria() {
+    tancarFotoChooser();
+    document.getElementById('fGal').click();
 }
 
 function renderConfig() {
@@ -586,19 +759,45 @@ function finalitzarConfig() {
 }
 
 function crearProyecto(tipo) {
-    closeModal(); curId = "p_" + Date.now(); regs = []; document.getElementById('titulo').value = "";
-    if(tipo === 'basic') fields = [{type:'carretera', label:'Carretera'}, {type:'pk', label:'PK'}, {type:'marge', label:'Marge'}, {type:'obs', label:'Observacions'}];
-    renderForm(); renderRegs(); ir('form');
+    closeModal();
+    curId = "p_" + Date.now();
+    regs = [];
+    tmpFotos = []; // Afegit per seguretat
+    editIdx = -1;  // Afegit per seguretat
+    
+    document.getElementById('titulo').value = "";
+    
+    // Neteja visual de fotos i botó
+    renderPreview(); 
+    const btnCancel = document.getElementById('btnCancelarEdicio');
+    if (btnCancel) btnCancel.style.display = 'none';
+
+    if(tipo === 'basic') {
+        fields = [
+            {type:'carretera', label:'Carretera'}, 
+            {type:'pk', label:'PK'}, 
+            {type:'marge', label:'Marge'}, 
+            {type:'obs', label:'Observacions'}
+        ];
+    }
+    
+    renderForm();
+    renderRegs();
+    ir('form');
 }
+
 
 function renderForm() {
     document.getElementById('dynamicFields').innerHTML = fields.map((f, i) => {
-        if(f.type === 'text' || f.type === 'carretera') return `<div class="form-group"><label>${f.label}</label><input type="text" class="dyn-input" data-idx="${i}"></div>`;
-        if(f.type === 'pk') return `<div class="form-group"><label>${f.label}</label><div class="pk-row"><input type="number" class="pk-km" data-idx="${i}" placeholder="Km"> <b>+</b> <input type="number" class="pk-m" data-idx="${i}" placeholder="m" onblur="if(this.value!='')this.value=this.value.padStart(3,'0')"></div></div>`;
+        if(f.type === 'carretera') return `<div class="form-group"><label>${f.label}</label><input type="text" class="dyn-input" data-idx="${i}"></div>`;
+        if(f.type === 'pk') return `<div class="form-group"><label>${f.label}</label><div class="pk-row"><input type="text" id="pk_incidencia" placeholder="PK Actual" onclick="rellenarPKAutomatico(this)"> <b>+</b> <input type="number" class="pk-m" data-idx="${i}" placeholder="m" onblur="if(this.value!='')this.value=this.value.padStart(3,'0')"></div></div>`;
         if(f.type === 'marge') return `<div class="form-group"><label>${f.label}</label><select class="dyn-marge" data-idx="${i}"><option>MD</option><option>ME</option><option>Eix</option></select></div>`;
-        if(f.type === 'obs') return `<div class="form-group"><label>${f.label}</label><textarea class="dyn-obs" data-idx="${i}" rows="2"></textarea></div>`;
+        
+        // MODIFICACIÓN: He añadido la clase "dyn-input" aquí también
+        if(f.type === 'text' || f.type === 'obs') return `<div class="form-group"><label>${f.label}</label><textarea class="dyn-input dyn-obs" data-idx="${i}" rows="2" style="font-family:inherit"></textarea></div>`;
     }).join('');
 }
+
 
 
 function descarregarFitxerUnic() {
@@ -747,6 +946,47 @@ for (let f of tmpFotos) {
     }
 }
 
+function obtenerBibliotecaPKs() {
+    return JSON.parse(localStorage.getItem('dc_pk_manager_v2')) || {};
+}
+
+function calcularPKActual(lat, lon) {
+    const db = obtenerBibliotecaPKs();
+    let mejorPK = "Manual";
+
+    // Aquí irá la lógica que recorre la DB y encuentra el tramo más cercano
+    // Por ahora, si no hay datos, devuelve vacío para que sea manual
+    for (let carretera in db) {
+        // Lógica de comparación de coordenadas...
+        // (Esta parte la afinaremos cuando verifiquemos que el GPS responde bien)
+    }
+    return mejorPK;
+}
+
+function rellenarPKAutomatico(inputElement) {
+    // 1. Obtenemos posición actual del GPS de la App
+    if (!lastCoords) {
+        alert("Esperando señal GPS...");
+        return;
+    }
+
+    // 2. Calculamos el PK basado en la biblioteca
+    const pkCalculado = calcularPKActual(lastCoords.lat, lastCoords.lon);
+    
+    // 3. Rellenamos el campo. Si el usuario no quiere este, puede borrar y escribir.
+    if(pkCalculado !== "Manual") {
+        inputElement.value = pkCalculado;
+    }
+}
+
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Radio de la Tierra en metros
+    const p1 = lat1 * Math.PI/180, p2 = lat2 * Math.PI/180;
+    const dp = (lat2-lat1) * Math.PI/180, dl = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+}
+
 function aplicarMarcaAigua(base64, text) {
     return new Promise((resolve) => {
         const img = new Image();
@@ -776,41 +1016,69 @@ function aplicarMarcaAigua(base64, text) {
     });
 }
 
+
+
 function renderRegs() {
     const count = regs.length;
     const btn = document.getElementById('regCountBtn');
     
-    // Actualitzem el text del botó
+    // Botó contador
     if (btn) {
         btn.innerText = `📋 PUNTS RECOLLITS: ${count}`;
     }
 
     const list = document.getElementById('regList');
-    if (list) {
-        if (regs.length === 0) {
-            list.innerHTML = `<p style="text-align:center; padding:20px; color:#666;">No hi ha punts registrats.</p>`;
-            return;
-        }
 
-        list.innerHTML = regs.map((r, i) => {
-            const carreteraVal = r.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || "";
-            const pkVal = r.values.find(v => v.label.toLowerCase().includes('pk'))?.val || "";
-            const margeVal = r.values.find(v => v.label.toLowerCase().includes('marge'))?.val || "";
-            
-            return `
-            <div class="card" data-idx="${i}">
-                <div class="drag-handle">☰</div>
-                <div style="flex-grow:1; font-size:0.85rem; line-height: 1.2;">
-                    <div style="font-weight:bold; color:var(--primary);">${carreteraVal}</div>
-                    <div style="color:#555;">PK: ${pkVal} | ${margeVal}</div>
-                </div>
-                <div style="display:flex; gap:5px">
-                    <button class="btn-sec btn-hist" style="padding: 5px 10px;" onclick="loadE(${i})">✏️</button>
-                    <button class="btn-danger btn-hist" style="padding: 5px 10px;" onclick="eliminarPunt(${i})">🗑️</button>
-                </div>
-            </div>`;
-        }).join('');
+    if (!list) return;
+
+    if (regs.length === 0) {
+        list.innerHTML = `<p style="text-align:center; padding:20px; color:#666;">
+            No hi ha punts registrats.
+        </p>`;
+        return;
     }
+
+    list.innerHTML = regs.map((r, i) => {
+
+        // 🔍 Buscar valors
+        const carreteraVal = r.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || "";
+        const pkVal = r.values.find(v => v.label.toLowerCase().includes('pk'))?.val || "";
+        const margeVal = r.values.find(v => v.label.toLowerCase().includes('marge'))?.val || "";
+
+        // 🖼 FOTO (primera si existe)
+        const img = (r.fotos && r.fotos.length > 0) ? r.fotos[0] : "";
+
+        // 📸 contador fotos
+        const numFotos = r.fotos?.length || 0;
+
+        return `
+        <div class="reg-item" data-idx="${i}">
+
+            <div class="drag-handle">≡</div>
+
+            ${img 
+                ? `<img src="${img}" class="thumb">`
+                : `<div class="thumb"></div>`
+            }
+
+            <div class="reg-info">
+                <div class="reg-title">${carreteraVal}</div>
+                <div class="reg-sub">
+                    PK: ${pkVal} | ${margeVal}
+                    ${numFotos ? ` · 📷 ${numFotos}` : ''}
+                </div>
+                
+            </div>
+
+            <div class="actions">
+                <button onclick="loadE(${i})">✏️</button>
+                <button onclick="eliminarPunt(${i})">🗑️</button>
+            </div>
+
+        </div>
+        `;
+
+    }).join('');
 }
 
 function eliminarPunt(i) {
@@ -858,7 +1126,7 @@ async function handleFotos(input) {
 
             img.onload = () => {
                 const cvs = document.createElement("canvas");
-                const max = 1000;
+                const max = 800;
 
                 let w = img.width;
                 let h = img.height;
@@ -877,7 +1145,8 @@ async function handleFotos(input) {
                 // 🔥 CLAU TOTAL
                 if (isFotoDirecta) {
                     tmpFotos = []; // neteja total
-                    obrirEditorFotoDirecta(base64); // 👉 nou flux
+                    obrirEditorFotoDirecta(base64);
+                    isFotoDirecta = false; 
                 } else {
                     tmpFotos.push(base64);
                     renderPreview();
@@ -897,9 +1166,9 @@ function renderPreview() {
     preview.innerHTML = tmpFotos.map((f, i) => `
         <div class="photo-item" style="height: 110px; position: relative;">
             <img src="${f}">
-            <!-- Botón de Lupa para ampliar -->
-            <div class="zoom-icon" onclick="obrirVisor(${i})">🔍</div>            
-            <!-- Botón de eliminar -->
+            <!-- Botó Lupa robust -->
+            <div class="zoom-icon" onclick="obrirVisor(${i}); event.stopPropagation();" role="button">🔍</div>            
+            <!-- Botó Borrar robust -->
             <button class="btn-del-photo" onclick="eliminarFoto(event, ${i})">✕</button>
         </div>`).join('');
 }
@@ -1020,7 +1289,7 @@ function borrarP(id) { if(confirm("Eliminar tot el projecte?")) db.transaction("
 function openP(id) {
     db.transaction("projects").objectStore("projects").get(id).onsuccess = e => {
         const p = e.target.result; curId = p.id; fields = p.fields; regs = p.registros;
-        document.getElementById('titulo').value = p.titulo; renderForm(); renderRegs(); ir('form');
+        document.getElementById('titulo').value = p.titulo; renderForm(); renderRegs(); ir('puntsLlistat');
     };
 }
 
@@ -1078,8 +1347,16 @@ function toggleOptions(id) {
 
 async function descarregarTotesFotos(id) {
     const zip = new JSZip();
+    
+    // Canviem el text del botó per indicar que s'està treballant
+    const btnText = document.getElementById(`opts-${id}`)?.previousElementSibling?.querySelector('button') || {innerText: ""};
+    const originalText = btnText.innerText;
+    btnText.innerText = "⏳ Generant ZIP...";
+
     db.transaction("projects").objectStore("projects").get(id).onsuccess = async e => {
         const p = e.target.result;
+        
+        // Bucle per afegir fotos al ZIP
         p.registros.forEach((reg, i) => {
             const carr = reg.values.find(v => v.label.toLowerCase().includes('carretera'))?.val || "C";
             const pk = reg.values.find(v => v.label.toLowerCase().includes('pk'))?.val || "0";
@@ -1087,14 +1364,45 @@ async function descarregarTotesFotos(id) {
             
             reg.fotos.forEach((foto, fi) => {
                 const imgData = foto.split(',')[1];
-                zip.file(`${p.titulo}_${carr}_PK${pk}_${marge}_${fi}.jpg`.replace(/\s+/g, '_'), imgData, {base64: true});
+                // Nomenclatura neta per als fitxers dins del ZIP
+                const nomFoto = `${carr}_PK${pk}_${marge}_${i}_${fi}.jpg`.replace(/[^a-z0-9.]/gi, '_');
+                zip.file(nomFoto, imgData, {base64: true});
             });
         });
-        const content = await zip.generateAsync({type:"blob"});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(content);
-        link.download = `Fotos_${p.titulo}.zip`;
-        link.click();
+
+        // Generem el Blob del ZIP
+        currentBlob = await zip.generateAsync({type: "blob"});
+        currentFileName = `Fotos_${p.titulo.replace(/\s+/g, '_')}.zip`;
+
+        // Configurem el títol i el nom al modal d'exportació
+        document.getElementById('exportTitle').innerText = "PAQUET DE FOTOS (ZIP)";
+        document.getElementById('exportName').innerText = currentFileName;
+
+        // Configurem el botó de Compartir (WhatsApp, Email, etc.)
+        document.getElementById('btnShare').onclick = () => {
+            const file = new File([currentBlob], currentFileName, { type: "application/zip" });
+            if (navigator.share) {
+                navigator.share({ files: [file], title: currentFileName }).catch(console.error);
+            } else {
+                alert("Compartir no disponible en aquest navegador.");
+            }
+            closeExportModal();
+        };
+
+        // Configurem el botó de Descàrrega directa
+        document.getElementById('btnDownload').onclick = () => {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(currentBlob);
+            a.download = currentFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            closeExportModal();
+        };
+
+        // Mostrem el modal i restablim el text del botó del menú
+        document.getElementById('exportModal').style.display = 'flex';
+        btnText.innerText = originalText;
     };
 }
 
@@ -1141,103 +1449,167 @@ if (tipus === 'Fitxa') {
     };
 }
 
-        async function generarBlobPDF(p, tipus) {
+
+async function generarBlobPDF(p, tipus) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    
+    // Funció interna per dibuixar la capçalera (MANTINGUDA TOTALMENT IGUAL)
+    const drawHeader = (pageDoc, title) => {
+        pageDoc.setDrawColor(200, 200, 200);
+        pageDoc.setLineWidth(0.5);
+        pageDoc.line(10, 22, 200, 22);
+
+        if (typeof logoCorporativo !== 'undefined' && logoCorporativo) {
+            try {
+                const imgProps = pageDoc.getImageProperties(logoCorporativo);
+                const hMax = 12;
+                const wMax = 50;
+                const rati = Math.min(wMax / imgProps.width, hMax / imgProps.height);
+                const wFinal = imgProps.width * rati;
+                const hFinal = imgProps.height * rati;
+                pageDoc.addImage(logoCorporativo, 'PNG', 15, 18 - hFinal, wFinal, hFinal);
+            } catch (err) { 
+                console.error("Error logo:", err);
+            }
+        }
+
+        pageDoc.setTextColor(40, 40, 40);
+        pageDoc.setFont("helvetica", "bold");
+        pageDoc.setFontSize(10);
+        
+ const ampleMaximTitol = 100; // Limitem el títol a la meitat dreta
+const títolMultilínia = pageDoc.splitTextToSize(p.titulo.toUpperCase(), ampleMaximTitol);
+
+// Dibuixem el títol ajustat a la dreta (alineació dreta real)
+pageDoc.text(títolMultilínia, 195, 10, { align: 'right' });
+
+// Calculem la posició de la data dinàmicament segons les línies del títol
+const alcadaTitol = títolMultilínia.length * 4.5; 
+const yData = 10 + alcadaTitol + 2;
+
+const dataAvui = new Date().toLocaleDateString('ca-ES', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        
+      
+        pageDoc.setFont("helvetica", "normal");
+        pageDoc.setFontSize(8);
+        pageDoc.setTextColor(100, 100, 100);
+        
+        const textData = `Data d'emissió: ${dataAvui}`;
+        const xPosData = 195 - pageDoc.getTextWidth(textData);
+        pageDoc.text(textData, xPosData, 20);
+    };
+
     const localRegs = p.registros;
-    const localFields = p.fields;
 
     if (tipus === 'Fitxa') {
         localRegs.forEach((r, i) => {
             if (i > 0) doc.addPage();
-            doc.setFillColor(58, 52, 50); doc.rect(0, 0, 210, 15, 'F');
-            doc.setTextColor(255); doc.setFontSize(14); doc.text("INFORME TÈCNIC", 15, 10);
-            doc.setTextColor(0); doc.setFontSize(12); doc.text(`Projecte: ${p.titulo}`, 15, 22);
-            doc.autoTable({
-                startY: 28,
-                head: [['Paràmetre', 'Valor']],
-                body: r.values.map(v => [v.label, v.val]),
-                theme: 'striped',
-                headStyles: { fillColor: [60, 60, 60] }
+            drawHeader(doc, `Informe: ${p.titulo}`);
+
+            // Estil per al número de registre (més subtil com a la teva foto)
+            doc.setFontSize(8);
+            doc.setTextColor(180, 180, 180);
+            doc.setFont("helvetica", "normal");
+            doc.text(`REGISTRE #${i + 1}`, 15, 35);
+
+            // DADES ALINEADES (Com a la imatge 1)
+            let currentY = 45;
+            const xCol1 = 15;  // Posició etiqueta
+            const xCol2 = 60;  // Posició valor (tabulació)
+
+            r.values.forEach(v => {
+                doc.setFontSize(10);
+                doc.setTextColor(0, 0, 0);
+                
+                // Etiqueta en negreta
+                doc.setFont("helvetica", "bold");
+                doc.text(`${v.label}:`, xCol1, currentY);
+                
+                // Valor en normal a la segona columna
+                doc.setFont("helvetica", "normal");
+                const valor = String(v.val || "-");
+                
+                // Si el text és molt llarg, fem que salti de línia sense xafar la columna 1
+                const textSplit = doc.splitTextToSize(valor, 130); 
+                doc.text(textSplit, xCol2, currentY);
+                
+                // Espai entre files (ajustat per donar aire)
+                currentY += Math.max(textSplit.length * 7, 8); 
             });
-            let y = doc.lastAutoTable.finalY + 10;
-                        // Codi corregit per a les línies 551-555
+
+            let yFotos = currentY + 15; // Més espai abans de la foto
+            
+            // FOTOS
             r.fotos.forEach(f => {
-                const props = doc.getImageProperties(f);
-                const ampleMax = 180;
-                const altMax = 90; // Limitem l'alçada perquè en cabdin dues
-                
-                // Calculem la proporció per no deformar
-                const rati = Math.min(ampleMax / props.width, altMax / props.height);
-                const wFinal = props.width * rati;
-                const hFinal = props.height * rati;
-                
-                // Centrem la foto horitzontalment
-                const xCentrat = 15 + (ampleMax - wFinal) / 2;
+                try {
+                    const props = doc.getImageProperties(f);
+                    const ampleMax = 180;
+                    const altMax = 90;
+                    const rati = Math.min(ampleMax / props.width, altMax / props.height);
+                    const wFinal = props.width * rati;
+                    const hFinal = props.height * rati;
+                    const xCentrat = 15 + (ampleMax - wFinal) / 2;
 
-                if (y + hFinal > 280) { 
-                    doc.addPage(); 
-                    y = 20; 
-                }
-                
-                doc.addImage(f, 'JPEG', xCentrat, y, wFinal, hFinal);
-                y += hFinal + 8;
+                    if (yFotos + hFinal > 280) { 
+                        doc.addPage(); 
+                        drawHeader(doc, `Informe: ${p.titulo}`);
+                        yFotos = 35; 
+                    }
+                    
+                    doc.addImage(f, 'JPEG', xCentrat, yFotos, wFinal, hFinal);
+                    yFotos += hFinal + 10;
+                } catch(e) { console.error("Error imatge registre:", e); }
             });
-
         });
     } else {
-        doc.setFontSize(14);
-        doc.text("PROJECTE: " + p.titulo, 15, 15);
-        const headers = localFields.map(f => f.label); 
-        headers.push("Imatges");
+    // PDF TIPUS TAULA
+    const headers = p.fields.map(f => f.label); 
+    headers.push("Imatges");
 
-        doc.autoTable({
-            startY: 22,
-            head: [headers],
-            body: localRegs.map(r => [...r.values.map(v => v.val), ""]),
-            theme: 'striped',
-            headStyles: { fillColor: [100, 100, 100] },
-            styles: { valign: 'middle', fontSize: 8, overflow: 'linebreak' },
-            // Fem les files més altes (35mm) per veure bé la foto
-            bodyStyles: { minCellHeight: 35 },
-            columnStyles: {
-                // Forcem que l'última columna (la foto) mesuri 35mm d'ample
-                [localFields.length]: { cellWidth: 35 }
-            },
-            didDrawCell: (data) => {
-                // Si és la columna de la imatge i no és la capçalera
-                if (data.column.index === localFields.length && data.cell.section === 'body') {
-                    const r = localRegs[data.row.index];
-                    if (r.fotos && r.fotos.length > 0) {
-                        const f = r.fotos[0];
-                        try {
-                            const props = doc.getImageProperties(f);
-                            
-                            // Mida útil de la cel·la deixant un marge de 2mm
-                            const cW = data.cell.width - 4;
-                            const cH = data.cell.height - 4;
+    doc.autoTable({
+        startY: 25,
+        head: [headers],
+        body: localRegs.map(r => [...r.values.map(v => v.val), ""]),
+        theme: 'striped',
+        headStyles: { fillColor: [60, 60, 60] },
+        styles: { valign: 'middle', fontSize: 8 },
+        bodyStyles: { minCellHeight: 35 },
+        didDrawPage: () => {
+            drawHeader(doc, p.titulo);
+        },
+        didDrawCell: (data) => {
+            if (data.column.index === p.fields.length && data.cell.section === 'body') {
+                const r = localRegs[data.row.index];
+                if (r.fotos && r.fotos.length > 0) {
+                    const f = r.fotos[0];
+                    try {
+                        const props = doc.getImageProperties(f);
+                        const padding = 2;
+                        const cW = data.cell.width - (padding * 2);
+                        const cH = data.cell.height - (padding * 2);
+                        const rati = Math.min(cW / props.width, cH / props.height);
 
-                            // Calculem rati per mantenir proporció original (SENSE DEFORMAR)
-                            const rati = Math.min(cW / props.width, cH / props.height);
-                            const wFinal = props.width * rati;
-                            const hFinal = props.height * rati;
-
-                            // Centrem la foto dins la cel·la
-                            const xCentrat = data.cell.x + (data.cell.width - wFinal) / 2;
-                            const yCentrat = data.cell.y + (data.cell.height - hFinal) / 2;
-
-                            doc.addImage(f, 'JPEG', xCentrat, yCentrat, wFinal, hFinal);
-                        } catch (e) {
-                            console.error("Error en miniatura:", e);
-                        }
+                        doc.addImage(
+                            f,
+                            'JPEG',
+                            data.cell.x + (data.cell.width - props.width * rati) / 2,
+                            data.cell.y + (data.cell.height - props.height * rati) / 2,
+                            props.width * rati,
+                            props.height * rati
+                        );
+                    } catch (e) {
+                        console.error("Error imatge taula:", e);
                     }
                 }
             }
-        });
-    }        
-
- return doc.output('blob');
+        }
+    });
 }
+return doc.output('blob');
+}       
 
 function generarBlobExcel(p) {
     const ws = XLSX.utils.json_to_sheet(p.registros.map(r => { let o = {}; r.values.forEach(v => o[v.label] = v.val); return o; }));
@@ -1416,6 +1788,52 @@ function obrirEditorFotoDirecta(imgData) {
     `;
 
     document.querySelector('.container').appendChild(screen);
+}
+
+function handleLogo(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 400; // Mida optimitzada
+                const scale = MAX_WIDTH / img.width;
+                canvas.width = MAX_WIDTH;
+                canvas.height = img.height * scale;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                logoCorporativo = canvas.toDataURL('image/png');
+                localStorage.setItem('logo_corp', logoCorporativo);
+                mostrarLogoActual();
+                alert("Logo guardat correctament");
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function mostrarLogoActual() {
+    const img = document.getElementById('logoActual');
+    const msg = document.getElementById('noLogoMsg');
+    if (logoCorporativo && img) {
+        img.src = logoCorporativo;
+        img.style.display = 'inline-block';
+        msg.style.display = 'none';
+    } else if (msg) {
+        img.style.display = 'none';
+        msg.style.display = 'block';
+    }
+}
+
+function eliminarLogo() {
+    if (confirm("Vols eliminar el logo corporatiu?")) {
+        localStorage.removeItem('logo_corp');
+        logoCorporativo = null;
+        mostrarLogoActual();
+    }
 }
 
 async function guardarFotoDirecta(imgData) {
