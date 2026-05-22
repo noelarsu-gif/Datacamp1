@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PK-MAPA · Localitzador de Punts Kilométrics</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Bebas+Neue&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════
+   VARIABLES & RESET
+══════════════════════════════════════════════ */
+:root{
+  --ink:#0b0f1a;
+  --ink2:#141929;
+  --ink3:#1e2740;
+  --surface:rgba(11,15,26,.92);
+  --cyan:#00e5ff;
+  --cyan2:rgba(0,229,255,.12);
+  --cyan3:rgba(0,229,255,.06);
+  --amber:#ffb300;
+  --green:#00e676;
+  --red:#ff1744;
+  --text:#e8edf8;
+  --text2:#7a8aaa;
+  --text3:#3d4d6a;
+  --border:rgba(0,229,255,.13);
+  --border2:rgba(255,255,255,.06);
+  --r:12px;
+  --r2:20px;
+  --mono:'DM Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+  --display:'Bebas Neue',sans-serif;
+  --glow:0 0 40px rgba(0,229,255,.18);
+  --glow2:0 0 80px rgba(0,229,255,.1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--ink);}
+body{font-family:var(--sans);color:var(--text);-webkit-font-smoothing:antialiased;}
+
+/* Grid scanlines subtle */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:1000;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.012) 2px,rgba(0,229,255,.012) 3px);
+}
+
+/* ══════════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════════ */
+#app{
+  display:grid;
+  grid-template-columns:380px 1fr;
+  height:100vh;
+  position:relative;
+}
+
+/* ══════════════════════════════════════════════
+   SIDEBAR
+══════════════════════════════════════════════ */
+#sidebar{
+  background:var(--ink2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;z-index:10;
+  box-shadow:4px 0 40px rgba(0,0,0,.6);
+}
+
+/* Header */
+.sidebar-head{
+  padding:24px 24px 20px;
+  border-bottom:1px solid var(--border2);
+  flex-shrink:0;
+  background:linear-gradient(180deg,rgba(0,229,255,.04) 0%,transparent 100%);
+}
+.brand{
+  display:flex;align-items:baseline;gap:10px;margin-bottom:4px;
+}
+.brand-name{
+  font-family:var(--display);letter-spacing:3px;font-size:2rem;
+  color:var(--cyan);text-shadow:0 0 30px rgba(0,229,255,.5);
+  line-height:1;
+}
+.brand-badge{
+  font-family:var(--mono);font-size:.6rem;font-weight:500;
+  color:var(--cyan);background:var(--cyan2);
+  border:1px solid var(--border);
+  padding:2px 8px;border-radius:20px;letter-spacing:1px;
+}
+.brand-sub{
+  font-size:.72rem;color:var(--text2);font-weight:400;letter-spacing:.5px;
+}
+
+/* GPS bar */
+.gps-strip{
+  margin:0 24px 0;padding:10px 14px;
+  border-radius:var(--r);border:1px solid var(--border2);
+  background:var(--ink3);
+  display:flex;align-items:center;gap:10px;
+  transition:all .3s;
+}
+.gps-strip.locked{border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.05);}
+.gps-strip.searching{border-color:rgba(255,179,0,.3);background:rgba(255,179,0,.05);}
+.gps-strip.err{border-color:rgba(255,23,68,.3);background:rgba(255,23,68,.05);}
+.gps-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--text3);
+  flex-shrink:0;transition:background .3s;
+}
+.gps-strip.locked .gps-dot{background:var(--green);box-shadow:0 0 8px var(--green);}
+.gps-strip.searching .gps-dot{background:var(--amber);animation:pulse 1s infinite;}
+.gps-strip.err .gps-dot{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.gps-text{flex:1;font-size:.72rem;font-weight:500;color:var(--text2);letter-spacing:.3px;}
+.gps-strip.locked .gps-text{color:var(--green);}
+.gps-strip.searching .gps-text{color:var(--amber);}
+.gps-strip.err .gps-text{color:var(--red);}
+.gps-btn{
+  padding:5px 12px;border-radius:var(--r);border:1px solid var(--border);
+  background:var(--ink);color:var(--cyan);font-family:var(--sans);font-size:.7rem;
+  font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.5px;white-space:nowrap;
+}
+.gps-btn:hover{background:var(--cyan2);border-color:var(--cyan);}
+
+/* Scrollable body */
+.sidebar-body{
+  flex:1;overflow-y:auto;padding:16px 24px 24px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.sidebar-body::-webkit-scrollbar{width:4px;}
+.sidebar-body::-webkit-scrollbar-track{background:transparent;}
+.sidebar-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* Section label */
+.sec-label{
+  font-size:.6rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+  color:var(--text3);margin-bottom:8px;
+}
+
+/* ── RESULT CARD ── */
+.result-card{
+  background:var(--ink3);border:1px solid var(--border);
+  border-radius:var(--r2);padding:20px;
+  transition:all .4s;min-height:120px;
+  display:flex;flex-direction:column;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.result-card.ok{border-color:rgba(0,230,118,.35);box-shadow:0 0 40px rgba(0,230,118,.08);}
+.result-card.ok::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--green),transparent);
+}
+.result-card.warn{border-color:rgba(255,179,0,.35);}
+.result-card.err{border-color:rgba(255,23,68,.3);}
+.result-idle{text-align:center;color:var(--text3);}
+.result-idle-icon{font-size:2rem;margin-bottom:6px;opacity:.3;}
+.result-idle-text{font-size:.75rem;line-height:1.5;}
+
+.result-road{
+  font-family:var(--display);letter-spacing:3px;font-size:1.1rem;
+  color:var(--text2);margin-bottom:2px;
+}
+.result-pk{
+  font-family:var(--display);font-size:3.5rem;letter-spacing:2px;
+  color:var(--green);line-height:1;text-shadow:0 0 30px rgba(0,230,118,.4);
+}
+.result-pk .sep{color:var(--text3);font-size:2.5rem;}
+.result-dist{font-size:.7rem;color:var(--text2);margin-top:6px;}
+.result-coords{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:4px;}
+.result-warn-title{font-family:var(--display);font-size:1.2rem;letter-spacing:2px;color:var(--amber);}
+.result-warn-sub{font-size:.75rem;color:var(--text2);margin-top:4px;}
+
+/* Action buttons under result */
+.result-actions{
+  display:flex;gap:8px;margin-top:10px;
+}
+.ra-btn{
+  flex:1;padding:9px 8px;border-radius:var(--r);font-family:var(--sans);
+  font-size:.7rem;font-weight:600;letter-spacing:.5px;cursor:pointer;
+  border:1px solid var(--border);background:var(--ink);color:var(--text2);
+  transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.ra-btn:hover{background:var(--cyan2);border-color:var(--cyan);color:var(--cyan);}
+.ra-btn.wa:hover{background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.5);color:#25d366;}
+.ra-btn.maps:hover{background:rgba(66,133,244,.12);border-color:rgba(66,133,244,.5);color:#4285f4;}
+
+/* ── BUSCADOR CARRETERA + PK ── */
+.lookup-card{
+  background:var(--ink3);border:1px solid var(--border2);
+  border-radius:var(--r2);padding:18px;
+}
+.lookup-row{display:flex;gap:8px;}
+.lookup-inp{
+  flex:1;padding:11px 13px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--ink);
+  color:var(--text);font-family:var(--mono);font-size:.85rem;font-weight:500;
+  outline:none;transition:all .2s;-webkit-appearance:none;
+}
+.lookup-inp::placeholder{color:var(--text3);font-family:var(--sans);font-size:.78rem;}
+.lookup-inp:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan3);}
+.lookup-inp.narrow{max-width:80px;text-align:center;}
+.lookup-inp.narrower{max-width:72px;text-align:center;}
+.lookup-btn{
+  padding:11px 16px;border-radius:var(--r);border:1px solid var(--border);
+  background:var(--ink);color:var(--cyan);font-family:var(--sans);font-size:.75rem;
+  font-weight:700;letter-spacing:.5px;cursor:pointer;transition:all .2s;white-space:nowrap;
+}
+.lookup-btn:hover{background:var(--cyan2);border-color:var(--cyan);}
+.lookup-btn.primary{
+  background:linear-gradient(135deg,rgba(0,229,255,.15),rgba(0,229,255,.08));
+  border-color:var(--cyan);
+}
+
+/* ── BUSCADOR (autocomplete carreteres) ── */
+.search-wrap{position:relative;}
+.search-inp{
+  width:100%;padding:11px 40px 11px 14px;border-radius:var(--r);
+  border:1px solid var(--border2);background:var(--ink);
+  color:var(--text);font-family:var(--sans);font-size:.85rem;
+  outline:none;transition:all .2s;
+}
+.search-inp::placeholder{color:var(--text3);}
+.search-inp:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan3);}
+.search-icon{
+  position:absolute;right:13px;top:50%;transform:translateY(-50%);
+  color:var(--text3);font-size:1rem;pointer-events:none;
+}
+.search-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:100;
+  background:var(--ink3);border:1px solid var(--border);border-radius:var(--r);
+  max-height:200px;overflow-y:auto;display:none;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.search-dropdown.open{display:block;}
+.search-item{
+  padding:10px 14px;cursor:pointer;font-size:.8rem;
+  border-bottom:1px solid var(--border2);transition:background .15s;
+  display:flex;align-items:center;gap:10px;
+}
+.search-item:last-child{border-bottom:none;}
+.search-item:hover,.search-item.active{background:var(--cyan2);}
+.search-item-road{font-family:var(--mono);font-weight:500;color:var(--cyan);min-width:60px;}
+.search-item-pks{font-size:.68rem;color:var(--text3);}
+
+/* ── INSTRUCCIONS DRAG ── */
+.drag-hint{
+  background:var(--ink3);border:1px solid var(--border2);
+  border-radius:var(--r);padding:12px 14px;
+  display:flex;align-items:center;gap:10px;
+}
+.drag-hint-icon{font-size:1.4rem;flex-shrink:0;}
+.drag-hint-text{font-size:.72rem;color:var(--text2);line-height:1.5;}
+.drag-hint-text strong{color:var(--cyan);display:block;font-size:.68rem;letter-spacing:.5px;text-transform:uppercase;}
+
+/* Firma */
+.firma{
+  margin-top:auto;padding-top:16px;
+  text-align:right;font-family:var(--mono);font-size:.58rem;
+  color:var(--text3);letter-spacing:.5px;line-height:1.8;
+}
+.firma span{color:var(--cyan);opacity:.5;}
+
+/* ══════════════════════════════════════════════
+   MAPA
+══════════════════════════════════════════════ */
+#map-wrap{position:relative;overflow:hidden;}
+#leafletMap{width:100%;height:100%;background:#080c18;}
+
+/* Customització Leaflet */
+.leaflet-container{background:#080c18;font-family:var(--sans);}
+.leaflet-tile{filter:saturate(.9) brightness(.88) hue-rotate(5deg);}
+.leaflet-popup-content-wrapper{
+  background:rgba(14,19,35,.97);border:1px solid var(--border);
+  color:var(--text);border-radius:var(--r);
+  backdrop-filter:blur(12px);box-shadow:var(--glow);
+}
+.leaflet-popup-tip{background:rgba(14,19,35,.97);}
+.leaflet-popup-content{font-family:var(--sans);font-size:.82rem;padding:4px 2px;}
+.leaflet-popup-content b{color:var(--cyan);font-family:var(--display);letter-spacing:1px;font-size:1rem;}
+.leaflet-control-zoom a{
+  background:rgba(14,19,35,.9)!important;color:var(--text)!important;
+  border-color:var(--border)!important;transition:all .2s!important;
+}
+.leaflet-control-zoom a:hover{background:var(--cyan2)!important;color:var(--cyan)!important;}
+.leaflet-control-attribution{
+  background:rgba(8,12,24,.8)!important;color:var(--text3)!important;
+  font-size:.55rem!important;
+}
+
+/* Crosshair overlay al centre del mapa */
+#crosshair{
+  position:absolute;top:50%;left:50%;z-index:500;
+  transform:translate(-50%,-50%);pointer-events:none;
+  opacity:0;transition:opacity .3s;
+}
+#crosshair.visible{opacity:1;}
+.ch-h,.ch-v{position:absolute;background:rgba(0,229,255,.4);}
+.ch-h{width:40px;height:1px;top:50%;left:50%;transform:translate(-50%,-50%);}
+.ch-v{width:1px;height:40px;top:50%;left:50%;transform:translate(-50%,-50%);}
+.ch-dot{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:6px;height:6px;border-radius:50%;background:var(--cyan);
+  box-shadow:0 0 10px var(--cyan);
+}
+
+/* Loading overlay */
+#mapLoading{
+  position:absolute;inset:0;z-index:600;
+  background:rgba(8,12,24,.7);backdrop-filter:blur(4px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  pointer-events:none;opacity:0;transition:opacity .3s;
+}
+#mapLoading.visible{opacity:1;pointer-events:all;}
+.loading-ring{
+  width:40px;height:40px;border:3px solid var(--border);
+  border-top-color:var(--cyan);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:.75rem;color:var(--text2);letter-spacing:1px;text-transform:uppercase;}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);
+  z-index:9999;background:var(--ink3);border:1px solid var(--border);
+  border-radius:30px;padding:10px 20px;font-size:.78rem;color:var(--text);
+  box-shadow:var(--glow);opacity:0;transition:all .3s;pointer-events:none;
+  white-space:nowrap;backdrop-filter:blur(12px);
+}
+#toast.ok{border-color:rgba(0,230,118,.4);color:var(--green);}
+#toast.warn{border-color:rgba(255,179,0,.4);color:var(--amber);}
+#toast.err{border-color:rgba(255,23,68,.4);color:var(--red);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Mobile responsive */
+@media(max-width:768px){
+  #app{grid-template-columns:1fr;grid-template-rows:auto 1fr;}
+  #sidebar{max-height:55vh;overflow:hidden;}
+  .sidebar-body{padding:12px 16px;}
+  .sidebar-head{padding:16px 16px 12px;}
+  .result-pk{font-size:2.5rem;}
+  #map-wrap{min-height:45vh;}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside id="sidebar">
+
+    <div class="sidebar-head">
+      <div class="brand">
+        <span class="brand-name">PK·MAPA</span>
+        <span class="brand-badge">v2</span>
+      </div>
+      <div class="brand-sub">Localitzador de Punts Kilométrics · Catalunya</div>
+    </div>
+
+    <div class="gps-strip" id="gpsStrip" style="margin-top:16px;">
+      <div class="gps-dot"></div>
+      <span class="gps-text" id="gpsText">GPS no inicialitzat</span>
+      <button class="gps-btn" onclick="localitzarGPS()">📡 Localitzar</button>
+    </div>
+
+    <div class="sidebar-body">
+
+      <!-- RESULTAT -->
+      <div>
+        <div class="sec-label">📍 Punt Kilométric Detectat</div>
+        <div class="result-card" id="resultCard">
+          <div class="result-idle" id="resultIdle">
+            <div class="result-idle-icon">🛣️</div>
+            <div class="result-idle-text">Arrossega el pin al mapa<br>o usa el GPS per detectar el PK</div>
+          </div>
+          <div id="resultData" style="display:none;">
+            <div class="result-road" id="rRoad">—</div>
+            <div class="result-pk" id="rPK">—</div>
+            <div class="result-dist" id="rDist"></div>
+            <div class="result-coords" id="rCoords"></div>
+          </div>
+          <div id="resultWarn" style="display:none;">
+            <div class="result-warn-title">⚠️ Fora de Carretera</div>
+            <div class="result-warn-sub" id="warnSub">El punt seleccionat no pertany a cap carretera de la xarxa.</div>
+          </div>
+        </div>
+        <div class="result-actions" id="resultActions" style="display:none;">
+          <button class="ra-btn maps" onclick="obrirMaps()">🗺️ Maps</button>
+          <button class="ra-btn wa" onclick="compartirWA()">💬 WhatsApp</button>
+          <button class="ra-btn" onclick="copiarResultat()">📋 Copiar</button>
+        </div>
+      </div>
+
+      <!-- BUSCADOR CARRETERA -->
+      <div>
+        <div class="sec-label">🔍 Cercar Carretera</div>
+        <div class="search-wrap">
+          <input class="search-inp" id="searchInp" type="text"
+            placeholder="Escriu una carretera: C-26, N-II, AP-7..."
+            autocomplete="off" oninput="onSearchInput(this.value)">
+          <span class="search-icon">⌕</span>
+          <div class="search-dropdown" id="searchDrop"></div>
+        </div>
+      </div>
+
+      <!-- LOOKUP PK → POSICIÓ -->
+      <div>
+        <div class="sec-label">🎯 Anar a PK Exacte</div>
+        <div class="lookup-card">
+          <div class="lookup-row" style="margin-bottom:8px;">
+            <input class="lookup-inp" id="lkCarretera" type="text" placeholder="C-26" maxlength="10"
+              style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+            <input class="lookup-inp narrow" id="lkKm" type="number" placeholder="KM" min="0" max="9999">
+            <span style="display:flex;align-items:center;color:var(--text3);font-size:1.1rem;padding:0 2px;">+</span>
+            <input class="lookup-inp narrower" id="lkM" type="number" placeholder="m" min="0" max="999">
+          </div>
+          <button class="lookup-btn primary" style="width:100%;" onclick="anarAPK()">
+            → ANAR A AQUEST PK
+          </button>
+        </div>
+      </div>
+
+      <!-- HINT DRAG -->
+      <div class="drag-hint">
+        <div class="drag-hint-icon">📌</div>
+        <div class="drag-hint-text">
+          <strong>Pin arrossegable</strong>
+          Mou el pin taronja al mapa per calcular el PK de qualsevol punt de la carretera. El resultat s'actualitza en temps real.
+        </div>
+      </div>
+
+      <!-- FIRMA -->
+      <div class="firma">
+        <span>creat per</span> N.Arroyo<br>
+        <span>PK-MAPA v2.0 · 2025</span>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ══════════ MAPA ══════════ -->
+  <div id="map-wrap">
+    <div id="leafletMap"></div>
+    <div id="crosshair">
+      <div class="ch-h"></div><div class="ch-v"></div><div class="ch-dot"></div>
+    </div>
+    <div id="mapLoading">
+      <div class="loading-ring"></div>
+      <div class="loading-text">Calculant PK...</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+/* ══════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════ */
+const ARCGIS_URL = 'https://services1.arcgis.com/nCKYwcSONQTkPA4K/arcgis/rest/services/Puntos_kilometricos_Espana/FeatureServer/0/query';
+const LLINDAR_M = 300; // metres màxims per considerar "a la carretera"
+
+/* ══════════════════════════════════════════════
+   ESTAT
+══════════════════════════════════════════════ */
+let map, dragPin, userMarker;
+let pkCache = null; // cache local de PKs descarregats
+let ultimResultat = null; // { carretera, km, m, lat, lon, dist }
+let dragging = false;
+let searchTimeout = null;
+let carreteresIndexades = []; // per al buscador
+
+/* ══════════════════════════════════════════════
+   INIT MAPA
+══════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  map = L.map('leafletMap', {
+    center: [41.65, 1.62],
+    zoom: 9,
+    zoomControl: true,
+    attributionControl: true,
+  });
+
+  // Capes: satèl·lit ESRI + etiquetes
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'ESRI World Imagery',
+    maxZoom: 20,
+  }).addTo(map);
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 20, opacity: .85,
+  }).addTo(map);
+
+  // Pin arrossegable
+  const pinIcon = L.divIcon({
+    html: `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="48" viewBox="0 0 36 48">
+      <filter id="s"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity=".5"/></filter>
+      <g filter="url(#s)">
+        <path d="M18 0C9.16 0 2 7.16 2 16c0 11 16 30 16 30s16-19 16-30C34 7.16 26.84 0 18 0z" fill="#ff6d00"/>
+        <circle cx="18" cy="16" r="7" fill="#fff" opacity=".9"/>
+        <circle cx="18" cy="16" r="3.5" fill="#ff6d00"/>
+      </g>
+    </svg>`,
+    className: '',
+    iconSize: [36, 48],
+    iconAnchor: [18, 48],
+    popupAnchor: [0, -50],
+  });
+
+  dragPin = L.marker([41.65, 1.62], {
+    icon: pinIcon,
+    draggable: true,
+    zIndexOffset: 1000,
+    title: 'Arrossega per calcular PK',
+  }).addTo(map);
+
+  dragPin.on('dragstart', () => {
+    dragging = true;
+    document.getElementById('crosshair').classList.add('visible');
+  });
+  dragPin.on('drag', debounce(() => {
+    const ll = dragPin.getLatLng();
+    calcularPKperPosicio(ll.lat, ll.lng, false);
+  }, 400));
+  dragPin.on('dragend', async () => {
+    dragging = false;
+    document.getElementById('crosshair').classList.remove('visible');
+    const ll = dragPin.getLatLng();
+    await calcularPKperPosicio(ll.lat, ll.lng, true);
+  });
+
+  // Clic al mapa: mou el pin al punt clicat
+  map.on('click', async e => {
+    dragPin.setLatLng(e.latlng);
+    await calcularPKperPosicio(e.latlng.lat, e.latlng.lng, true);
+  });
+
+  // Intentar GPS automàtic a l'inici
+  localitzarGPS();
+});
+
+/* ══════════════════════════════════════════════
+   GPS
+══════════════════════════════════════════════ */
+function localitzarGPS() {
+  if (!navigator.geolocation) {
+    setGPS('err', 'GPS no disponible'); return;
+  }
+  setGPS('searching', 'Cercant posició GPS...');
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const acc = Math.round(pos.coords.accuracy);
+      setGPS('locked', `GPS · ±${acc} m`);
+
+      // Marcador de l'usuari
+      const uIcon = L.divIcon({
+        html:`<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="#00e5ff" opacity=".25"/><circle cx="11" cy="11" r="5.5" fill="#00e5ff"/><circle cx="11" cy="11" r="2.5" fill="#fff"/></svg>`,
+        className:'',iconSize:[22,22],iconAnchor:[11,11],
+      });
+      if (userMarker) userMarker.setLatLng([lat, lon]);
+      else userMarker = L.marker([lat, lon], { icon: uIcon }).addTo(map);
+
+      // Mou el pin i centra el mapa
+      dragPin.setLatLng([lat, lon]);
+      map.flyTo([lat, lon], 15, { animate: true, duration: 1.2 });
+      await calcularPKperPosicio(lat, lon, true);
+    },
+    err => {
+      const msg = { 1:'Permís denegat', 2:'GPS no disponible', 3:'Temps exhaurit' };
+      setGPS('err', msg[err.code] || 'Error GPS');
+      toast('⚠️ ' + (msg[err.code] || 'Error GPS') + '. Usa el pin manualment.', 'warn');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+  );
+}
+
+function setGPS(state, text) {
+  const strip = document.getElementById('gpsStrip');
+  strip.className = 'gps-strip ' + state;
+  document.getElementById('gpsText').textContent = text;
+}
+
+/* ══════════════════════════════════════════════
+   CÀLCUL DE PK
+══════════════════════════════════════════════ */
+async function calcularPKperPosicio(lat, lon, final) {
+  if (final) mostrarLoading(true);
+
+  try {
+    // 1. Prova cache local primer
+    let punts = filtrarCache(lat, lon, 0.06);
+    // 2. Si no n'hi ha prou, consulta ArcGIS
+    if (punts.length < 2) {
+      punts = await consultarArcGIS(lat, lon, 0.07);
+      indexarCarreteres(punts);
+    }
+    if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.14);
+
+    const res = calcularMillorPK(lat, lon, punts);
+
+    if (!res || res.dist > LLINDAR_M) {
+      mostrarResultatFora(res);
+    } else {
+      mostrarResultatOK(lat, lon, res);
+    }
+  } catch(e) {
+    mostrarError('Error de connexió: ' + e.message);
+  } finally {
+    if (final) mostrarLoading(false);
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ARCGIS
+══════════════════════════════════════════════ */
+async function consultarArcGIS(lat, lon, buf) {
+  const xMin = lon - buf, yMin = lat - buf, xMax = lon + buf, yMax = lat + buf;
+  const params = new URLSearchParams({
+    where: '1=1',
+    outFields: 'nombre,numero',
+    returnGeometry: true,
+    outSR: '4326',
+    f: 'json',
+    geometry: JSON.stringify({ xmin:xMin,ymin:yMin,xmax:xMax,ymax:yMax,spatialReference:{wkid:4326} }),
+    geometryType: 'esriGeometryEnvelope',
+    spatialRel: 'esriSpatialRelIntersects',
+    resultRecordCount: 500,
+  });
+  const r = await fetch(`${ARCGIS_URL}?${params}`, { signal: AbortSignal.timeout(15000) });
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const j = await r.json();
+  if (j.error) throw new Error(j.error.message);
+  const punts = (j.features || []).map(f => ({
+    carretera: (f.attributes.nombre || '').trim().toUpperCase(),
+    pk: parseFloat(f.attributes.numero) || 0,
+    lat: f.geometry.y, lon: f.geometry.x,
+  })).filter(p => p.carretera && !isNaN(p.pk));
+
+  // Afegir a cache
+  if (!pkCache) pkCache = [];
+  punts.forEach(p => {
+    if (!pkCache.find(c => c.carretera===p.carretera && c.pk===p.pk))
+      pkCache.push(p);
+  });
+  return punts;
+}
+
+function filtrarCache(lat, lon, buf) {
+  if (!pkCache?.length) return [];
+  return pkCache.filter(p =>
+    p.lat>=lat-buf && p.lat<=lat+buf && p.lon>=lon-buf && p.lon<=lon+buf
+  );
+}
+
+function indexarCarreteres(punts) {
+  punts.forEach(p => {
+    if (!carreteresIndexades.find(c => c.nom === p.carretera))
+      carreteresIndexades.push({ nom: p.carretera });
+  });
+}
+
+/* ══════════════════════════════════════════════
+   MOTOR HAVERSINE + INTERPOLACIÓ
+══════════════════════════════════════════════ */
+function haversineM(lat1,lon1,lat2,lon2){
+  const R=6371000,r=d=>d*Math.PI/180;
+  const dLat=r(lat2-lat1),dLon=r(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.asin(Math.sqrt(a));
+}
+
+function interpolarPK(uLat,uLon,A,B){
+  const dA=haversineM(uLat,uLon,A.lat,A.lon);
+  const dB=haversineM(uLat,uLon,B.lat,B.lon);
+  const dAB=haversineM(A.lat,A.lon,B.lat,B.lon);
+  if(dAB<1) return null;
+  const t=Math.max(0,Math.min(1,(dAB**2+dA**2-dB**2)/(2*dAB**2)));
+  const pkDec=A.pk+t*(B.pk-A.pk);
+  const dist=Math.sqrt(Math.max(0,dA**2-(t*dAB)**2));
+  return{km:Math.floor(pkDec),m:Math.round((pkDec%1)*1000),carretera:A.carretera,dist,pkDec};
+}
+
+function calcularMillorPK(uLat,uLon,punts){
+  if(!punts?.length) return null;
+  const grups={};
+  punts.forEach(p=>{(grups[p.carretera]=grups[p.carretera]||[]).push(p);});
+  let millor=null;
+  for(const pks of Object.values(grups)){
+    pks.sort((a,b)=>a.pk-b.pk);
+    for(let i=0;i<pks.length-1;i++){
+      const r=interpolarPK(uLat,uLon,pks[i],pks[i+1]);
+      if(r&&(!millor||r.dist<millor.dist)) millor=r;
+    }
+    if(pks.length===1){
+      const d=haversineM(uLat,uLon,pks[0].lat,pks[0].lon);
+      if(!millor||d<millor.dist)
+        millor={km:Math.floor(pks[0].pk),m:Math.round((pks[0].pk%1)*1000),carretera:pks[0].carretera,dist:d,pkDec:pks[0].pk};
+    }
+  }
+  return millor;
+}
+
+/* ══════════════════════════════════════════════
+   RESULTAT UI
+══════════════════════════════════════════════ */
+function mostrarResultatOK(lat, lon, res) {
+  ultimResultat = { ...res, lat, lon };
+  const mStr = String(res.m).padStart(3,'0');
+
+  document.getElementById('resultIdle').style.display = 'none';
+  document.getElementById('resultWarn').style.display = 'none';
+  document.getElementById('resultData').style.display = 'block';
+  document.getElementById('resultActions').style.display = 'flex';
+
+  document.getElementById('rRoad').textContent = res.carretera;
+  document.getElementById('rPK').innerHTML = `${res.km}<span class="sep">+</span>${mStr}`;
+  document.getElementById('rDist').textContent = `A ${Math.round(res.dist)} m de la calçada`;
+  document.getElementById('rCoords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+
+  const card = document.getElementById('resultCard');
+  card.className = 'result-card ok';
+
+  // Popup al pin
+  dragPin.bindPopup(`<b>${res.carretera}</b><br>PK ${res.km}+${mStr}<br><small style="color:#7a8aaa">${lat.toFixed(5)}, ${lon.toFixed(5)}</small>`).openPopup();
+}
+
+function mostrarResultatFora(res) {
+  ultimResultat = null;
+  document.getElementById('resultIdle').style.display = 'none';
+  document.getElementById('resultData').style.display = 'none';
+  document.getElementById('resultWarn').style.display = 'block';
+  document.getElementById('resultActions').style.display = 'none';
+  document.getElementById('resultCard').className = 'result-card warn';
+  const d = res ? ` La carretera més propera (${res.carretera}) és a ${Math.round(res.dist)} m.` : '';
+  document.getElementById('warnSub').textContent = 'El punt seleccionat no pertany a la xarxa de carreteres.' + d;
+  dragPin.closePopup();
+  toast('⚠️ Fora de la xarxa de carreteres', 'warn');
+}
+
+function mostrarError(msg) {
+  ultimResultat = null;
+  document.getElementById('resultIdle').style.display = 'none';
+  document.getElementById('resultData').style.display = 'none';
+  document.getElementById('resultActions').style.display = 'none';
+  document.getElementById('resultWarn').style.display = 'block';
+  document.getElementById('resultCard').className = 'result-card err';
+  document.getElementById('warnSub').textContent = msg;
+  toast('❌ ' + msg, 'err');
+}
+
+function mostrarLoading(v) {
+  document.getElementById('mapLoading').classList.toggle('visible', v);
+}
+
+/* ══════════════════════════════════════════════
+   BUSCADOR CARRETERES (autocomplete)
+══════════════════════════════════════════════ */
+function onSearchInput(val) {
+  clearTimeout(searchTimeout);
+  const drop = document.getElementById('searchDrop');
+  if (val.length < 1) { drop.classList.remove('open'); return; }
+
+  searchTimeout = setTimeout(async () => {
+    // Busca en cache local primer
+    const query = val.toUpperCase().trim();
+    let resultats = carreteresIndexades
+      .filter(c => c.nom.includes(query))
+      .slice(0, 8);
+
+    // Si no n'hi ha prou, consulta ArcGIS per nom
+    if (resultats.length < 3) {
+      try {
+        const params = new URLSearchParams({
+          where: `UPPER(nombre) LIKE '${query}%'`,
+          outFields: 'nombre,numero', returnGeometry: true,
+          outSR: '4326', f: 'json', resultRecordCount: 200,
+        });
+        const r = await fetch(`${ARCGIS_URL}?${params}`, { signal: AbortSignal.timeout(8000) });
+        const j = await r.json();
+        const punts = (j.features||[]).map(f=>({
+          carretera:(f.attributes.nombre||'').trim().toUpperCase(),
+          pk:parseFloat(f.attributes.numero)||0,
+          lat:f.geometry.y, lon:f.geometry.x,
+        }));
+        indexarCarreteres(punts);
+        if(!pkCache) pkCache=[];
+        punts.forEach(p=>{if(!pkCache.find(c=>c.carretera===p.carretera&&c.pk===p.pk))pkCache.push(p);});
+        resultats = carreteresIndexades.filter(c=>c.nom.includes(query)).slice(0,8);
+      } catch(_) {}
+    }
+
+    if (!resultats.length) { drop.classList.remove('open'); return; }
+
+    // Calcula rang de PKs per carretera
+    drop.innerHTML = resultats.map(c => {
+      const pks = (pkCache||[]).filter(p=>p.carretera===c.nom).map(p=>p.pk);
+      const rang = pks.length ? `PK ${Math.min(...pks).toFixed(0)} – ${Math.max(...pks).toFixed(0)}` : '';
+      return `<div class="search-item" onclick="seleccionarCarretera('${c.nom}')">
+        <span class="search-item-road">${c.nom}</span>
+        <span class="search-item-pks">${rang}</span>
+      </div>`;
+    }).join('');
+    drop.classList.add('open');
+  }, 300);
+}
+
+function seleccionarCarretera(nom) {
+  document.getElementById('searchInp').value = nom;
+  document.getElementById('searchDrop').classList.remove('open');
+  document.getElementById('lkCarretera').value = nom;
+
+  // Centra el mapa al primer PK conegut d'aquesta carretera
+  const punt = (pkCache||[]).find(p=>p.carretera===nom);
+  if (punt) {
+    map.flyTo([punt.lat, punt.lon], 13, { animate:true, duration:1 });
+    dragPin.setLatLng([punt.lat, punt.lon]);
+    calcularPKperPosicio(punt.lat, punt.lon, true);
+  }
+  toast(`🛣️ Carretera ${nom} seleccionada`, 'ok');
+}
+
+// Tanca dropdown en clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap'))
+    document.getElementById('searchDrop').classList.remove('open');
+});
+
+/* ══════════════════════════════════════════════
+   ANAR A PK EXACTE
+══════════════════════════════════════════════ */
+async function anarAPK() {
+  const carr = document.getElementById('lkCarretera').value.trim().toUpperCase();
+  const km   = parseInt(document.getElementById('lkKm').value) || 0;
+  const m    = Math.min(999, parseInt(document.getElementById('lkM').value) || 0);
+
+  if (!carr) { toast('⚠️ Introdueix el nom de la carretera', 'warn'); return; }
+
+  mostrarLoading(true);
+  toast(`🔍 Buscant ${carr} PK ${km}+${String(m).padStart(3,'0')}...`, 'ok');
+
+  try {
+    // Busca tots els PKs de la carretera propera al PK demanat
+    const pkTarget = km + m/1000;
+    const params = new URLSearchParams({
+      where: `UPPER(nombre)='${carr}' AND numero>=${Math.max(0,pkTarget-2)} AND numero<=${pkTarget+2}`,
+      outFields: 'nombre,numero', returnGeometry: true,
+      outSR: '4326', f: 'json', resultRecordCount: 200,
+      orderByFields: 'numero ASC',
+    });
+    const r = await fetch(`${ARCGIS_URL}?${params}`, { signal: AbortSignal.timeout(15000) });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message);
+    const punts = (j.features||[]).map(f=>({
+      carretera:(f.attributes.nombre||'').trim().toUpperCase(),
+      pk:parseFloat(f.attributes.numero)||0,
+      lat:f.geometry.y, lon:f.geometry.x,
+    }));
+
+    if (!punts.length) {
+      // Intenta sense filtre de numero
+      const p2 = new URLSearchParams({
+        where:`UPPER(nombre)='${carr}'`,
+        outFields:'nombre,numero',returnGeometry:true,outSR:'4326',f:'json',resultRecordCount:500,
+      });
+      const r2 = await fetch(`${ARCGIS_URL}?${p2}`,{signal:AbortSignal.timeout(15000)});
+      const j2 = await r2.json();
+      const p2res=(j2.features||[]).map(f=>({
+        carretera:(f.attributes.nombre||'').trim().toUpperCase(),
+        pk:parseFloat(f.attributes.numero)||0,lat:f.geometry.y,lon:f.geometry.x,
+      }));
+      if(!p2res.length){toast(`❌ No s'ha trobat la carretera ${carr}`,'err');return;}
+      punts.push(...p2res);
+    }
+
+    // Interpola la posició exacta al PK demanat
+    const sorted = punts.sort((a,b)=>a.pk-b.pk);
+    let posInterp = null;
+    for(let i=0;i<sorted.length-1;i++){
+      if(sorted[i].pk<=pkTarget && sorted[i+1].pk>=pkTarget){
+        const t=(pkTarget-sorted[i].pk)/(sorted[i+1].pk-sorted[i].pk);
+        posInterp={
+          lat:sorted[i].lat+t*(sorted[i+1].lat-sorted[i].lat),
+          lon:sorted[i].lon+t*(sorted[i+1].lon-sorted[i].lon),
+        };
+        break;
+      }
+    }
+    // Fallback: el PK més proper
+    if(!posInterp){
+      const mes=sorted.reduce((a,b)=>Math.abs(b.pk-pkTarget)<Math.abs(a.pk-pkTarget)?b:a);
+      posInterp={lat:mes.lat,lon:mes.lon};
+    }
+
+    // Actualitza mapa i calcula PK
+    if(!pkCache) pkCache=[];
+    punts.forEach(p=>{if(!pkCache.find(c=>c.carretera===p.carretera&&c.pk===p.pk))pkCache.push(p);});
+    indexarCarreteres(punts);
+
+    map.flyTo([posInterp.lat,posInterp.lon],15,{animate:true,duration:1.2});
+    dragPin.setLatLng([posInterp.lat,posInterp.lon]);
+    await calcularPKperPosicio(posInterp.lat,posInterp.lon,false);
+    mostrarLoading(false);
+    toast(`✅ ${carr} PK ${km}+${String(m).padStart(3,'0')} localitzat`,'ok');
+  } catch(e) {
+    mostrarLoading(false);
+    toast('❌ Error: '+e.message,'err');
+  }
+}
+
+/* ══════════════════════════════════════════════
+   COMPARTIR
+══════════════════════════════════════════════ */
+function obrirMaps() {
+  if (!ultimResultat) return;
+  window.open(`https://maps.google.com/?q=${ultimResultat.lat},${ultimResultat.lon}`, '_blank');
+}
+
+async function compartirWA() {
+  if (!ultimResultat) return;
+  const { carretera, km, m, lat, lon } = ultimResultat;
+  const mStr = String(m).padStart(3,'0');
+  const text =
+    `📍 *Carretera:* ${carretera}\n` +
+    `🛣️ *PK:* ${km}+${mStr}\n` +
+    `🗺️ *Ubicació:* https://maps.google.com/?q=${lat},${lon}`;
+
+  if (navigator.canShare?.({ text })) {
+    try { await navigator.share({ text }); return; } catch(e) { if(e.name==='AbortError') return; }
+  }
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+async function copiarResultat() {
+  if (!ultimResultat) return;
+  const { carretera, km, m, lat, lon } = ultimResultat;
+  const mStr = String(m).padStart(3,'0');
+  const text = `${carretera} PK ${km}+${mStr} | ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('📋 Copiat al porta-retalls', 'ok');
+  } catch { toast('❌ No s\'ha pogut copiar', 'err'); }
+}
+
+/* ══════════════════════════════════════════════
+   UTILITATS
+══════════════════════════════════════════════ */
+function debounce(fn, ms) {
+  let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+
+let toastTimer;
+function toast(msg, type='ok', dur=3500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type + ' show';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, dur);
+}
+</script>
+</body>
+</html>
