@@ -1,0 +1,39 @@
+const CACHE_NAME = 'pk-geoloc-cache-v2';
+const ASSETS = [
+  './pk-geoloc-v2.html',
+  './manifest.json',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
+];
+
+// Instalar el Service Worker y guardar archivos esenciales en caché
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS);
+    })
+  );
+});
+
+// Activar y limpiar cachés antiguas
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+});
+
+// Interceptar peticiones para que funcione offline
+self.addEventListener('fetch', (e) => {
+  e.respondWith(
+    caches.match(e.request).then((cachedResponse) => {
+      return cachedResponse || fetch(e.request);
+    })
+  );
+});
