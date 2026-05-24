@@ -737,20 +737,61 @@ body::before{
 
 /* ── Botó Google Maps al visor de foto ── */
 .pv-maps-btn{
-  flex:1;max-width:160px;padding:13px;border-radius:var(--radius);
-  font-family:var(--font-cond);font-size:.82rem;font-weight:700;letter-spacing:1.5px;
+  flex:1;max-width:120px;padding:11px 8px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.78rem;font-weight:700;letter-spacing:1px;
   cursor:pointer;transition:var(--tr);border:1px solid rgba(66,133,244,.5);
   background:rgba(66,133,244,.14);color:#4285f4;
 }
 .pv-maps-btn:hover{background:rgba(66,133,244,.28);}
-/* ── Botó WhatsApp al visor de foto ── */
-.pv-whatsapp-btn{
-  flex:1;max-width:160px;padding:13px;border-radius:var(--radius);
-  font-family:var(--font-cond);font-size:.82rem;font-weight:700;letter-spacing:1.5px;
-  cursor:pointer;transition:var(--tr);border:1px solid rgba(37,211,102,.5);
-  background:rgba(37,211,102,.13);color:#25d366;
+
+/* ── Botons dobles WhatsApp al visor de foto ── */
+.pv-wa-group{
+  display:flex;flex-direction:column;gap:6px;flex:1;max-width:220px;
 }
-.pv-whatsapp-btn:hover{background:rgba(37,211,102,.25);}
+.pv-wa-btn{
+  width:100%;padding:11px 8px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.78rem;font-weight:900;letter-spacing:1.2px;
+  cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.pv-wa-btn.con-aviso{
+  border:2px solid #25d366;background:rgba(37,211,102,.18);color:#25d366;
+}
+.pv-wa-btn.con-aviso:hover{background:rgba(37,211,102,.32);}
+.pv-wa-btn.sin-aviso{
+  border:2px solid #00b0ff;background:rgba(0,176,255,.14);color:#00b0ff;
+}
+.pv-wa-btn.sin-aviso:hover{background:rgba(0,176,255,.28);}
+
+/* Llegenda explicativa sota els botons WA */
+.pv-wa-legend{
+  display:flex;flex-direction:column;gap:2px;
+  margin-top:2px;padding:5px 6px;
+  background:rgba(0,0,0,.45);border-radius:6px;
+  font-size:.6rem;font-weight:500;line-height:1.5;
+  color:rgba(255,255,255,.78);letter-spacing:.1px;
+}
+.pv-wa-legend b{font-weight:700;}
+
+/* ── Botons dobles WhatsApp a cada targeta de galeria ── */
+.photo-wa-group{
+  position:absolute;top:5px;right:5px;
+  display:flex;flex-direction:column;gap:4px;z-index:3;
+}
+.photo-wa-mini{
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 10px rgba(0,0,0,.5);
+  transition:transform .2s,box-shadow .2s;
+  cursor:pointer;padding:0;
+  border:2px solid rgba(255,255,255,.25);
+  appearance:none;-webkit-appearance:none;
+  font-size:.75rem;font-weight:900;line-height:1;
+}
+.photo-wa-mini.con-aviso{background:#25d366;color:#fff;}
+.photo-wa-mini.con-aviso:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(37,211,102,.6);}
+.photo-wa-mini.sin-aviso{background:#00b0ff;color:#fff;}
+.photo-wa-mini.sin-aviso:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(0,176,255,.6);}
 .inc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-3);}
 .inc-empty-icon{font-size:2.5rem;opacity:.2;}
 .inc-empty-text{font-size:.82rem;font-weight:500;}
@@ -869,25 +910,8 @@ body::before{
   color:var(--accent);letter-spacing:.5px;text-align:left;padding-left:5px;
   pointer-events:none;
 }
-/* Botó WhatsApp directe a cada targeta de foto */
-.photo-wa-btn{
-  position:absolute;top:6px;right:6px;
-  width:32px;height:32px;border-radius:50%;
-  background:#25D366;
-  color:#fff;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 10px rgba(0,0,0,.5);
-  transition:transform .2s, box-shadow .2s;
-  z-index:3;
-  /* suport tant per <a> com per <button> */
-  text-decoration:none;
-  border:2px solid rgba(255,255,255,.25);
-  cursor:pointer;
-  padding:0;
-  /* evita que el fons del tema sobreescrigui el verd */
-  appearance:none;-webkit-appearance:none;
-}
-.photo-wa-btn:hover{transform:scale(1.12);box-shadow:0 4px 16px rgba(37,211,102,.5);}
+/* Botó WhatsApp directe a cada targeta de foto — substituït per photo-wa-group */
+.photo-wa-btn{ display:none; } /* legacy — mantenim per compatibilitat */
 .photo-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-3);min-height:220px;}
 .photo-empty-icon{font-size:2.5rem;opacity:.2;}
 
@@ -1078,7 +1102,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
   </div>
   <div class="photo-viewer-botbar">
     <button class="pv-maps-btn" onclick="obrirMapsFotoVisor()" title="Veure ubicació a Google Maps">🗺️ Maps</button>
-    <button class="pv-whatsapp-btn" onclick="compartirWhatsAppFotoVisor()" title="Compartir per WhatsApp">💬 WhatsApp</button>
+    <div class="pv-wa-group">
+      <button class="pv-wa-btn con-aviso" onclick="compartirWhatsAppFotoVisor('CON AVISO')" title="Incidències notificades pel Centre de Control (CECAT)">🟢 CON AVISO</button>
+      <button class="pv-wa-btn sin-aviso" onclick="compartirWhatsAppFotoVisor('SIN AVISO')" title="Incidències detectades de forma espontània en ruta">🔵 SIN AVISO</button>
+      <div class="pv-wa-legend">
+        <span>💡 <b>CON AVISO:</b> Notificada pel CECAT</span>
+        <span>💡 <b>SIN AVISO:</b> Detectada en ruta</span>
+      </div>
+    </div>
     <button class="photo-viewer-btn share-btn" onclick="compartirFotoVisor()">↗️ Exportar</button>
     <button class="photo-viewer-btn" onclick="descarregarFotoVisor()">⬇️ Baixar</button>
   </div>
@@ -1525,8 +1556,46 @@ function actualitzarMarkerMapa(lat, lon, res) {
 
 function centrarMapa() {
   if (!map) return;
-  if (ultimaPos) map.flyTo([ultimaPos.lat, ultimaPos.lon], 15, { animate: true, duration: .8 });
-  else showToast('⚠️ Primer localitza\'t a la pantalla principal', 'warn');
+
+  // Si ja tenim posició → centra directament
+  if (ultimaPos) {
+    map.flyTo([ultimaPos.lat, ultimaPos.lon], 16, { animate: true, duration: .9 });
+    return;
+  }
+
+  // Sense posició → dispara GPS i centra en rebre coordenades (un sol toc)
+  if (!navigator.geolocation) {
+    showToast('⚠️ GPS no disponible en aquest dispositiu', 'warn'); return;
+  }
+  showToast('📡 Adquirint senyal GPS...', 'ok', 4000);
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      ultimaPos = { lat, lon, acc: pos.coords.accuracy };
+
+      // Actualitza els camps de coordenades de la pantalla principal
+      const elLat = document.getElementById('cLat');
+      const elLon = document.getElementById('cLon');
+      const elAcc = document.getElementById('cAcc');
+      if (elLat) elLat.textContent = lat.toFixed(6);
+      if (elLon) elLon.textContent = lon.toFixed(6);
+      if (elAcc) elAcc.textContent = `±${Math.round(pos.coords.accuracy)} m`;
+
+      // Actualitza el marcador GPS al mapa
+      actualitzarMarkerMapa(lat, lon, {});
+
+      // Centra el mapa
+      map.flyTo([lat, lon], 16, { animate: true, duration: .9 });
+      showToast('🎯 Mapa centrat a la teva posició', 'ok', 2500);
+    },
+    err => {
+      const msg = { 1: 'Permís GPS denegat', 2: 'Posició no disponible', 3: 'Temps GPS exhaurit' };
+      showToast(`⚠️ ${msg[err.code] || 'Error GPS'}`, 'warn');
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+  );
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2815,21 +2884,26 @@ async function renderitzarFotos() {
         <img class="photo-thumb" src="${url}" alt="${foto.nom}" loading="lazy">
         <div class="photo-checkbox">✓</div>
         <div class="photo-pk-overlay">${foto.carretera||'—'} PK ${foto.km||0}+${mStr}</div>
-        <button class="photo-wa-btn" title="Compartir per WhatsApp" type="button">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-        </button>`;
+        <div class="photo-wa-group">
+          <button class="photo-wa-mini con-aviso" title="Enviar CON AVISO" type="button">✔</button>
+          <button class="photo-wa-mini sin-aviso" title="Enviar SIN AVISO" type="button">✗</button>
+        </div>`;
 
-      // ── Botó WhatsApp: flux intel·ligent (Share API v2 → clipboard + descàrrega) ──
-      card.querySelector('.photo-wa-btn').addEventListener('click', async e => {
+      // ── Botons CON/SIN AVISO: flux intel·ligent complet ──
+      card.querySelector('.photo-wa-mini.con-aviso').addEventListener('click', async e => {
         e.stopPropagation();
         await compartirFotoWhatsApp(
-          foto.blob,
-          foto.nom,
-          foto.carretera,
-          foto.km  ?? 0,
-          foto.m   ?? 0,
-          foto.lat ?? null,
-          foto.lon ?? null
+          foto.blob, foto.nom, foto.carretera,
+          foto.km ?? 0, foto.m ?? 0, foto.lat ?? null, foto.lon ?? null,
+          'CON AVISO'
+        );
+      });
+      card.querySelector('.photo-wa-mini.sin-aviso').addEventListener('click', async e => {
+        e.stopPropagation();
+        await compartirFotoWhatsApp(
+          foto.blob, foto.nom, foto.carretera,
+          foto.km ?? 0, foto.m ?? 0, foto.lat ?? null, foto.lon ?? null,
+          'SIN AVISO'
         );
       });
 
@@ -2974,13 +3048,15 @@ function obrirMapsFotoVisor() {
 
 /**
  * Construeix el text del missatge estil "camp" sense cap marca temporal.
+ * @param {string} avis - 'CON AVISO' | 'SIN AVISO'
  */
-function _construirTextWA(carr, km, mStr, lat, lon) {
+function _construirTextWA(carr, km, mStr, lat, lon, avis) {
+  const etiqueta = avis === 'CON AVISO' ? ' [CON AVISO]' : ' [SIN AVISO]';
   const coordLine = (lat && lon)
     ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${lat},${lon}`
     : '';
   return (
-    `⚠️ *Incidència Carretera* ⚠️\n` +
+    `⚠️ *Incidència Carretera${etiqueta}* ⚠️\n` +
     `🛣️ *Carretera:* ${carr || '—'}\n` +
     `📍 *PK:* ${km}+${mStr}` +
     coordLine
@@ -2989,58 +3065,45 @@ function _construirTextWA(carr, km, mStr, lat, lon) {
 
 /**
  * Funció central: comparteix foto + text per WhatsApp.
- * @param {Blob}   blob - Blob de la imatge JPEG
- * @param {string} nom  - Nom del fitxer (sense hora)
- * @param {string} carr - Carretera
- * @param {number} km   - Km
- * @param {number} m    - Metres
+ * @param {Blob}   blob
+ * @param {string} nom   - Nom del fitxer (sense hora)
+ * @param {string} carr  - Carretera
+ * @param {number} km
+ * @param {number} m     - Metres
  * @param {number|null} lat
  * @param {number|null} lon
+ * @param {string} avis  - 'CON AVISO' | 'SIN AVISO'
  */
-async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon) {
+async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SIN AVISO') {
   const mStr   = String(m ?? 0).padStart(3, '0');
-  const textWA = _construirTextWA(carr, km, mStr, lat, lon);
+  const textWA = _construirTextWA(carr, km, mStr, lat, lon, avis);
   const fitxer = new File([blob], nom, { type: 'image/jpeg' });
 
   // ── INTENT 1: Web Share API v2 (imatge + text en un sol pas) ─────────────
-  // Funciona a Android Chrome ≥ 89 i iOS Safari ≥ 15 quan el gestor de
-  // compartir del SO accepta fitxers. Si l'usuari tria WhatsApp, la imatge
-  // i el text arriben junts en un sol missatge, sense friccions.
   if (navigator.canShare && navigator.canShare({ files: [fitxer], text: textWA })) {
     try {
       await navigator.share({ files: [fitxer], text: textWA, title: 'PK-GEOLOC' });
-      return; // Èxit total — cap pas addicional
+      return;
     } catch (err) {
-      if (err.name === 'AbortError') return; // L'usuari va cancel·lar → sortim
-      // Qualsevol altre error (permís denegat, WhatsApp bloqueja binari, etc.)
-      // → caiem automàticament al flux de fallback
+      if (err.name === 'AbortError') return;
     }
   }
 
-  // ── INTENT 2: Fallback intel·ligent per a WhatsApp mòbil ─────────────────
-  // WhatsApp Web i algunes versions mòbils no accepten fitxers via Share API.
-  // Estratègia: (a) copiar text → (b) descarregar foto → (c) obrir WhatsApp.
-  // L'operari només ha de: triar grup → mantenir per enganxar → adjuntar foto.
-
-  // 2a) Copia el text al porta-retalls PRIMER (mentre l'usuari veu el toast)
+  // ── INTENT 2: Fallback — clipboard + descàrrega + obrir WhatsApp ─────────
   let textCopiat = false;
   try {
     await navigator.clipboard.writeText(textWA);
     textCopiat = true;
-  } catch (_) {
-    // clipboard pot requerir HTTPS o focus — si falla, continuem igualment
-  }
+  } catch (_) {}
 
-  // 2b) Descarrega la foto al dispositiu immediatament
+  // Descarrega la foto al dispositiu (sense hora al nom de fitxer)
   descarregarBlob(blob, nom);
 
-  // 2c) Toast de confirmació — instrucció clara per a l'operari
   const toastMsg = textCopiat
-    ? '📋 Text copiat! Obre WhatsApp, tria el grup i enganxa-ho.'
+    ? '📋 ¡Text copiat! Selecciona la última foto a WhatsApp.'
     : '📲 Foto descarregada. Obre WhatsApp i adjunta-la.';
   showToast(toastMsg, 'ok', 5000);
 
-  // 2d) Obre WhatsApp amb el text pre-emplenat (400ms per donar temps a la descàrrega)
   setTimeout(() => {
     window.open(
       `https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`,
@@ -3050,7 +3113,7 @@ async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon) {
 }
 
 /* ── Punt d'entrada des del visor de foto ── */
-async function compartirWhatsAppFotoVisor() {
+async function compartirWhatsAppFotoVisor(avis = 'SIN AVISO') {
   if (!viewerBlob || !viewerNomFitxer) {
     showToast('⚠️ No hi ha foto oberta', 'warn'); return;
   }
@@ -3061,7 +3124,8 @@ async function compartirWhatsAppFotoVisor() {
     viewerKm ?? 0,
     viewerM  ?? 0,
     viewerLat,
-    viewerLon
+    viewerLon,
+    avis
   );
 }
 
