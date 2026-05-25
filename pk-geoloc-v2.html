@@ -1089,6 +1089,41 @@ body::before{
 .pv-icon-btn{display:none;}
 .photo-viewer-btn{display:none;}
 
+/* ── GAVETA MULTI-FOTO ── */
+.pv-strip-wrap{
+  flex-shrink:0;
+  background:rgba(0,0,0,.6);
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:8px 10px;
+  display:none; /* visible quan hi ha ≥1 foto al strip */
+}
+.pv-strip-wrap.visible{display:block;}
+.pv-strip-label{
+  font-size:.58rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:rgba(255,255,255,.45);margin-bottom:6px;
+}
+.pv-strip{
+  display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;
+}
+.pv-strip::-webkit-scrollbar{height:3px;}
+.pv-strip::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:2px;}
+.pv-strip-thumb{
+  width:54px;height:54px;border-radius:6px;object-fit:cover;
+  border:2px solid rgba(255,255,255,.15);flex-shrink:0;cursor:pointer;
+  transition:border-color .2s;
+}
+.pv-strip-thumb.active{border-color:var(--accent);}
+.pv-strip-add{
+  width:54px;height:54px;border-radius:6px;border:2px dashed rgba(255,255,255,.3);
+  background:rgba(255,255,255,.05);flex-shrink:0;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;transition:all .2s;color:rgba(255,255,255,.5);
+}
+.pv-strip-add:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+.pv-strip-count{
+  font-size:.6rem;color:rgba(255,255,255,.45);margin-top:4px;text-align:right;
+}
+
 /* ─── VISOR FINALITZAT (Abans + Després) ─── */
 #viewerFinalitzat{
   position:fixed;inset:0;z-index:510;background:#000;
@@ -1164,12 +1199,16 @@ body::before{
 .vf-legend{font-size:.6rem;color:rgba(255,255,255,.5);text-align:center;line-height:1.5;}
 
 /* ─── BLOC AMBRE "TREBALL EN PROGRÉS" — fix inferior sobre la tab-bar ─── */
+/* ─── BLOC AMBRE "TREBALL EN PROGRÉS" — dins el flux de la pantalla Home ─── */
 #repairZone{
-  position:fixed;bottom:56px;left:0;right:0;z-index:200;
-  background:rgba(30,20,0,.97);border-top:2px solid #f59e0b;
-  padding:10px 16px 12px;
+  /* NO és fix — forma part del scroll de screenHome sota el botó principal */
+  background:rgba(30,20,0,.97);
+  border:2px solid #f59e0b;
+  border-radius:var(--radius);
+  margin:0 16px 4px;
+  padding:10px 14px 12px;
   display:none;flex-direction:column;gap:8px;
-  box-shadow:0 -4px 24px rgba(245,158,11,.25);
+  box-shadow:0 0 24px rgba(245,158,11,.2);
 }
 #repairZone.visible{display:flex;}
 .repair-zone-title{
@@ -1294,8 +1333,39 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
         <span class="threshold-label">Distància màxima fins a la calçada</span>
         <span class="threshold-value" id="thresholdVal">150 m</span>
       </div>
-      <input type="range" id="thresholdSlider" min="50" max="500" step="25" value="150"
-        oninput="document.getElementById('thresholdVal').textContent=this.value+' m';llindar=+this.value;">
+      <input type="range" id="thresholdSlider" min="15" max="500" step="1" value="150"
+        list="thresholdTicks"
+        oninput="
+          document.getElementById('thresholdVal').textContent=this.value+' m';
+          llindar=+this.value;
+          if(+this.value<=30) showToast('⚠️ Llindar estricte ('+this.value+' m): si no hi ha carretera al radi, es demanarà entrada manual','warn',4000);
+        ">
+      <datalist id="thresholdTicks">
+        <option value="15" label="15 m"></option>
+        <option value="30" label="30 m"></option>
+        <option value="50" label="50 m"></option>
+        <option value="100" label="100 m"></option>
+        <option value="150" label="150 m"></option>
+        <option value="200"></option>
+        <option value="300"></option>
+        <option value="500" label="500 m"></option>
+      </datalist>
+      <div style="font-size:.62rem;color:var(--text-3);margin-top:4px;line-height:1.5;">
+        A 15–30 m: molt estricte (zones denses). A 150 m: recomanat. Si la carretera més propera és més lluny del llindar, s'activa l'entrada manual.
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-card">
+      <div class="settings-card-title">🚫 Llista Negra de Carreteres</div>
+      <div style="font-size:.68rem;color:var(--text-2);margin-bottom:6px;line-height:1.5;">
+        Carreteres que s'ignoraran en el càlcul (falsos positius per viaductes, autopistes paral·leles, etc.).
+      </div>
+      <textarea id="llistaNegraInput" rows="3"
+        style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:var(--font-mono);font-size:.78rem;padding:8px;resize:vertical;box-sizing:border-box;outline:none;"
+        placeholder="A-2, AP-7, C-25 (una per línia o separades per comes)"
+        oninput="actualitzarLlistaNegra(this.value)"
+      ></textarea>
+      <button onclick="resetLlistaNegra()" style="margin-top:6px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-size:.7rem;cursor:pointer;font-family:var(--font-cond);">↺ Restaurar per defecte</button>
     </div>
     <div class="divider"></div>
     <div class="settings-card">
@@ -1344,36 +1414,47 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
     <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Guardar al mòbil">📥 Guardar</button>
     <button class="pv-del-btn" onclick="eliminarFotoVisor()" title="Eliminar">🗑️</button>
   </div>
-  <!-- Imatge -->
+  <!-- Imatge principal -->
   <div class="photo-viewer-img-wrap">
     <img id="photoViewerImg" src="" alt="Foto">
+  </div>
+  <!-- Gaveta multi-foto -->
+  <div class="pv-strip-wrap" id="pvStripWrap">
+    <div class="pv-strip-label">Fotos d'aquesta sessió</div>
+    <div class="pv-strip" id="pvStrip">
+      <!-- Les miniatures s'afegiran dinàmicament -->
+      <button class="pv-strip-add" id="pvStripAdd"
+        onclick="afegirFotoAlVisor()"
+        title="Afegir més fotos (màx. 5)">+</button>
+    </div>
+    <div class="pv-strip-count" id="pvStripCount"></div>
   </div>
   <!-- Barra inferior -->
   <div class="photo-viewer-botbar">
     <div class="pv-secondary-row">
       <button class="pv-maps-btn" onclick="obrirMapsFotoVisor()">🗺️ Veure al mapa</button>
+      <button class="pv-maps-btn" onclick="afegirFotoAlVisor()"
+        style="border-color:rgba(192,132,252,.5);background:rgba(192,132,252,.12);color:var(--purple);"
+        id="btnAfegirFoto">📸 Afegir foto</button>
     </div>
     <div class="pv-wa-pair">
       <button class="pv-wa-big amb-avis"
-        onclick="compartirWhatsAppFotoVisor('AMB AVÍS')"
-        title="Incidència notificada pel CECAT">
+        onclick="compartirWhatsAppFotoVisor('AMB AVÍS')">
         🟢 Amb avís
       </button>
       <button class="pv-wa-big sense-avis"
-        onclick="compartirWhatsAppFotoVisor('SENSE AVÍS')"
-        title="Incidència detectada en ruta">
+        onclick="compartirWhatsAppFotoVisor('SENSE AVÍS')">
         🔵 Sense avís
       </button>
       <button class="pv-wa-big reparar"
-        onclick="activarModeReparacio()"
-        title="Guardar posició i continuar treballant. Foto de finalitzat en acabar.">
+        onclick="activarModeReparacio()">
         🚧 Reparar ara
       </button>
     </div>
     <div class="pv-wa-legend">
-      <span>💡 <b>Amb avís:</b> Incidència notificada pel Centre de Control (CECAT)</span>
-      <span>💡 <b>Sense avís:</b> Incidència detectada de forma espontània en ruta</span>
-      <span>💡 <b>Reparar ara:</b> Guarda la posició. Fes la foto del "després" en acabar.</span>
+      <span>💡 <b>Amb avís:</b> Notificada pel CC Vic</span>
+      <span>💡 <b>Sense avís:</b> Detectada en ruta (sense notificació)</span>
+      <span>💡 <b>Reparar ara:</b> Fes la foto del "després" en acabar</span>
     </div>
   </div>
 </div>
@@ -1506,13 +1587,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       <span id="btnLabel">ON ESTIC ARA?</span>
     </button>
   </div>
-</div>
 
-<!-- ════ BLOC AMBRE FIX — Treball en progrés ════ -->
-<div id="repairZone">
-  <div class="repair-zone-title">🚧 TREBALL EN PROGRÉS</div>
-  <div class="repair-zone-pk" id="repairZonePK"></div>
-  <button class="btn-foto-final" onclick="ferFotoFinalitzat()">📸 Fer foto de finalitzat</button>
+  <!-- Bloc ambre TREBALL EN PROGRÉS — sota el botó, dins el flux de la pantalla -->
+  <div id="repairZone">
+    <div class="repair-zone-title">🚧 TREBALL EN PROGRÉS</div>
+    <div class="repair-zone-pk" id="repairZonePK"></div>
+    <button class="btn-foto-final" onclick="ferFotoFinalitzat()">📸 Fer foto de finalitzat</button>
+  </div>
+
 </div>
 
 <!-- ════════════════════════════════════════════════
@@ -1769,6 +1851,14 @@ const CFG = {
 
 /* ── ESTAT GLOBAL ────────────────────────────────────────────────── */
 let llindar = 150;
+
+/* ══════════════════════════════════════════════════════════════════
+   LLISTA NEGRA DE CARRETERES — carreteres que s'han d'ignorar
+   en el càlcul de PK (evita falsos positius en viaductes, creuaments
+   a diferent nivell, carreteres paral·leles massa properes, etc.)
+   L'operari pot modificar-la des de Configuració.
+══════════════════════════════════════════════════════════════════ */
+let llistaNegra = ['A-2', 'C-25', 'AP-7'];
 let pkCache = null;
 let ultimResultat = null;
 let ultimaPos = null;       // {lat,lon,acc}
@@ -1917,7 +2007,7 @@ function centrarMapa() {
       const msg = { 1: 'Permís GPS denegat', 2: 'Posició no disponible', 3: 'Temps GPS exhaurit' };
       showToast(`⚠️ ${msg[err.code] || 'Error GPS'}`, 'warn');
     },
-    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
   );
 }
 
@@ -2206,15 +2296,15 @@ async function enviarFinalitzatWA(avis) {
   }
 
   const mStr     = String(_reparacioDades.m ?? 0).padStart(3, '0');
-  const etiqueta = avis === 'AMB AVÍS' ? ' [AMB AVÍS]' : '';
+  const ccLine   = avis === 'AMB AVÍS' ? '\n📞 [AMB AVÍS CC VIC]' : '';
   const coordLine= (_reparacioDades.lat && _reparacioDades.lon)
-    ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
+    ? `\n🌐 Ubicació: http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
     : '';
   const text = (
-    `⚠️ *Incidència Carretera${etiqueta}* ⚠️\n\n` +
-    `🛣️ *Carretera:* ${_reparacioDades.carretera}\n` +
-    `📍 *PK:* ${_reparacioDades.km}+${mStr}\n` +
-    `✅ *Estat:* FINALITZADA I ZONA NETA` +
+    `🛣️ Carretera: ${_reparacioDades.carretera}\n` +
+    `📍 PK: ${_reparacioDades.km}+${mStr}\n` +
+    `✅ Estat: FINALITZADA I ZONA NETA` +
+    ccLine +
     coordLine
   );
 
@@ -2268,6 +2358,33 @@ function _netejarModeReparacio() {
 /* Acordió panell manual a la Home */
 function toggleManualPanel() {
   document.getElementById('manualPanel').classList.toggle('open');
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   GESTIÓ LLISTA NEGRA DE CARRETERES
+══════════════════════════════════════════════════════════════════ */
+const _LLISTA_NEGRA_DEFAULT = ['A-2', 'C-25', 'AP-7'];
+
+/** Parseja el text del textarea i actualitza la llista negra global */
+function actualitzarLlistaNegra(text) {
+  llistaNegra = text
+    .split(/[\n,]+/)
+    .map(s => s.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+/** Restaura la llista negra als valors per defecte */
+function resetLlistaNegra() {
+  llistaNegra = [..._LLISTA_NEGRA_DEFAULT];
+  const ta = document.getElementById('llistaNegraInput');
+  if (ta) ta.value = _LLISTA_NEGRA_DEFAULT.join(', ');
+  showToast('↺ Llista negra restaurada per defecte', 'ok', 2500);
+}
+
+/** Inicialitza el textarea amb els valors actuals de la llista negra */
+function inicialitzarUILlistaNegra() {
+  const ta = document.getElementById('llistaNegraInput');
+  if (ta) ta.value = llistaNegra.join(', ');
 }
 document.addEventListener('DOMContentLoaded', () => {
   const latEl = document.getElementById('mapCoordLat');
@@ -2678,10 +2795,36 @@ function interpolarPK(uLat, uLon, pkA, pkB) {
   return { km: Math.floor(pkDec), m: Math.round((pkDec - Math.floor(pkDec)) * 1000), carretera: pkA.carretera, dist: distPp, pkDec };
 }
 
+/**
+ * calcularPK — Motor principal d'interpolació haversine.
+ *
+ * Filtra les carreteres de la `llistaNegra` global ABANS d'evaluar
+ * la millor opció. Això evita falsos positius en:
+ *   - Viaductes o carreteres superposades (AP-7 sobre una local)
+ *   - Carreteres paral·leles molt properes (A-2 i N-II, C-25 i C-55)
+ *
+ * Si TOTES les carreteres estan a la llista negra retorna null i el
+ * caller ha d'activar el mode manual.
+ */
 function calcularPK(uLat, uLon, punts) {
   if (!punts?.length) return null;
+
+  // Agrupa per carretera EXCLOENT les de la llista negra
   const grups = {};
-  punts.forEach(p => { if (!grups[p.carretera]) grups[p.carretera] = []; grups[p.carretera].push(p); });
+  punts.forEach(p => {
+    if (!p.carretera) return;
+    // Compara ignorant majúscules/minúscules i espais laterals
+    const nomNet = p.carretera.trim().toUpperCase();
+    const bloquejat = llistaNegra.some(
+      b => b.trim().toUpperCase() === nomNet
+    );
+    if (bloquejat) return; // salta aquesta carretera
+    if (!grups[p.carretera]) grups[p.carretera] = [];
+    grups[p.carretera].push(p);
+  });
+
+  if (!Object.keys(grups).length) return null; // totes bloquejades
+
   let millor = null;
   for (const pks of Object.values(grups)) {
     pks.sort((a, b) => a.pk - b.pk);
@@ -2913,7 +3056,7 @@ async function executarGeolocal() {
   navigator.geolocation.getCurrentPosition(
     pos => processarPosicio(pos),
     err => gestionarErrorGPS(err),
-    { enableHighAccuracy: true, timeout: 15000, maximumAge: 8000 }
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
   );
 }
 
@@ -2945,11 +3088,30 @@ async function processarPosicio(pos) {
     const res = calcularPK(lat, lon, punts);
 
     if (!res) {
-      mostrarResultatFora(null, 0);
-      showToast('🏙️ Zona urbana o fora de la xarxa de carreteres','warn');
+      // null pot significar: (a) totes bloquejades per la llista negra, (b) cap carretera propera
+      // Comprova si hi hauria resultat sense la llista negra
+      const resSenseFiltres = (() => {
+        const llistaBak = llistaNegra;
+        llistaNegra = [];
+        const r = calcularPK(lat, lon, punts);
+        llistaNegra = llistaBak;
+        return r;
+      })();
+      if (resSenseFiltres) {
+        // Era una carretera bloquejada — demanar entrada manual
+        mostrarResultatFora(resSenseFiltres.carretera, resSenseFiltres.dist);
+        showToast(`🚫 ${resSenseFiltres.carretera} bloquejada per la llista negra. Introdueix el PK manualment.`, 'warn', 5000);
+        // Obre l'acordió de entrada manual automàticament
+        document.getElementById('manualPanel').classList.add('open');
+      } else {
+        mostrarResultatFora(null, 0);
+        showToast('🏙️ Zona urbana o fora de la xarxa de carreteres','warn');
+      }
     } else if (res.dist > llindar) {
       mostrarResultatFora(res.carretera, res.dist);
-      showToast(`⚠️ Fora de l'àrea (${Math.round(res.dist)} m)`, 'warn');
+      showToast(`⚠️ Fora de l'àrea (${Math.round(res.dist)} m > llindar ${llindar} m). Introdueix el PK manualment.`, 'warn', 5000);
+      // Si el llindar és estricte (≤30 m) i no hi ha carretera propera, obre el panell manual
+      if (llindar <= 30) document.getElementById('manualPanel').classList.add('open');
     } else {
       // Calcular sentit automàtic
       historialPos.push({ pkDec: res.pkDec, lat, lon, ts: Date.now() });
@@ -3106,7 +3268,7 @@ function obtenirPosicioFrescaAmbPK(timeoutMs = 10000) {
         // GPS ha fallat o superat el timeout
         resolve({ pos: ultimaPos, res: ultimResultatObj, error: true });
       },
-      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 5000 }
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 3000 }
     );
   });
 }
@@ -3236,6 +3398,22 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
   if (!file) return;
   this.value = '';
 
+  // ── Cas: foto addicional al visor (multi-foto) ──────────────────
+  if (_esperantFotoAddicional) {
+    _esperantFotoAddicional = false;
+    showToast('⏳ Processant foto addicional...', 'ok', 2000);
+    const { pos, res } = await obtenirPosicioFrescaAmbPK(5000).catch(() => ({ pos: ultimaPos, res: ultimResultatObj }));
+    const blobFinal = await _processarFotoNeta(file, pos ?? ultimaPos, res ?? ultimResultatObj);
+    if (blobFinal) {
+      const url = URL.createObjectURL(blobFinal);
+      const nom = generarNomFitxer(viewerCarretera || '—', viewerKm || 0, String(viewerM || 0).padStart(3,'0'), new Date());
+      sessionFotos.push({ blob: blobFinal, nom, url });
+      _actualitzarPvStrip();
+      showToast(`📸 Foto ${sessionFotos.length} afegida`, 'ok', 2000);
+    }
+    return;
+  }
+
   showToast('📡 Capturant posició GPS...', 'ok', 4000);
   const { pos, res, error } = await obtenirPosicioFrescaAmbPK(5000);
 
@@ -3249,7 +3427,6 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
   if (_modeEnviarFinalitzat) {
     _modeEnviarFinalitzat = false;
     showToast('⏳ Processant foto de finalitzat...', 'ok', 3000);
-    // Guarda la foto del "després" a la galeria interna
     const blobDespres = await _processarFotoNeta(file, pos, res);
     if (blobDespres) obrirViewerFinalitzat(blobDespres);
     return;
@@ -3270,13 +3447,12 @@ async function processarFoto(file, pos, res) {
 
   const pkStr     = `${carretera}, PK ${km}+${mStr}`;
   const sentitStr = `Sentit: ${sentit === 'creixent' ? 'Creixent ↑' : sentit === 'decreixent' ? 'Decreixent ↓' : 'Indeterminat ↔'}`;
-  const coordStr  = lat ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : 'Coordenades no disponibles';
   const nomFitxer = generarNomFitxer(carretera, km, mStr, ara);
 
   showToast('⏳ Processant foto...', 'ok', 2500);
 
   try {
-    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr, coordStr);
+    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr);
 
     // Guarda a IndexedDB (galeria interna)
     await idbAdd(CFG.STORE_PHOTOS, {
@@ -3299,7 +3475,7 @@ async function processarFoto(file, pos, res) {
   }
 }
 
-async function aplicarMarcaAigua(file, pkStr, sentitStr, coordStr) {
+async function aplicarMarcaAigua(file, pkStr, sentitStr) {
   return new Promise((res, rej) => {
     const img = new Image();
     img.onload = () => {
@@ -3339,19 +3515,14 @@ async function aplicarMarcaAigua(file, pkStr, sentitStr, coordStr) {
       ctx.shadowColor  = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur   = 4;
 
-      // Esquerra: PK en verd brillant (el dato clau)
+      // Esquerra: Carretera + PK en verd brillant (únic dato visible)
       ctx.fillStyle = '#22D97A';
       ctx.font = `700 ${fs}px 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif`;
       ctx.textAlign = 'left';
       ctx.fillText(pkStr, marginX, cy);
 
-      // Centre: coordenades GPS en blanc (útil, sense hora)
-      ctx.fillStyle = 'rgba(196,201,212,0.92)';
-      ctx.font = `500 ${Math.round(fs * 0.82)}px 'Roboto Mono', monospace, Arial`;
-      ctx.textAlign = 'center';
-      ctx.fillText(coordStr, w / 2, cy);
-
       // Dreta: nom de l'app en cian molt petit i semitransparent (branding discret)
+      // NOTA: les coordenades GPS s'han eliminat — privacitat total dels operaris
       ctx.fillStyle = 'rgba(0,212,255,0.45)';
       ctx.font = `600 ${Math.round(fs * 0.72)}px 'Barlow Condensed', 'Arial Narrow', Arial`;
       ctx.textAlign = 'right';
@@ -3513,31 +3684,103 @@ async function compartirSeleccio() {
 /* ── VISOR PANTALLA COMPLETA ─────────────────────────────────────── */
 let viewerBlobUrl = null;
 let viewerNomFitxer = null;
-// Variables exteses per a Maps i WhatsApp
 let viewerLat = null;
 let viewerLon = null;
 let viewerCarretera = null;
 let viewerKm = null;
 let viewerM = null;
 
+/* ── SESSIÓ MULTI-FOTO ───────────────────────────────────────────── */
+// Array de { blob, nom, url } de totes les fotos de la sessió actual (màx 5)
+let sessionFotos = [];
+const MAX_SESSION_FOTOS = 5;
+// Indica si estem esperant una nova foto per afegir al strip (no és la foto inicial)
+let _esperantFotoAddicional = false;
+
 function obrirFotoVisor(url, nom, id, blob, fotoObj) {
+  // Si ve d'una nova foto de càmera (no de la galeria), reinicia la sessió
+  if (id === null) {
+    // Nova sessió: la primera foto
+    sessionFotos = [{ blob, nom, url }];
+  }
+
   viewerBlobUrl   = url;
   viewerNomFitxer = nom;
   viewerFotoId    = id;
   viewerBlob      = blob;
-  // Dades geogràfiques de la foto (si es passa l'objecte foto sencer)
   viewerLat       = fotoObj?.lat   ?? null;
   viewerLon       = fotoObj?.lon   ?? null;
   viewerCarretera = fotoObj?.carretera ?? null;
   viewerKm        = fotoObj?.km    ?? null;
   viewerM         = fotoObj?.m     ?? null;
+
   document.getElementById('photoViewerImg').src = url;
   const nomCurt = nom.replace('.jpg','').replace(/_/g,' ');
   document.getElementById('photoViewerTitle').textContent = nomCurt;
   document.getElementById('photoViewer').classList.add('open');
+
+  // Actualitza el strip de miniatures
+  _actualitzarPvStrip();
+}
+
+/** Actualitza la gaveta de miniatures */
+function _actualitzarPvStrip() {
+  const strip     = document.getElementById('pvStrip');
+  const stripWrap = document.getElementById('pvStripWrap');
+  const count     = document.getElementById('pvStripCount');
+  const addBtn    = document.getElementById('pvStripAdd');
+  if (!strip) return;
+
+  // Mostra el strip si hi ha ≥1 foto (la primera ja és al strip)
+  stripWrap.classList.toggle('visible', sessionFotos.length >= 1);
+
+  // Neteja les miniatures existents (conserva el botó "+")
+  strip.querySelectorAll('.pv-strip-thumb').forEach(el => el.remove());
+
+  // Afegeix miniatures en ordre
+  sessionFotos.forEach((f, i) => {
+    const img = document.createElement('img');
+    img.className = 'pv-strip-thumb';
+    img.src = f.url;
+    img.alt = `Foto ${i+1}`;
+    if (f.url === viewerBlobUrl) img.classList.add('active');
+    img.addEventListener('click', () => {
+      // Canvia la imatge principal al fer clic a una miniatura
+      viewerBlobUrl   = f.url;
+      viewerNomFitxer = f.nom;
+      viewerBlob      = f.blob;
+      document.getElementById('photoViewerImg').src = f.url;
+      document.getElementById('photoViewerTitle').textContent = f.nom.replace('.jpg','').replace(/_/g,' ');
+      _actualitzarPvStrip(); // refresca la classe active
+    });
+    strip.insertBefore(img, addBtn);
+  });
+
+  // Amaga/mostra el botó "+" segons el màxim
+  const maxAssolit = sessionFotos.length >= MAX_SESSION_FOTOS;
+  addBtn.style.display = maxAssolit ? 'none' : 'flex';
+  document.getElementById('btnAfegirFoto').style.display = maxAssolit ? 'none' : '';
+
+  if (sessionFotos.length > 1) {
+    count.textContent = `${sessionFotos.length} / ${MAX_SESSION_FOTOS} fotos a la sessió`;
+  } else {
+    count.textContent = '';
+  }
+}
+
+/** Obre la càmera per afegir una foto addicional a la sessió */
+function afegirFotoAlVisor() {
+  if (sessionFotos.length >= MAX_SESSION_FOTOS) {
+    showToast(`Màxim ${MAX_SESSION_FOTOS} fotos per sessió`, 'warn'); return;
+  }
+  _esperantFotoAddicional = true;
+  document.getElementById('inputCaptura').click();
 }
 function closePhotoViewer() {
   document.getElementById('photoViewer').classList.remove('open');
+  // Neteja la sessió multi-foto quan es tanca el visor
+  sessionFotos = [];
+  _esperantFotoAddicional = false;
 }
 function descarregarFotoVisor() {
   if (viewerBlobUrl && viewerNomFitxer)
@@ -3567,66 +3810,62 @@ function obrirMapsFotoVisor() {
 ═══════════════════════════════════════════════════════════════════ */
 
 /**
- * Construeix el text del missatge estil "camp" sense cap marca temporal.
- * @param {string} avis - 'CON AVISO' | 'SIN AVISO'
+ * Construeix el text del missatge estil CC Vic.
+ * Format net, sense "Incidència Carretera" ni triangles d'advertència.
  */
 function _construirTextWA(carr, km, mStr, lat, lon, avis) {
-  // AMB AVÍS → etiqueta explícita [AMB AVÍS]
-  // SENSE AVÍS → sense etiqueta (incidència normal detectada en ruta)
-  const etiqueta = avis === 'AMB AVÍS' ? ' [AMB AVÍS]' : '';
+  const ccLine = avis === 'AMB AVÍS' ? '\n📞 [AMB AVÍS CC VIC]' : '';
   const coordLine = (lat && lon)
-    ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${lat},${lon}`
+    ? `\n🌐 Ubicació: http://maps.google.com/maps?q=${lat},${lon}`
     : '';
   return (
-    `⚠️ *Incidència Carretera${etiqueta}* ⚠️\n\n` +
-    `🛣️ *Carretera:* ${carr || '—'}\n` +
-    `📍 *PK:* ${km}+${mStr}` +
+    `🛣️ Carretera: ${carr || '—'}\n` +
+    `📍 PK: ${km}+${mStr}` +
+    ccLine +
     coordLine
   );
 }
 
 /**
- * Funció central: comparteix foto + text per WhatsApp.
- * @param {Blob}   blob
- * @param {string} nom   - Nom del fitxer (sense hora)
- * @param {string} carr  - Carretera
- * @param {number} km
- * @param {number} m     - Metres
- * @param {number|null} lat
- * @param {number|null} lon
- * @param {string} avis  - 'AMB AVÍS' | 'SENSE AVÍS'
+ * Funció central: comparteix TOTES les fotos de la sessió + text per WhatsApp.
+ * Usa sessionFotos[] si hi ha multi-foto, sinó usa el blob individual.
  */
 async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SENSE AVÍS') {
   const mStr   = String(m ?? 0).padStart(3, '0');
   const textWA = _construirTextWA(carr, km, mStr, lat, lon, avis);
-  const fitxer = new File([blob], nom, { type: 'image/jpeg' });
 
-  // ── INTENT 1: Web Share API v2 (imatge + text en un sol pas) ─────────────
-  if (navigator.canShare && navigator.canShare({ files: [fitxer], text: textWA })) {
+  // Construeix l'array de fitxers — usa la sessió multi-foto si és possible
+  let fitxers;
+  if (sessionFotos.length > 1) {
+    fitxers = sessionFotos.map((f, i) =>
+      new File([f.blob], f.nom || `foto_${i+1}.jpg`, { type: 'image/jpeg' })
+    );
+  } else {
+    fitxers = [new File([blob], nom, { type: 'image/jpeg' })];
+  }
+
+  // ── INTENT 1: Web Share API v2 (totes les imatges + text en un sol pas) ──
+  if (navigator.canShare && navigator.canShare({ files: fitxers, text: textWA })) {
     try {
-      await navigator.share({ files: [fitxer], text: textWA, title: 'PK-GEOLOC' });
+      await navigator.share({ files: fitxers, text: textWA, title: 'PK-GEOLOC' });
       return;
     } catch (err) {
       if (err.name === 'AbortError') return;
     }
   }
 
-  // ── INTENT 2: Fallback — clipboard + obrir WhatsApp (SENSE descàrrega automàtica) ──
-  // La foto JA es queda a la galeria interna de l'app (IndexedDB).
-  // NO la guardem al carret del mòbil — l'operari decideix quan fer-ho (botó "Guardar").
+  // ── FALLBACK: clipboard + WhatsApp URL ────────────────────────────────────
   let textCopiat = false;
   try {
     await navigator.clipboard.writeText(textWA);
     textCopiat = true;
   } catch (_) {}
 
-  // Toast clar per a l'operari — l'informa que ha de seleccionar la foto a WA
   const toastMsg = textCopiat
-    ? '📋 ¡Text copiat! Selecciona la última foto a WhatsApp.'
-    : '📲 Obre WhatsApp, enganxa el text i adjunta la foto.';
+    ? '📋 Text copiat! Selecciona les fotos a WhatsApp.'
+    : '📲 Obre WhatsApp, enganxa el text i adjunta les fotos.';
   showToast(toastMsg, 'ok', 5000);
 
-  // Obre WhatsApp amb el text pre-emplenat
   setTimeout(() => {
     window.open(
       `https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`,
@@ -3662,10 +3901,9 @@ async function _processarFotoNeta(file, pos, res) {
   const lon       = pos?.lon ?? _reparacioDades?.lon ?? null;
   const pkStr     = `${carretera}, PK ${km}+${mStr}`;
   const sentitStr = `Sentit: ${sentit === 'creixent' ? 'Creixent ↑' : sentit === 'decreixent' ? 'Decreixent ↓' : 'Indeterminat ↔'}`;
-  const coordStr  = lat ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : 'Coordenades no disponibles';
   const nomFitxer = generarNomFitxer(carretera, km, mStr, ara);
   try {
-    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr, coordStr);
+    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr);
     await idbAdd(CFG.STORE_PHOTOS, {
       nom:nomFitxer, blob:blobFinal, carretera, km, m, lat, lon,
       ts:ara.toISOString(), ts_legible:`${carretera} PK ${km}+${mStr}`, sentit,
@@ -3784,6 +4022,7 @@ function showToast(msg, type='', duration=3000) {
 document.addEventListener('DOMContentLoaded', async () => {
   await initDB();
   await carregarCache();
+  inicialitzarUILlistaNegra(); // Inicialitza el textarea de la llista negra amb els valors per defecte
 
   // ── Inicialitzar Leaflet ARA: #screenMap és display:flex des d'inici
   //    (visibility:hidden), així el contenidor té dimensions reals i Leaflet
