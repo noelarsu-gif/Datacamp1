@@ -621,11 +621,9 @@ body::before{
 }
 .repair-badge.visible{display:block;}
 
-/* ── Botó "Reparar Ara" al visor ── */
+/* ── Botó "Reparar Ara" al visor — mateixa mida que Amb avís / Sense avís ── */
 .pv-wa-big.reparar{
   border:2px solid #f59e0b;background:rgba(245,158,11,.14);color:#f59e0b;
-  flex:0 0 100%;   /* fila sencera */
-  margin-top:4px;
 }
 .pv-wa-big.reparar:hover,.pv-wa-big.reparar:active{background:rgba(245,158,11,.28);}
 
@@ -845,34 +843,6 @@ body::before{
 .pv-maps-btn:hover{background:rgba(66,133,244,.28);}
 
 /* ── Botons dobles WhatsApp al visor de foto ── */
-.pv-wa-group{
-  display:flex;flex-direction:column;gap:6px;flex:1;max-width:220px;
-}
-.pv-wa-btn{
-  width:100%;padding:11px 8px;border-radius:var(--radius);
-  font-family:var(--font-cond);font-size:.78rem;font-weight:900;letter-spacing:1.2px;
-  cursor:pointer;transition:var(--tr);
-  display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.pv-wa-btn.con-aviso{
-  border:2px solid #25d366;background:rgba(37,211,102,.18);color:#25d366;
-}
-.pv-wa-btn.con-aviso:hover{background:rgba(37,211,102,.32);}
-.pv-wa-btn.sin-aviso{
-  border:2px solid #00b0ff;background:rgba(0,176,255,.14);color:#00b0ff;
-}
-.pv-wa-btn.sin-aviso:hover{background:rgba(0,176,255,.28);}
-
-/* Llegenda explicativa sota els botons WA */
-.pv-wa-legend{
-  display:flex;flex-direction:column;gap:2px;
-  margin-top:2px;padding:5px 6px;
-  background:rgba(0,0,0,.45);border-radius:6px;
-  font-size:.6rem;font-weight:500;line-height:1.5;
-  color:rgba(255,255,255,.78);letter-spacing:.1px;
-}
-.pv-wa-legend b{font-weight:700;}
-
 /* ── Botons dobles WhatsApp a cada targeta de galeria ── */
 .photo-wa-group{
   position:absolute;top:5px;right:5px;
@@ -888,10 +858,6 @@ body::before{
   appearance:none;-webkit-appearance:none;
   font-size:.75rem;font-weight:900;line-height:1;
 }
-.photo-wa-mini.con-aviso{background:#25d366;color:#fff;}
-.photo-wa-mini.con-aviso:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(37,211,102,.6);}
-.photo-wa-mini.sin-aviso{background:#00b0ff;color:#fff;}
-.photo-wa-mini.sin-aviso:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(0,176,255,.6);}
 .inc-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text-3);}
 .inc-empty-icon{font-size:2.5rem;opacity:.2;}
 .inc-empty-text{font-size:.82rem;font-weight:500;}
@@ -1022,12 +988,12 @@ body::before{
 }
 .photo-viewer.open{display:flex;}
 
-/* Barra superior: Torna, títol carretera+PK, Guardar al mòbil, Eliminar */
+/* Barra superior — part del flux flex, no absolute */
 .photo-viewer-topbar{
   display:flex;align-items:center;gap:8px;
-  padding:12px 14px;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);
-  position:absolute;top:0;left:0;right:0;z-index:10;
+  padding:12px 14px;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
   border-bottom:1px solid rgba(255,255,255,.08);
+  flex-shrink:0;
 }
 .pv-back-btn{
   padding:8px 12px;border-radius:var(--radius-sm);
@@ -1058,20 +1024,30 @@ body::before{
 }
 .pv-del-btn:hover{background:rgba(255,59,92,.25);}
 
-/* Zona imatge — espai per als dos bars */
+/* Zona imatge — alçada controlada, mai desborda */
 .photo-viewer-img-wrap{
-  flex:1;display:flex;align-items:center;justify-content:center;
-  overflow:hidden;padding-top:62px;padding-bottom:180px;
+  flex:1;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  padding:6px;
+  min-height:0;            /* CRÍTIC: permet que flex:1 funcioni dins flex-col */
+  background:#111214;
 }
-.photo-viewer-img-wrap img{max-width:100%;max-height:100%;object-fit:contain;}
+.photo-viewer-img-wrap img{
+  width:100%;
+  height:100%;
+  object-fit:contain;      /* sempre es veu completa, sense retallar */
+  background-color:#1a1a1a;
+  border-radius:var(--radius-sm);
+}
 
-/* Barra inferior: botons grans CON/SIN AVISO + llegenda + Maps */
+/* Barra inferior: botons grans Amb avís / Sense avís + llegenda + Maps */
 .photo-viewer-botbar{
-  position:absolute;bottom:0;left:0;right:0;z-index:10;
   background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
   border-top:1px solid rgba(255,255,255,.08);
-  padding:14px 16px 18px;
-  display:flex;flex-direction:column;gap:10px;
+  padding:12px 14px 16px;
+  display:flex;flex-direction:column;gap:8px;
+  flex-shrink:0;
 }
 /* Fila superior: botó Maps petit */
 .pv-secondary-row{
@@ -1092,14 +1068,14 @@ body::before{
   cursor:pointer;transition:var(--tr);
   display:flex;align-items:center;justify-content:center;gap:7px;
 }
-.pv-wa-big.con-aviso{
-  border:2px solid #25d366;background:rgba(37,211,102,.18);color:#25d366;
+.pv-wa-big.amb-avis{border:2px solid #25d366;background:rgba(37,211,102,.18);color:#25d366;}
+.pv-wa-big.amb-avis:hover,.pv-wa-big.amb-avis:active{background:rgba(37,211,102,.32);}
+.pv-wa-big.sense-avis{border:2px solid #00b0ff;background:rgba(0,176,255,.14);color:#00b0ff;}
+.pv-wa-big.sense-avis:hover,.pv-wa-big.sense-avis:active{background:rgba(0,176,255,.28);}
+.pv-wa-big.reparar{
+  border:2px solid #f59e0b;background:rgba(245,158,11,.14);color:#f59e0b;
 }
-.pv-wa-big.con-aviso:hover,.pv-wa-big.con-aviso:active{background:rgba(37,211,102,.32);}
-.pv-wa-big.sin-aviso{
-  border:2px solid #00b0ff;background:rgba(0,176,255,.14);color:#00b0ff;
-}
-.pv-wa-big.sin-aviso:hover,.pv-wa-big.sin-aviso:active{background:rgba(0,176,255,.28);}
+.pv-wa-big.reparar:hover,.pv-wa-big.reparar:active{background:rgba(245,158,11,.28);}
 /* Llegenda */
 .pv-wa-legend{
   display:flex;flex-direction:column;gap:2px;padding:5px 8px;
@@ -1109,9 +1085,115 @@ body::before{
 }
 .pv-wa-legend b{font-weight:700;color:rgba(255,255,255,.85);}
 
-/* Estils legacy eliminats — ja no s'usen */
+/* Estils legacy */
 .pv-icon-btn{display:none;}
 .photo-viewer-btn{display:none;}
+
+/* ─── VISOR FINALITZAT (Abans + Després) ─── */
+#viewerFinalitzat{
+  position:fixed;inset:0;z-index:510;background:#000;
+  display:none;flex-direction:column;
+}
+#viewerFinalitzat.open{display:flex;}
+.vf-topbar{
+  display:flex;align-items:center;gap:8px;padding:11px 14px;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+}
+.vf-back-btn{
+  padding:8px 12px;border-radius:var(--radius-sm);
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
+  color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;font-family:var(--font-cond);
+}
+.vf-title{
+  flex:1;text-align:center;font-family:var(--font-cond);font-size:.85rem;
+  font-weight:700;color:var(--text-1);letter-spacing:1px;
+}
+.vf-save-btn{
+  padding:8px 11px;border-radius:var(--radius-sm);
+  border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.12);
+  color:var(--accent);font-size:.72rem;font-weight:700;cursor:pointer;font-family:var(--font-cond);
+}
+.vf-dual-wrap{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:6px;
+  padding:6px 6px 0;
+  min-height:0;           /* CRÍTIC: permet que flex:1 no desbordi */
+  overflow:hidden;
+}
+.vf-foto{
+  display:flex;flex-direction:column;
+  gap:4px;min-height:0;
+  background:#1a1a1a;
+  border-radius:var(--radius-sm);
+  overflow:hidden;
+}
+.vf-foto-label{
+  font-family:var(--font-cond);font-size:.7rem;font-weight:700;letter-spacing:1px;
+  text-align:center;padding:5px 4px 3px;flex-shrink:0;
+  background:rgba(0,0,0,.4);
+}
+.vf-foto-label.abans{color:var(--amber);}
+.vf-foto-label.despres{color:var(--green);}
+.vf-foto img{
+  flex:1;
+  width:100%;
+  height:100%;
+  object-fit:contain;     /* foto completa, sense retallar */
+  background-color:#1a1a1a;
+  min-height:0;
+}
+.vf-botbar{
+  padding:12px 14px 16px;background:rgba(0,0,0,.88);
+  backdrop-filter:blur(12px);border-top:1px solid rgba(255,255,255,.08);
+  display:flex;flex-direction:column;gap:8px;flex-shrink:0;
+}
+.vf-wa-pair{display:flex;gap:10px;}
+.vf-wa-btn{
+  flex:1;padding:18px 10px;border-radius:var(--radius-lg);
+  font-family:var(--font-cond);font-size:1.1rem;font-weight:900;letter-spacing:1.5px;
+  cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.vf-wa-btn.amb-avis{border:2px solid #25d366;background:rgba(37,211,102,.18);color:#25d366;}
+.vf-wa-btn.amb-avis:hover{background:rgba(37,211,102,.32);}
+.vf-wa-btn.sense-avis{border:2px solid #00b0ff;background:rgba(0,176,255,.14);color:#00b0ff;}
+.vf-wa-btn.sense-avis:hover{background:rgba(0,176,255,.28);}
+.vf-legend{font-size:.6rem;color:rgba(255,255,255,.5);text-align:center;line-height:1.5;}
+
+/* ─── BLOC AMBRE "TREBALL EN PROGRÉS" — fix inferior sobre la tab-bar ─── */
+#repairZone{
+  position:fixed;bottom:56px;left:0;right:0;z-index:200;
+  background:rgba(30,20,0,.97);border-top:2px solid #f59e0b;
+  padding:10px 16px 12px;
+  display:none;flex-direction:column;gap:8px;
+  box-shadow:0 -4px 24px rgba(245,158,11,.25);
+}
+#repairZone.visible{display:flex;}
+.repair-zone-title{
+  font-family:var(--font-cond);font-size:.78rem;font-weight:700;
+  letter-spacing:1.5px;color:#f59e0b;text-align:center;
+}
+.repair-zone-pk{
+  font-family:var(--font-mono);font-size:.68rem;
+  color:rgba(245,158,11,.75);text-align:center;margin-top:-4px;
+}
+.btn-foto-final{
+  width:100%;padding:16px;border-radius:var(--radius);
+  border:2px solid #f59e0b;background:rgba(245,158,11,.18);
+  color:#f59e0b;font-family:var(--font-cond);font-size:1rem;font-weight:900;
+  letter-spacing:2px;cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-foto-final:hover{background:rgba(245,158,11,.32);}
+
+/* Botons mini galeria — noms actualitzats */
+.photo-wa-mini.amb-avis{background:#25d366;color:#fff;}
+.photo-wa-mini.amb-avis:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(37,211,102,.6);}
+.photo-wa-mini.sense-avis{background:#00b0ff;color:#fff;}
+.photo-wa-mini.sense-avis:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(0,176,255,.6);}
 
 /* Canvas ocult per al watermark */
 #canvasWatermark{display:none;}
@@ -1255,45 +1337,71 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 
 <!-- ════ VISOR DE FOTO — pantalla completa ════ -->
 <div class="photo-viewer" id="photoViewer">
-  <!-- Barra superior: Torna | Carretera+PK | Guardar | Eliminar -->
+  <!-- Barra superior -->
   <div class="photo-viewer-topbar">
-    <button class="pv-back-btn" onclick="closePhotoViewer()">← Tornar</button>
+    <button class="pv-back-btn" onclick="closePhotoViewer()">← Tancar</button>
     <span class="photo-viewer-title" id="photoViewerTitle">Foto</span>
-    <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Desar al carret del mòbil">📥 Guardar</button>
-    <button class="pv-del-btn" onclick="eliminarFotoVisor()" title="Eliminar foto de l'app">🗑️</button>
+    <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Guardar al mòbil">📥 Guardar</button>
+    <button class="pv-del-btn" onclick="eliminarFotoVisor()" title="Eliminar">🗑️</button>
   </div>
-
-  <!-- Imatge centrada -->
+  <!-- Imatge -->
   <div class="photo-viewer-img-wrap">
     <img id="photoViewerImg" src="" alt="Foto">
   </div>
-
-  <!-- Barra inferior: Maps + tres botons grans + llegenda -->
+  <!-- Barra inferior -->
   <div class="photo-viewer-botbar">
     <div class="pv-secondary-row">
-      <button class="pv-maps-btn" onclick="obrirMapsFotoVisor()" title="Veure ubicació a Google Maps">🗺️ Veure al mapa</button>
+      <button class="pv-maps-btn" onclick="obrirMapsFotoVisor()">🗺️ Veure al mapa</button>
     </div>
     <div class="pv-wa-pair">
-      <button class="pv-wa-big con-aviso"
-        onclick="compartirWhatsAppFotoVisor('CON AVISO')"
+      <button class="pv-wa-big amb-avis"
+        onclick="compartirWhatsAppFotoVisor('AMB AVÍS')"
         title="Incidència notificada pel CECAT">
-        🟢 CON AVISO
+        🟢 Amb avís
       </button>
-      <button class="pv-wa-big sin-aviso"
-        onclick="compartirWhatsAppFotoVisor('SIN AVISO')"
+      <button class="pv-wa-big sense-avis"
+        onclick="compartirWhatsAppFotoVisor('SENSE AVÍS')"
         title="Incidència detectada en ruta">
-        🔵 SIN AVISO
+        🔵 Sense avís
+      </button>
+      <button class="pv-wa-big reparar"
+        onclick="activarModeReparacio()"
+        title="Guardar posició i continuar treballant. Foto de finalitzat en acabar.">
+        🚧 Reparar ara
       </button>
     </div>
-    <button class="pv-wa-big reparar"
-      onclick="activarModeReparacio()"
-      title="Desar posició i posar app en mode espera fins a finalitzar la reparació">
-      🚧 Reparar Ara (Tancar més tard)
-    </button>
     <div class="pv-wa-legend">
-      <span>💡 <b>CON AVISO:</b> Incidència notificada pel Centre de Control (CECAT)</span>
-      <span>💡 <b>SIN AVISO:</b> Incidència detectada de forma espontània en ruta</span>
-      <span>💡 <b>REPARAR ARA:</b> Guarda la posició. Fes la foto del "després" en acabar.</span>
+      <span>💡 <b>Amb avís:</b> Incidència notificada pel Centre de Control (CECAT)</span>
+      <span>💡 <b>Sense avís:</b> Incidència detectada de forma espontània en ruta</span>
+      <span>💡 <b>Reparar ara:</b> Guarda la posició. Fes la foto del "després" en acabar.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ VISOR FINALITZAT — Abans + Després ════ -->
+<div id="viewerFinalitzat">
+  <div class="vf-topbar">
+    <button class="vf-back-btn" onclick="tancarViewerFinalitzat()">← Tancar</button>
+    <span class="vf-title" id="vfTitle">Treball Finalitzat</span>
+    <button class="vf-save-btn" onclick="guardarFotoFinalitzat()">📥 Guardar</button>
+  </div>
+  <div class="vf-dual-wrap">
+    <div class="vf-foto">
+      <div class="vf-foto-label abans">📷 ABANS</div>
+      <img id="vfImgAbans" src="" alt="Abans">
+    </div>
+    <div class="vf-foto">
+      <div class="vf-foto-label despres">✅ DESPRÉS</div>
+      <img id="vfImgDespres" src="" alt="Després">
+    </div>
+  </div>
+  <div class="vf-botbar">
+    <div class="vf-wa-pair">
+      <button class="vf-wa-btn amb-avis" onclick="enviarFinalitzatWA('AMB AVÍS')">🟢 Amb avís</button>
+      <button class="vf-wa-btn sense-avis" onclick="enviarFinalitzatWA('SENSE AVÍS')">🔵 Sense avís</button>
+    </div>
+    <div class="vf-legend">
+      💡 Envia el resum de la reparació per WhatsApp
     </div>
   </div>
 </div>
@@ -1351,11 +1459,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       </div>
     </div>
 
-    <!-- Indicador mode reparació -->
-    <div class="repair-badge" id="repairBadge">
-      🚧 Treball en progrés — Prem per fer la foto de finalitzat
-    </div>
-
     <!-- Entrada Manual — acordió desplegable per defecte tancat -->
     <div class="manual-panel" id="manualPanel">
       <div class="manual-panel-head" onclick="toggleManualPanel()">
@@ -1403,6 +1506,13 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       <span id="btnLabel">ON ESTIC ARA?</span>
     </button>
   </div>
+</div>
+
+<!-- ════ BLOC AMBRE FIX — Treball en progrés ════ -->
+<div id="repairZone">
+  <div class="repair-zone-title">🚧 TREBALL EN PROGRÉS</div>
+  <div class="repair-zone-pk" id="repairZonePK"></div>
+  <button class="btn-foto-final" onclick="ferFotoFinalitzat()">📸 Fer foto de finalitzat</button>
 </div>
 
 <!-- ════════════════════════════════════════════════
@@ -2008,87 +2118,157 @@ window.aplicarManual = function() {
 /* ═══════════════════════════════════════════════════════════════════
    MODE REPARACIÓ — Flux sense hora de finalització
 ═══════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════
+   MODE REPARACIÓ — Flux complet sense hora de finalització
+   ─────────────────────────────────────────────────────────────────
+   Estat global de la reparació en curs
+═══════════════════════════════════════════════════════════════════ */
 let _reparacioActiva = false;
-let _reparacioDades  = null; // { carretera, km, m, lat, lon }
+let _reparacioDades  = null; // { carretera, km, m, lat, lon, blobAbans, urlAbans }
 
+/** Activa el mode reparació: guarda dades, mostra bloc ambre.
+ *  NO toca el botó principal ni el panel manual — segueixen operatius. */
 function activarModeReparacio() {
-  // Guarda els dades actuals en silenci
+  // Persista TOTS les dades de la foto d'inici — inclòs el blob i la URL
   _reparacioDades = {
     carretera: viewerCarretera || ultimResultatObj?.carretera || '—',
     km:        viewerKm        ?? ultimResultatObj?.km        ?? 0,
     m:         viewerM         ?? ultimResultatObj?.m         ?? 0,
     lat:       viewerLat       ?? ultimaPos?.lat              ?? null,
     lon:       viewerLon       ?? ultimaPos?.lon              ?? null,
+    blobAbans: viewerBlob      ?? null,   // CRÍTIC: guarda el blob abans de tancar el visor
+    urlAbans:  viewerBlobUrl   ?? null,   // CRÍTIC: URL per mostrar la foto "Abans"
+    nomAbans:  viewerNomFitxer ?? null,
   };
   _reparacioActiva = true;
 
-  // Tanca el visor de foto
   closePhotoViewer();
 
-  // Posa el botó principal en mode ambre
-  const btnMain  = document.getElementById('btnMain');
-  const btnIcon  = document.getElementById('btnIcon');
-  const btnLabel = document.getElementById('btnLabel');
-  if (btnMain)  btnMain.classList.add('mode-repair');
-  if (btnIcon)  btnIcon.textContent  = '📸';
-  if (btnLabel) btnLabel.textContent = 'Fer Foto de Finalitzat';
+  // Mostra el bloc ambre fix a la part inferior
+  const rz  = document.getElementById('repairZone');
+  const rpk = document.getElementById('repairZonePK');
+  if (rz)  rz.classList.add('visible');
+  if (rpk) {
+    const mStr = String(_reparacioDades.m).padStart(3,'0');
+    rpk.textContent = `${_reparacioDades.carretera} · PK ${_reparacioDades.km}+${mStr}`;
+  }
 
-  // Mostra el badge ambre
-  const badge = document.getElementById('repairBadge');
-  if (badge) badge.classList.add('visible');
-
-  showToast('🚧 Treball en progrés. Fes la foto en acabar.', 'ok', 5000);
-
-  // Redirigeix el botó principal a la càmera (foto de finalitzat)
-  document.getElementById('btnMain').onclick = ferFotoFinalitzat;
+  showToast('🚧 Posa\'t a treballar! Fes la foto en acabar.', 'ok', 4000);
 }
 
+/** Obre la càmera per fer la foto "de finalitzat" */
 async function ferFotoFinalitzat() {
-  // Obre la càmera. Quan l'usuari faci la foto, el listener de inputCaptura
-  // la processarà normalment i després enviarem el text de finalització.
   _modeEnviarFinalitzat = true;
   document.getElementById('inputCaptura').click();
 }
-
 let _modeEnviarFinalitzat = false;
 
-// Interceptem el processarFoto per al mode de finalitzat
-const _processarFotoOriginal = window.processarFoto;
-// Patch post-processarFoto: si estem en mode finalitzat, copiem el text i obrim WA
-async function processarFotoFinalitzat(file, pos, res) {
-  await processarFoto(file, pos, res);
-  if (_modeEnviarFinalitzat && _reparacioDades) {
-    _modeEnviarFinalitzat = false;
-    const mStr = String(_reparacioDades.m ?? 0).padStart(3, '0');
-    const coordLine = (_reparacioDades.lat && _reparacioDades.lon)
-      ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
-      : '';
-    const text = (
-      `⚠️ *Incidència Carretera* ⚠️\n\n` +
-      `🛣️ *Carretera:* ${_reparacioDades.carretera}\n` +
-      `📍 *PK:* ${_reparacioDades.km}+${mStr}\n` +
-      `✅ *Estat:* FINALITZADA I ZONA NETA` +
-      coordLine
-    );
-    // Copia al portaretalls
-    try { await navigator.clipboard.writeText(text); } catch (_) {}
-    showToast('📋 ¡Text copiat! Obre WhatsApp per enviar.', 'ok', 5000);
-    setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank'), 500);
-    // Restaura el mode normal
-    _reparacioActiva = false; _reparacioDades = null;
-    const btnMain = document.getElementById('btnMain');
-    if (btnMain) { btnMain.classList.remove('mode-repair'); btnMain.onclick = executarGeolocal; }
-    document.getElementById('btnIcon').textContent  = '🔍';
-    document.getElementById('btnLabel').textContent = 'ON ESTIC ARA?';
-    const badge = document.getElementById('repairBadge');
-    if (badge) badge.classList.remove('visible');
+/** Mostra el visor de Abans + Després i permet enviar a WhatsApp */
+function obrirViewerFinalitzat(blobDespres) {
+  const urlDespres = URL.createObjectURL(blobDespres);
+
+  // Imatge ABANS — des de _reparacioDades (persistida quan es va prémer "Reparar ara")
+  const imgAbans = document.getElementById('vfImgAbans');
+  if (_reparacioDades?.urlAbans) {
+    imgAbans.src = _reparacioDades.urlAbans;
+  } else {
+    imgAbans.src = '';
+    imgAbans.alt = 'Foto no disponible';
   }
+
+  // Imatge DESPRÉS — acabada de processar
+  document.getElementById('vfImgDespres').src = urlDespres;
+
+  // Títol amb carretera+PK de la reparació
+  const mStr = String(_reparacioDades?.m ?? 0).padStart(3,'0');
+  document.getElementById('vfTitle').textContent =
+    `${_reparacioDades?.carretera ?? '—'} PK ${_reparacioDades?.km ?? 0}+${mStr}`;
+
+  // Guarda el blob de "després" a l'element del visor per a descàrrega manual
+  const vf = document.getElementById('viewerFinalitzat');
+  vf._blobDespres   = blobDespres;
+  vf._urlDespresTmp = urlDespres;
+  vf.classList.add('open');
 }
 
-// Redirigim inputCaptura quan _modeEnviarFinalitzat és true
-document.getElementById('inputCaptura').addEventListener('change', async function handler(e) {}, { once: false });
+function tancarViewerFinalitzat() {
+  document.getElementById('viewerFinalitzat').classList.remove('open');
+}
 
-// Suport enganxar "lat, lon" directament al camp lat
+function guardarFotoFinalitzat() {
+  const blob = document.getElementById('viewerFinalitzat')._blobDespres;
+  if (blob) descarregarBlob(blob, 'finalitzat.jpg');
+}
+
+async function enviarFinalitzatWA(avis) {
+  if (!_reparacioDades) {
+    showToast('⚠️ No hi ha dades de reparació', 'warn'); return;
+  }
+
+  const mStr     = String(_reparacioDades.m ?? 0).padStart(3, '0');
+  const etiqueta = avis === 'AMB AVÍS' ? ' [AMB AVÍS]' : '';
+  const coordLine= (_reparacioDades.lat && _reparacioDades.lon)
+    ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
+    : '';
+  const text = (
+    `⚠️ *Incidència Carretera${etiqueta}* ⚠️\n\n` +
+    `🛣️ *Carretera:* ${_reparacioDades.carretera}\n` +
+    `📍 *PK:* ${_reparacioDades.km}+${mStr}\n` +
+    `✅ *Estat:* FINALITZADA I ZONA NETA` +
+    coordLine
+  );
+
+  // ── Preparar els dos fitxers (Abans + Després) ─────────────────────────
+  const blobAbans   = _reparacioDades.blobAbans;
+  const nomAbans    = _reparacioDades.nomAbans  || 'abans.jpg';
+  const vfEl        = document.getElementById('viewerFinalitzat');
+  const blobDespres = vfEl?._blobDespres ?? null;
+  const nomDespres  = 'finalitzat.jpg';
+
+  const fitxers = [];
+  if (blobAbans)   fitxers.push(new File([blobAbans],   nomAbans,    { type: 'image/jpeg' }));
+  if (blobDespres) fitxers.push(new File([blobDespres], nomDespres,  { type: 'image/jpeg' }));
+
+  // ── INTENT 1: Web Share API v2 (igual que una sola foto) ───────────────
+  // Passa els dos fitxers + el text en un sol share natiu.
+  // L'operari veurà el mateix menú de la Foto 1 i podrà triar WhatsApp.
+  if (navigator.canShare && fitxers.length > 0 && navigator.canShare({ files: fitxers, text })) {
+    try {
+      await navigator.share({
+        title: 'Incidència Carretera',
+        text,
+        files: fitxers,
+      });
+      // Neteja DESPRÉS d'enviar (no abans, per si cancel·la)
+      _netejarModeReparacio();
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return; // L'usuari va cancel·lar → no fem res
+      // Altre error → caiem al fallback
+    }
+  }
+
+  // ── FALLBACK: clipboard + WhatsApp URL ─────────────────────────────────
+  try { await navigator.clipboard.writeText(text); } catch (_) {}
+  showToast('📋 Text copiat! Obre WhatsApp i adjunta les fotos.', 'ok', 5000);
+  setTimeout(() => {
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+  }, 400);
+  setTimeout(_netejarModeReparacio, 1200);
+}
+
+function _netejarModeReparacio() {
+  _reparacioActiva      = false;
+  _reparacioDades       = null;
+  _modeEnviarFinalitzat = false;
+  document.getElementById('repairZone').classList.remove('visible');
+  tancarViewerFinalitzat();
+}
+
+/* Acordió panell manual a la Home */
+function toggleManualPanel() {
+  document.getElementById('manualPanel').classList.toggle('open');
+}
 document.addEventListener('DOMContentLoaded', () => {
   const latEl = document.getElementById('mapCoordLat');
   if (latEl) latEl.addEventListener('paste', e => {
@@ -3054,17 +3234,24 @@ let _fitxerPendentGPS = null;
 document.getElementById('inputCaptura').addEventListener('change', async function(e) {
   const file = e.target.files?.[0];
   if (!file) return;
-  this.value = ''; // Reset per permetre repetir
+  this.value = '';
 
   showToast('📡 Capturant posició GPS...', 'ok', 4000);
-
-  // GPS amb timeout de 5 s — si falla, mostra el modal d'entrada manual
   const { pos, res, error } = await obtenirPosicioFrescaAmbPK(5000);
 
-  if (error) {
-    // GPS ha fallat — guardem el fitxer i mostrem el modal
+  if (error && !_modeEnviarFinalitzat) {
     _fitxerPendentGPS = file;
     document.getElementById('gpsErrorModal').classList.add('open');
+    return;
+  }
+
+  // Mode finalitzat: processar la foto i obrir el visor Abans+Després
+  if (_modeEnviarFinalitzat) {
+    _modeEnviarFinalitzat = false;
+    showToast('⏳ Processant foto de finalitzat...', 'ok', 3000);
+    // Guarda la foto del "després" a la galeria interna
+    const blobDespres = await _processarFotoNeta(file, pos, res);
+    if (blobDespres) obrirViewerFinalitzat(blobDespres);
     return;
   }
 
@@ -3072,39 +3259,41 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
 });
 
 async function processarFoto(file, pos, res) {
-  const ara = new Date(); // Necessari per al nom de fitxer intern (no visible)
+  const ara = new Date();
 
-  // Dades 100% fresques del GPS — mai hereda variables globals antigues
-  const carretera = res?.carretera || '—';
-  const km        = res?.km        ?? 0;
-  const m         = res?.m         ?? 0;
+  const carretera = res?.carretera || (ultimResultatObj?.carretera) || '—';
+  const km        = res?.km        ?? ultimResultatObj?.km ?? 0;
+  const m         = res?.m         ?? ultimResultatObj?.m  ?? 0;
   const mStr      = String(m).padStart(3, '0');
   const lat       = pos?.lat ?? null;
   const lon       = pos?.lon ?? null;
 
-  const pkStr    = `${carretera}, PK ${km}+${mStr}`;
+  const pkStr     = `${carretera}, PK ${km}+${mStr}`;
   const sentitStr = `Sentit: ${sentit === 'creixent' ? 'Creixent ↑' : sentit === 'decreixent' ? 'Decreixent ↓' : 'Indeterminat ↔'}`;
   const coordStr  = lat ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : 'Coordenades no disponibles';
-  // dataStr eliminat per privacitat dels operaris — no es mostra l'hora a la foto
   const nomFitxer = generarNomFitxer(carretera, km, mStr, ara);
 
-  showToast('⏳ Aplicant marca d\'aigua...', 'ok', 3000);
+  showToast('⏳ Processant foto...', 'ok', 2500);
 
   try {
     const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr, coordStr);
+
+    // Guarda a IndexedDB (galeria interna)
     await idbAdd(CFG.STORE_PHOTOS, {
-      nom: nomFitxer,
-      blob: blobFinal,
-      carretera, km, m,
-      lat, lon,
+      nom: nomFitxer, blob: blobFinal,
+      carretera, km, m, lat, lon,
       ts: ara.toISOString(),
-      ts_legible: `${carretera} PK ${km}+${mStr}`, // sense hora — només PK
+      ts_legible: `${carretera} PK ${km}+${mStr}`,
       sentit,
     });
-    showToast(`📸 Desada: ${nomFitxer}`, 'ok', 4000);
+
+    // FLUX CRÍTIC: obre el VISOR IMMEDIATAMENT, NO redirigeix a la galeria
+    const url = URL.createObjectURL(blobFinal);
+    const fotoObj = { carretera, km, m, lat, lon, nom: nomFitxer };
+    obrirFotoVisor(url, nomFitxer, null, blobFinal, fotoObj);
+
+    // Refresca la galeria en segon pla (sense canviar de pantalla)
     renderitzarFotos();
-    const tabBtn = document.querySelector('[data-tab="screenPhotos"]');
-    if (tabBtn) canviarTab(tabBtn, 'screenPhotos');
   } catch(e) {
     showToast('❌ Error processant la foto: ' + e.message, 'err');
   }
@@ -3223,26 +3412,19 @@ async function renderitzarFotos() {
         <div class="photo-checkbox">✓</div>
         <div class="photo-pk-overlay">${foto.carretera||'—'} PK ${foto.km||0}+${mStr}</div>
         <div class="photo-wa-group">
-          <button class="photo-wa-mini con-aviso" title="Enviar CON AVISO" type="button">✔</button>
-          <button class="photo-wa-mini sin-aviso" title="Enviar SIN AVISO" type="button">✗</button>
+          <button class="photo-wa-mini amb-avis" title="Enviar Amb Avís" type="button">✔</button>
+          <button class="photo-wa-mini sense-avis" title="Enviar Sense Avís" type="button">✗</button>
         </div>`;
 
-      // ── Botons CON/SIN AVISO: flux intel·ligent complet ──
-      card.querySelector('.photo-wa-mini.con-aviso').addEventListener('click', async e => {
+      card.querySelector('.photo-wa-mini.amb-avis').addEventListener('click', async e => {
         e.stopPropagation();
-        await compartirFotoWhatsApp(
-          foto.blob, foto.nom, foto.carretera,
-          foto.km ?? 0, foto.m ?? 0, foto.lat ?? null, foto.lon ?? null,
-          'CON AVISO'
-        );
+        await compartirFotoWhatsApp(foto.blob, foto.nom, foto.carretera,
+          foto.km??0, foto.m??0, foto.lat??null, foto.lon??null, 'AMB AVÍS');
       });
-      card.querySelector('.photo-wa-mini.sin-aviso').addEventListener('click', async e => {
+      card.querySelector('.photo-wa-mini.sense-avis').addEventListener('click', async e => {
         e.stopPropagation();
-        await compartirFotoWhatsApp(
-          foto.blob, foto.nom, foto.carretera,
-          foto.km ?? 0, foto.m ?? 0, foto.lat ?? null, foto.lon ?? null,
-          'SIN AVISO'
-        );
+        await compartirFotoWhatsApp(foto.blob, foto.nom, foto.carretera,
+          foto.km??0, foto.m??0, foto.lat??null, foto.lon??null, 'SENSE AVÍS');
       });
 
       // Clic foto: mode selecció o visor
@@ -3389,9 +3571,9 @@ function obrirMapsFotoVisor() {
  * @param {string} avis - 'CON AVISO' | 'SIN AVISO'
  */
 function _construirTextWA(carr, km, mStr, lat, lon, avis) {
-  // CON AVISO → etiqueta explícita [CON AVISO]
-  // SIN AVISO → sense etiqueta (incidència normal detectada en ruta)
-  const etiqueta = avis === 'CON AVISO' ? ' [CON AVISO]' : '';
+  // AMB AVÍS → etiqueta explícita [AMB AVÍS]
+  // SENSE AVÍS → sense etiqueta (incidència normal detectada en ruta)
+  const etiqueta = avis === 'AMB AVÍS' ? ' [AMB AVÍS]' : '';
   const coordLine = (lat && lon)
     ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${lat},${lon}`
     : '';
@@ -3412,9 +3594,9 @@ function _construirTextWA(carr, km, mStr, lat, lon, avis) {
  * @param {number} m     - Metres
  * @param {number|null} lat
  * @param {number|null} lon
- * @param {string} avis  - 'CON AVISO' | 'SIN AVISO'
+ * @param {string} avis  - 'AMB AVÍS' | 'SENSE AVÍS'
  */
-async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SIN AVISO') {
+async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SENSE AVÍS') {
   const mStr   = String(m ?? 0).padStart(3, '0');
   const textWA = _construirTextWA(carr, km, mStr, lat, lon, avis);
   const fitxer = new File([blob], nom, { type: 'image/jpeg' });
@@ -3454,20 +3636,46 @@ async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'S
 }
 
 /* ── Punt d'entrada des del visor de foto ── */
-async function compartirWhatsAppFotoVisor(avis = 'SIN AVISO') {
+async function compartirWhatsAppFotoVisor(avis = 'SENSE AVÍS') {
   if (!viewerBlob || !viewerNomFitxer) {
     showToast('⚠️ No hi ha foto oberta', 'warn'); return;
   }
   await compartirFotoWhatsApp(
-    viewerBlob,
-    viewerNomFitxer,
-    viewerCarretera,
-    viewerKm ?? 0,
-    viewerM  ?? 0,
-    viewerLat,
-    viewerLon,
-    avis
+    viewerBlob, viewerNomFitxer,
+    viewerCarretera, viewerKm ?? 0, viewerM ?? 0,
+    viewerLat, viewerLon, avis
   );
+}
+
+/**
+ * Processa una foto (aplica marca d'aigua, guarda a IndexedDB)
+ * i retorna el Blob resultant sense obrir el visor.
+ * Usada per a la foto "de finalitzat" del mode reparació.
+ */
+async function _processarFotoNeta(file, pos, res) {
+  const ara       = new Date();
+  const carretera = res?.carretera || _reparacioDades?.carretera || '—';
+  const km        = res?.km        ?? _reparacioDades?.km ?? 0;
+  const m         = res?.m         ?? _reparacioDades?.m  ?? 0;
+  const mStr      = String(m).padStart(3,'0');
+  const lat       = pos?.lat ?? _reparacioDades?.lat ?? null;
+  const lon       = pos?.lon ?? _reparacioDades?.lon ?? null;
+  const pkStr     = `${carretera}, PK ${km}+${mStr}`;
+  const sentitStr = `Sentit: ${sentit === 'creixent' ? 'Creixent ↑' : sentit === 'decreixent' ? 'Decreixent ↓' : 'Indeterminat ↔'}`;
+  const coordStr  = lat ? `${lat.toFixed(6)}, ${lon.toFixed(6)}` : 'Coordenades no disponibles';
+  const nomFitxer = generarNomFitxer(carretera, km, mStr, ara);
+  try {
+    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr, coordStr);
+    await idbAdd(CFG.STORE_PHOTOS, {
+      nom:nomFitxer, blob:blobFinal, carretera, km, m, lat, lon,
+      ts:ara.toISOString(), ts_legible:`${carretera} PK ${km}+${mStr}`, sentit,
+    });
+    renderitzarFotos();
+    return blobFinal;
+  } catch(e) {
+    showToast('❌ Error processant la foto: ' + e.message, 'err');
+    return null;
+  }
 }
 
 async function compartirFotoVisor() {
