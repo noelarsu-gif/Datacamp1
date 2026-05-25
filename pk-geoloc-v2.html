@@ -475,23 +475,44 @@ body::before{
 .map-search-item-road{font-family:var(--font-mono);font-weight:600;color:var(--accent);min-width:46px;}
 .map-search-item-pks{font-size:.6rem;color:var(--text-3);}
 
-/* Coordenades manuals */
-.mcoord-row{display:flex;gap:4px;}
+/* Coordenades manuals — acordió col·lapsable */
+.mcoord-accordion{
+  background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
+}
+.mcoord-accordion-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:9px 11px;cursor:pointer;user-select:none;transition:background .15s;
+}
+.mcoord-accordion-head:hover{background:rgba(255,255,255,.03);}
+.mcoord-accordion-label{font-size:.72rem;font-weight:600;color:var(--text-2);}
+.mcoord-accordion-arrow{
+  font-size:.65rem;color:var(--text-3);transition:transform .25s;
+}
+.mcoord-accordion.open .mcoord-accordion-arrow{transform:rotate(180deg);}
+.mcoord-accordion-body{
+  display:none;padding:0 10px 10px;
+  display:none;flex-direction:column;gap:7px;
+}
+.mcoord-accordion.open .mcoord-accordion-body{display:flex;}
+/* Inputs verticals, amplada 100% */
 .mcoord-inp{
-  flex:1;padding:7px 6px;border-radius:var(--radius-sm);
+  width:100%;padding:10px 10px;border-radius:var(--radius-sm);
   border:1px solid var(--border);background:var(--bg-3);
-  color:var(--text-1);font-family:var(--font-mono);font-size:.72rem;
+  color:var(--text-1);font-family:var(--font-mono);font-size:.8rem;
   outline:none;transition:border-color .2s;-webkit-appearance:none;
+  box-sizing:border-box;
 }
 .mcoord-inp:focus{border-color:var(--accent);}
-.mcoord-inp::placeholder{color:var(--text-3);font-size:.6rem;}
+.mcoord-inp::placeholder{color:var(--text-3);font-size:.68rem;}
+/* Botó IR gran, amplada completa */
 .mcoord-btn{
-  padding:7px 10px;border-radius:var(--radius-sm);
-  border:1px solid var(--border);background:var(--bg-3);
-  color:var(--text-2);font-family:var(--font-cond);font-size:.65rem;
-  font-weight:700;cursor:pointer;transition:var(--tr);white-space:nowrap;
+  width:100%;padding:12px;border-radius:var(--radius-sm);
+  border:1px solid var(--accent);background:var(--accent-dim);
+  color:var(--accent);font-family:var(--font-cond);font-size:.82rem;
+  font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);
+  box-sizing:border-box;
 }
-.mcoord-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+.mcoord-btn:hover{background:rgba(0,212,255,.22);}
 
 /* Amidament integrat */
 .map-amid-card{background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:border-color .3s;}
@@ -583,6 +604,85 @@ body::before{
   border-top:1px solid var(--border);
   background:var(--bg-0);
 }
+
+/* ── Mode reparació (color ambre, "Treball en progrés") ── */
+.btn-main.mode-repair{
+  background:linear-gradient(135deg,#b45309,#d97706) !important;
+  border-color:#f59e0b !important;
+  box-shadow:0 0 40px rgba(245,158,11,.35) !important;
+  animation:repairPulse 2s ease-in-out infinite;
+}
+@keyframes repairPulse{0%,100%{box-shadow:0 0 30px rgba(245,158,11,.3);}50%{box-shadow:0 0 55px rgba(245,158,11,.6);}}
+.repair-badge{
+  display:none;
+  background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.4);
+  border-radius:var(--radius-sm);padding:8px 14px;margin:0 16px 4px;
+  font-size:.75rem;color:#f59e0b;font-weight:600;text-align:center;line-height:1.5;
+}
+.repair-badge.visible{display:block;}
+
+/* ── Botó "Reparar Ara" al visor ── */
+.pv-wa-big.reparar{
+  border:2px solid #f59e0b;background:rgba(245,158,11,.14);color:#f59e0b;
+  flex:0 0 100%;   /* fila sencera */
+  margin-top:4px;
+}
+.pv-wa-big.reparar:hover,.pv-wa-big.reparar:active{background:rgba(245,158,11,.28);}
+
+/* ── Modal error GPS ── */
+.gps-error-modal{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;
+  padding:24px;
+}
+.gps-error-modal.open{display:flex;}
+.gps-error-box{
+  background:var(--bg-2);border:1px solid var(--border-acc);
+  border-radius:var(--radius-xl);padding:28px 24px;max-width:340px;width:100%;
+  text-align:center;box-shadow:var(--shadow-lg);
+}
+.gps-error-icon{font-size:2.4rem;margin-bottom:10px;}
+.gps-error-title{font-family:var(--font-cond);font-size:1rem;font-weight:900;
+  letter-spacing:1.5px;color:var(--text-1);margin-bottom:8px;}
+.gps-error-msg{font-size:.8rem;color:var(--text-2);line-height:1.55;margin-bottom:20px;}
+.gps-error-btns{display:flex;gap:10px;}
+.gps-error-btn{
+  flex:1;padding:13px 10px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.85rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:var(--tr);
+}
+.gps-error-btn.accept{
+  border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);
+}
+.gps-error-btn.accept:hover{background:rgba(0,212,255,.28);}
+.gps-error-btn.cancel{
+  border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);
+}
+.gps-error-btn.cancel:hover{background:var(--bg-4);}
+
+/* ── Panell manual Home — acordió desplegable ── */
+.manual-panel{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin:0;
+}
+.manual-panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 14px;cursor:pointer;user-select:none;
+  transition:background .15s;
+}
+.manual-panel-head:hover{background:rgba(255,255,255,.03);}
+.manual-panel-label{
+  font-family:var(--font-cond);font-size:.78rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--text-2);
+}
+.manual-panel-arrow{font-size:.65rem;color:var(--text-3);transition:transform .25s;}
+.manual-panel.open .manual-panel-arrow{transform:rotate(180deg);}
+.manual-panel-body{
+  display:none;padding:0 14px 14px;
+  flex-direction:column;gap:10px;
+}
+.manual-panel.open .manual-panel-body{display:flex;}
 
 /* Contenidor principal del mapa */
 #mapMain{
@@ -921,34 +1021,97 @@ body::before{
   display:none;flex-direction:column;
 }
 .photo-viewer.open{display:flex;}
+
+/* Barra superior: Torna, títol carretera+PK, Guardar al mòbil, Eliminar */
 .photo-viewer-topbar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 16px;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
+  display:flex;align-items:center;gap:8px;
+  padding:12px 14px;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);
   position:absolute;top:0;left:0;right:0;z-index:10;
+  border-bottom:1px solid rgba(255,255,255,.08);
 }
-.photo-viewer-title{font-family:var(--font-cond);font-size:.85rem;font-weight:700;color:var(--text-1);letter-spacing:1px;flex:1;text-align:center;}
-.pv-icon-btn{
-  width:40px;height:40px;border-radius:var(--radius-sm);border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.08);color:#fff;font-size:1.1rem;cursor:pointer;
+.pv-back-btn{
+  padding:8px 12px;border-radius:var(--radius-sm);
+  border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
+  color:#fff;font-size:.75rem;font-weight:700;cursor:pointer;
+  transition:var(--tr);white-space:nowrap;font-family:var(--font-cond);letter-spacing:.5px;
+  flex-shrink:0;
+}
+.pv-back-btn:hover{background:rgba(255,255,255,.18);}
+.photo-viewer-title{
+  font-family:var(--font-cond);font-size:.82rem;font-weight:700;
+  color:var(--text-1);letter-spacing:1px;flex:1;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pv-save-btn{
+  padding:8px 11px;border-radius:var(--radius-sm);
+  border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.12);
+  color:var(--accent);font-size:.72rem;font-weight:700;cursor:pointer;
+  transition:var(--tr);white-space:nowrap;font-family:var(--font-cond);
+  flex-shrink:0;
+}
+.pv-save-btn:hover{background:rgba(0,212,255,.25);}
+.pv-del-btn{
+  width:38px;height:38px;border-radius:var(--radius-sm);
+  border:1px solid rgba(255,59,92,.3);background:rgba(255,59,92,.1);
+  color:var(--red);font-size:1rem;cursor:pointer;
   display:flex;align-items:center;justify-content:center;transition:var(--tr);flex-shrink:0;
 }
-.pv-icon-btn.del-btn{color:var(--red);border-color:rgba(255,59,92,.3);}
-.pv-icon-btn:hover{background:rgba(255,255,255,.18);}
-.photo-viewer-img-wrap{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding-top:68px;padding-bottom:68px;}
+.pv-del-btn:hover{background:rgba(255,59,92,.25);}
+
+/* Zona imatge — espai per als dos bars */
+.photo-viewer-img-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding-top:62px;padding-bottom:180px;
+}
 .photo-viewer-img-wrap img{max-width:100%;max-height:100%;object-fit:contain;}
+
+/* Barra inferior: botons grans CON/SIN AVISO + llegenda + Maps */
 .photo-viewer-botbar{
-  display:flex;align-items:center;justify-content:center;gap:14px;
-  padding:12px 16px;background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
   position:absolute;bottom:0;left:0;right:0;z-index:10;
+  background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:14px 16px 18px;
+  display:flex;flex-direction:column;gap:10px;
 }
-.photo-viewer-btn{
-  flex:1;max-width:160px;padding:13px;border-radius:var(--radius);
-  font-family:var(--font-cond);font-size:.82rem;font-weight:700;letter-spacing:1.5px;
-  cursor:pointer;transition:var(--tr);border:1px solid var(--border-acc);
-  background:var(--accent-dim);color:var(--accent);
+/* Fila superior: botó Maps petit */
+.pv-secondary-row{
+  display:flex;justify-content:flex-start;gap:8px;
 }
-.photo-viewer-btn.share-btn{background:var(--green-dim);border-color:rgba(0,255,157,.4);color:var(--green);}
-.photo-viewer-btn:hover{opacity:.85;}
+.pv-maps-btn{
+  padding:8px 14px;border-radius:var(--radius-sm);
+  font-family:var(--font-cond);font-size:.72rem;font-weight:700;letter-spacing:.8px;
+  cursor:pointer;transition:var(--tr);border:1px solid rgba(66,133,244,.5);
+  background:rgba(66,133,244,.12);color:#4285f4;
+}
+.pv-maps-btn:hover{background:rgba(66,133,244,.25);}
+/* Dos botons principals gegants */
+.pv-wa-pair{display:flex;gap:10px;}
+.pv-wa-big{
+  flex:1;padding:18px 10px;border-radius:var(--radius-lg);
+  font-family:var(--font-cond);font-size:1.1rem;font-weight:900;letter-spacing:1.5px;
+  cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.pv-wa-big.con-aviso{
+  border:2px solid #25d366;background:rgba(37,211,102,.18);color:#25d366;
+}
+.pv-wa-big.con-aviso:hover,.pv-wa-big.con-aviso:active{background:rgba(37,211,102,.32);}
+.pv-wa-big.sin-aviso{
+  border:2px solid #00b0ff;background:rgba(0,176,255,.14);color:#00b0ff;
+}
+.pv-wa-big.sin-aviso:hover,.pv-wa-big.sin-aviso:active{background:rgba(0,176,255,.28);}
+/* Llegenda */
+.pv-wa-legend{
+  display:flex;flex-direction:column;gap:2px;padding:5px 8px;
+  background:rgba(255,255,255,.06);border-radius:var(--radius-sm);
+  font-size:.6rem;font-weight:500;line-height:1.6;
+  color:rgba(255,255,255,.65);letter-spacing:.1px;
+}
+.pv-wa-legend b{font-weight:700;color:rgba(255,255,255,.85);}
+
+/* Estils legacy eliminats — ja no s'usen */
+.pv-icon-btn{display:none;}
+.photo-viewer-btn{display:none;}
 
 /* Canvas ocult per al watermark */
 #canvasWatermark{display:none;}
@@ -1090,28 +1253,61 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
   <button class="fab-inc" id="fabInc" onclick="toggleIncPanel()" title="Marcar incidència">⚡</button>
 </div>
 
-<!-- ════ VISOR DE FOTO (redissenyat) ════ -->
+<!-- ════ VISOR DE FOTO — pantalla completa ════ -->
 <div class="photo-viewer" id="photoViewer">
+  <!-- Barra superior: Torna | Carretera+PK | Guardar | Eliminar -->
   <div class="photo-viewer-topbar">
-    <button class="pv-icon-btn" onclick="closePhotoViewer()">✕</button>
+    <button class="pv-back-btn" onclick="closePhotoViewer()">← Tornar</button>
     <span class="photo-viewer-title" id="photoViewerTitle">Foto</span>
-    <button class="pv-icon-btn del-btn" onclick="eliminarFotoVisor()" title="Eliminar">🗑️</button>
+    <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Desar al carret del mòbil">📥 Guardar</button>
+    <button class="pv-del-btn" onclick="eliminarFotoVisor()" title="Eliminar foto de l'app">🗑️</button>
   </div>
+
+  <!-- Imatge centrada -->
   <div class="photo-viewer-img-wrap">
     <img id="photoViewerImg" src="" alt="Foto">
   </div>
+
+  <!-- Barra inferior: Maps + tres botons grans + llegenda -->
   <div class="photo-viewer-botbar">
-    <button class="pv-maps-btn" onclick="obrirMapsFotoVisor()" title="Veure ubicació a Google Maps">🗺️ Maps</button>
-    <div class="pv-wa-group">
-      <button class="pv-wa-btn con-aviso" onclick="compartirWhatsAppFotoVisor('CON AVISO')" title="Incidències notificades pel Centre de Control (CECAT)">🟢 CON AVISO</button>
-      <button class="pv-wa-btn sin-aviso" onclick="compartirWhatsAppFotoVisor('SIN AVISO')" title="Incidències detectades de forma espontània en ruta">🔵 SIN AVISO</button>
-      <div class="pv-wa-legend">
-        <span>💡 <b>CON AVISO:</b> Notificada pel CECAT</span>
-        <span>💡 <b>SIN AVISO:</b> Detectada en ruta</span>
-      </div>
+    <div class="pv-secondary-row">
+      <button class="pv-maps-btn" onclick="obrirMapsFotoVisor()" title="Veure ubicació a Google Maps">🗺️ Veure al mapa</button>
     </div>
-    <button class="photo-viewer-btn share-btn" onclick="compartirFotoVisor()">↗️ Exportar</button>
-    <button class="photo-viewer-btn" onclick="descarregarFotoVisor()">⬇️ Baixar</button>
+    <div class="pv-wa-pair">
+      <button class="pv-wa-big con-aviso"
+        onclick="compartirWhatsAppFotoVisor('CON AVISO')"
+        title="Incidència notificada pel CECAT">
+        🟢 CON AVISO
+      </button>
+      <button class="pv-wa-big sin-aviso"
+        onclick="compartirWhatsAppFotoVisor('SIN AVISO')"
+        title="Incidència detectada en ruta">
+        🔵 SIN AVISO
+      </button>
+    </div>
+    <button class="pv-wa-big reparar"
+      onclick="activarModeReparacio()"
+      title="Desar posició i posar app en mode espera fins a finalitzar la reparació">
+      🚧 Reparar Ara (Tancar més tard)
+    </button>
+    <div class="pv-wa-legend">
+      <span>💡 <b>CON AVISO:</b> Incidència notificada pel Centre de Control (CECAT)</span>
+      <span>💡 <b>SIN AVISO:</b> Incidència detectada de forma espontània en ruta</span>
+      <span>💡 <b>REPARAR ARA:</b> Guarda la posició. Fes la foto del "després" en acabar.</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL ERROR GPS ════ -->
+<div class="gps-error-modal" id="gpsErrorModal">
+  <div class="gps-error-box">
+    <div class="gps-error-icon">❌</div>
+    <div class="gps-error-title">Error de connexió GPS</div>
+    <div class="gps-error-msg">No s'ha pogut obtenir la ubicació en 5 segons.<br>Vols introduir la Carretera i el PK manualment?</div>
+    <div class="gps-error-btns">
+      <button class="gps-error-btn cancel" onclick="tancarModalGPS()">Cancel·lar</button>
+      <button class="gps-error-btn accept" onclick="acceptarManualGPS()">✏️ Sí, introduir manual</button>
+    </div>
   </div>
 </div>
 
@@ -1155,29 +1351,41 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       </div>
     </div>
 
-    <div class="manual-panel">
-      <div class="manual-header">
-        <span class="manual-title">Entrada Manual</span>
-        <button class="btn-edit-toggle" id="btnEditToggle" onclick="toggleManual()">✏️ Editar Manual</button>
-      </div>
-      <div class="manual-fields">
-        <div class="field-group">
-          <label class="field-label" for="fCarretera">Carretera</label>
-          <input class="field-input" id="fCarretera" type="text" placeholder="C-26" disabled maxlength="10">
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="fPK">PK (Km)</label>
-          <input class="field-input" id="fPK" type="number" placeholder="25" disabled min="0" max="9999">
-        </div>
-        <div class="field-group">
-          <label class="field-label" for="fM">Metres (+)</label>
-          <input class="field-input" id="fM" type="number" placeholder="300" disabled min="0" max="999">
-        </div>
-      </div>
-      <button class="btn-apply-manual" id="btnApplyManual" onclick="aplicarManual()">✔ APLICAR DADES MANUALS</button>
+    <!-- Indicador mode reparació -->
+    <div class="repair-badge" id="repairBadge">
+      🚧 Treball en progrés — Prem per fer la foto de finalitzat
     </div>
 
-    <div class="coords-strip">
+    <!-- Entrada Manual — acordió desplegable per defecte tancat -->
+    <div class="manual-panel" id="manualPanel">
+      <div class="manual-panel-head" onclick="toggleManualPanel()">
+        <span class="manual-panel-label">✏️ Entrada Manual de PK</span>
+        <span class="manual-panel-arrow">▼</span>
+      </div>
+      <div class="manual-panel-body" id="manualPanelBody">
+        <div class="manual-fields">
+          <div class="field-group">
+            <label class="field-label" for="fCarretera">Carretera</label>
+            <input class="field-input" id="fCarretera" type="text" placeholder="C-26" disabled maxlength="10">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="fPK">PK (Km)</label>
+            <input class="field-input" id="fPK" type="number" placeholder="25" disabled min="0" max="9999">
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="fM">Metres (+)</label>
+            <input class="field-input" id="fM" type="number" placeholder="300" disabled min="0" max="999">
+          </div>
+        </div>
+        <div class="manual-header">
+          <button class="btn-edit-toggle" id="btnEditToggle" onclick="toggleManual()">✏️ Editar Manual</button>
+        </div>
+        <button class="btn-apply-manual" id="btnApplyManual" onclick="aplicarManual()">✔ APLICAR DADES MANUALS</button>
+      </div>
+    </div>
+
+    <!-- Coordenades GPS — ocultes per privacitat, accessibles internament -->
+    <div class="coords-strip" style="display:none;">
       <div class="coord-item"><div class="coord-label">Latitud</div><div class="coord-value" id="cLat">—</div></div>
       <div class="coord-sep"></div>
       <div class="coord-item"><div class="coord-label">Longitud</div><div class="coord-value" id="cLon">—</div></div>
@@ -1261,16 +1469,21 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
         </div>
       </div>
 
-      <!-- COORDENADES MANUALS -->
+      <!-- COORDENADES MANUALS — acordió col·lapsable -->
       <div>
         <div class="map-sec-label">Introduir Coordenades</div>
-        <div class="map-form-card">
-          <div class="mcoord-row">
-            <input class="mcoord-inp" id="mapCoordLat" type="number" placeholder="Lat 41.6xxx" step="any">
-            <input class="mcoord-inp" id="mapCoordLon" type="number" placeholder="Lon 1.2xxx" step="any">
-            <button class="mcoord-btn" onclick="mapAnarACoords()">IR→</button>
+        <div class="mcoord-accordion" id="mcoordAccordion">
+          <div class="mcoord-accordion-head" onclick="toggleMcoordAccordion()">
+            <span class="mcoord-accordion-label">📍 Enganxa des de Google Maps</span>
+            <span class="mcoord-accordion-arrow">▼</span>
           </div>
-          <div style="font-size:.55rem;color:var(--text-3);margin-top:4px;">Enganxa des de Google Maps (41.xxx, 1.xxx)</div>
+          <div class="mcoord-accordion-body" id="mcoordBody">
+            <input class="mcoord-inp" id="mapCoordLat" type="number"
+              placeholder="Latitud  (41.6xxx)" step="any">
+            <input class="mcoord-inp" id="mapCoordLon" type="number"
+              placeholder="Longitud  (1.2xxx)" step="any">
+            <button class="mcoord-btn" onclick="mapAnarACoords()">→ ANAR A AQUESTES COORDENADES</button>
+          </div>
         </div>
       </div>
 
@@ -1747,7 +1960,135 @@ async function mapAnarACoords() {
   await mapCalcPK(lat, lon, true);
 }
 
-// Paste automàtic "lat, lon" al camp lat
+/* Acordió panell manual a la Home */
+function toggleManualPanel() {
+  const panel = document.getElementById('manualPanel');
+  panel.classList.toggle('open');
+}
+
+/* Obre i inicialitza el panell manual des del modal d'error GPS */
+function acceptarManualGPS() {
+  tancarModalGPS();
+  // Obre l'acordió
+  const panel = document.getElementById('manualPanel');
+  panel.classList.add('open');
+  // Habilita els inputs i activa el mode edició
+  const btnEdit = document.getElementById('btnEditToggle');
+  if (btnEdit) btnEdit.click();
+  // Focus al primer camp
+  setTimeout(() => document.getElementById('fCarretera')?.focus(), 100);
+  showToast('✏️ Introdueix la carretera i el PK visualment', 'ok', 4000);
+  // Quan l'usuari apliqui les dades manuals i faci la foto, processem el fitxer pendent
+  _esperantManualPeFoto = true;
+}
+
+function tancarModalGPS() {
+  document.getElementById('gpsErrorModal').classList.remove('open');
+}
+
+// Flag per saber si esperem confirmació manual per processar la foto
+let _esperantManualPeFoto = false;
+
+// Sobreescribim aplicarManual per captar el cas de foto pendent
+const _aplicarManualOriginal = window.aplicarManual;
+window.aplicarManual = function() {
+  if (typeof _aplicarManualOriginal === 'function') _aplicarManualOriginal();
+  // Si hi ha una foto pendent (error GPS), la processem ara amb dades manuals
+  if (_esperantManualPeFoto && _fitxerPendentGPS) {
+    _esperantManualPeFoto = false;
+    const fitxer = _fitxerPendentGPS;
+    _fitxerPendentGPS = null;
+    // Construïm pos/res des dels camps manuals
+    const posManual = ultimaPos || null;
+    const resManual = ultimResultatObj || null;
+    setTimeout(() => processarFoto(fitxer, posManual, resManual), 200);
+  }
+};
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODE REPARACIÓ — Flux sense hora de finalització
+═══════════════════════════════════════════════════════════════════ */
+let _reparacioActiva = false;
+let _reparacioDades  = null; // { carretera, km, m, lat, lon }
+
+function activarModeReparacio() {
+  // Guarda els dades actuals en silenci
+  _reparacioDades = {
+    carretera: viewerCarretera || ultimResultatObj?.carretera || '—',
+    km:        viewerKm        ?? ultimResultatObj?.km        ?? 0,
+    m:         viewerM         ?? ultimResultatObj?.m         ?? 0,
+    lat:       viewerLat       ?? ultimaPos?.lat              ?? null,
+    lon:       viewerLon       ?? ultimaPos?.lon              ?? null,
+  };
+  _reparacioActiva = true;
+
+  // Tanca el visor de foto
+  closePhotoViewer();
+
+  // Posa el botó principal en mode ambre
+  const btnMain  = document.getElementById('btnMain');
+  const btnIcon  = document.getElementById('btnIcon');
+  const btnLabel = document.getElementById('btnLabel');
+  if (btnMain)  btnMain.classList.add('mode-repair');
+  if (btnIcon)  btnIcon.textContent  = '📸';
+  if (btnLabel) btnLabel.textContent = 'Fer Foto de Finalitzat';
+
+  // Mostra el badge ambre
+  const badge = document.getElementById('repairBadge');
+  if (badge) badge.classList.add('visible');
+
+  showToast('🚧 Treball en progrés. Fes la foto en acabar.', 'ok', 5000);
+
+  // Redirigeix el botó principal a la càmera (foto de finalitzat)
+  document.getElementById('btnMain').onclick = ferFotoFinalitzat;
+}
+
+async function ferFotoFinalitzat() {
+  // Obre la càmera. Quan l'usuari faci la foto, el listener de inputCaptura
+  // la processarà normalment i després enviarem el text de finalització.
+  _modeEnviarFinalitzat = true;
+  document.getElementById('inputCaptura').click();
+}
+
+let _modeEnviarFinalitzat = false;
+
+// Interceptem el processarFoto per al mode de finalitzat
+const _processarFotoOriginal = window.processarFoto;
+// Patch post-processarFoto: si estem en mode finalitzat, copiem el text i obrim WA
+async function processarFotoFinalitzat(file, pos, res) {
+  await processarFoto(file, pos, res);
+  if (_modeEnviarFinalitzat && _reparacioDades) {
+    _modeEnviarFinalitzat = false;
+    const mStr = String(_reparacioDades.m ?? 0).padStart(3, '0');
+    const coordLine = (_reparacioDades.lat && _reparacioDades.lon)
+      ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
+      : '';
+    const text = (
+      `⚠️ *Incidència Carretera* ⚠️\n\n` +
+      `🛣️ *Carretera:* ${_reparacioDades.carretera}\n` +
+      `📍 *PK:* ${_reparacioDades.km}+${mStr}\n` +
+      `✅ *Estat:* FINALITZADA I ZONA NETA` +
+      coordLine
+    );
+    // Copia al portaretalls
+    try { await navigator.clipboard.writeText(text); } catch (_) {}
+    showToast('📋 ¡Text copiat! Obre WhatsApp per enviar.', 'ok', 5000);
+    setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank'), 500);
+    // Restaura el mode normal
+    _reparacioActiva = false; _reparacioDades = null;
+    const btnMain = document.getElementById('btnMain');
+    if (btnMain) { btnMain.classList.remove('mode-repair'); btnMain.onclick = executarGeolocal; }
+    document.getElementById('btnIcon').textContent  = '🔍';
+    document.getElementById('btnLabel').textContent = 'ON ESTIC ARA?';
+    const badge = document.getElementById('repairBadge');
+    if (badge) badge.classList.remove('visible');
+  }
+}
+
+// Redirigim inputCaptura quan _modeEnviarFinalitzat és true
+document.getElementById('inputCaptura').addEventListener('change', async function handler(e) {}, { once: false });
+
+// Suport enganxar "lat, lon" directament al camp lat
 document.addEventListener('DOMContentLoaded', () => {
   const latEl = document.getElementById('mapCoordLat');
   if (latEl) latEl.addEventListener('paste', e => {
@@ -2533,13 +2874,14 @@ function tancarIncPanel() {
    HELPER CENTRAL: captura GPS fresca + càlcul PK immediat
    Crida obligatòria des de fotos I incidències — mai hereda dades antigues
 ═══════════════════════════════════════════════════════════════════ */
-function obtenirPosicioFrescaAmbPK() {
-  // Retorna una Promise que es resol amb { pos, res } on:
-  //   pos = { lat, lon, acc }      (sempre present si hi ha GPS)
-  //   res = { carretera,km,m,dist,pkDec } | null  (si es pot calcular PK)
+function obtenirPosicioFrescaAmbPK(timeoutMs = 10000) {
+  // Retorna una Promise que es resol amb { pos, res, error } on:
+  //   pos   = { lat, lon, acc }      (GPS obtingut)
+  //   res   = { carretera,km,m,dist,pkDec } | null
+  //   error = true si el GPS ha fallat o superat el timeout
   return new Promise(resolve => {
     if (!navigator.geolocation) {
-      resolve({ pos: null, res: null });
+      resolve({ pos: null, res: null, error: true });
       return;
     }
 
@@ -2554,50 +2896,37 @@ function obtenirPosicioFrescaAmbPK() {
         document.getElementById('cLat').textContent = lat.toFixed(6);
         document.getElementById('cLon').textContent = lon.toFixed(6);
         document.getElementById('cAcc').textContent = `±${Math.round(acc)} m`;
-        ultimaPos = pos; // actualitzem sempre l'estat global
+        ultimaPos = pos;
 
         // Càlcul PK fresc (cache local primer, ArcGIS si cal)
         let resCalc = null;
         try {
           let punts = filtrarCache(lat, lon, 0.05);
-          if (punts.length < 2) {
-            punts = await consultarArcGIS(lat, lon, 0.07);
-          }
-          if (punts.length < 2) {
-            punts = await consultarArcGIS(lat, lon, 0.12);
-          }
+          if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.07);
+          if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.12);
           const r = calcularPK(lat, lon, punts);
           if (r) {
             resCalc = r;
-            // Actualitzem sentit automàtic
             historialPos.push({ pkDec: r.pkDec, lat, lon, ts: Date.now() });
             if (historialPos.length > 5) historialPos.shift();
             calcularSentitAutomatic(r.pkDec);
-            // Actualitzem la targeta de resultat en pantalla
-            if (r.dist <= llindar) {
-              mostrarResultatOK(r);
-              ultimResultatObj = r;
-            }
+            if (r.dist <= llindar) { mostrarResultatOK(r); ultimResultatObj = r; }
           }
         } catch (_) {
-          // Si no hi ha xarxa, provem la cache amb radi més gran
           try {
             const puntsCache = filtrarCache(lat, lon, 0.12);
             const r = calcularPK(lat, lon, puntsCache);
-            if (r) {
-              resCalc = r;
-              if (r.dist <= llindar) { mostrarResultatOK(r); ultimResultatObj = r; }
-            }
+            if (r) { resCalc = r; if (r.dist <= llindar) { mostrarResultatOK(r); ultimResultatObj = r; } }
           } catch (_2) {}
         }
 
-        resolve({ pos, res: resCalc });
+        resolve({ pos, res: resCalc, error: false });
       },
       _err => {
-        // GPS no disponible: resolem sense dades noves però sense bloquejar
-        resolve({ pos: ultimaPos, res: ultimResultatObj });
+        // GPS ha fallat o superat el timeout
+        resolve({ pos: ultimaPos, res: ultimResultatObj, error: true });
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 5000 }
     );
   });
 }
@@ -2719,16 +3048,25 @@ function obrirCamera() {
   document.getElementById('inputCaptura').click();
 }
 
+// Fitxer pendent de foto GPS (per al modal d'error)
+let _fitxerPendentGPS = null;
+
 document.getElementById('inputCaptura').addEventListener('change', async function(e) {
   const file = e.target.files?.[0];
   if (!file) return;
   this.value = ''; // Reset per permetre repetir
 
-  // Mostrem feedback visual immediat
-  showToast('📡 Capturant posició GPS exacta...', 'ok', 5000);
+  showToast('📡 Capturant posició GPS...', 'ok', 4000);
 
-  // Captura GPS FRESCA en el moment exacte de la foto — mai variables antigues
-  const { pos, res } = await obtenirPosicioFrescaAmbPK();
+  // GPS amb timeout de 5 s — si falla, mostra el modal d'entrada manual
+  const { pos, res, error } = await obtenirPosicioFrescaAmbPK(5000);
+
+  if (error) {
+    // GPS ha fallat — guardem el fitxer i mostrem el modal
+    _fitxerPendentGPS = file;
+    document.getElementById('gpsErrorModal').classList.add('open');
+    return;
+  }
 
   await processarFoto(file, pos, res);
 });
@@ -3051,12 +3389,14 @@ function obrirMapsFotoVisor() {
  * @param {string} avis - 'CON AVISO' | 'SIN AVISO'
  */
 function _construirTextWA(carr, km, mStr, lat, lon, avis) {
-  const etiqueta = avis === 'CON AVISO' ? ' [CON AVISO]' : ' [SIN AVISO]';
+  // CON AVISO → etiqueta explícita [CON AVISO]
+  // SIN AVISO → sense etiqueta (incidència normal detectada en ruta)
+  const etiqueta = avis === 'CON AVISO' ? ' [CON AVISO]' : '';
   const coordLine = (lat && lon)
     ? `\n🌐 *Ubicació:* http://maps.google.com/maps?q=${lat},${lon}`
     : '';
   return (
-    `⚠️ *Incidència Carretera${etiqueta}* ⚠️\n` +
+    `⚠️ *Incidència Carretera${etiqueta}* ⚠️\n\n` +
     `🛣️ *Carretera:* ${carr || '—'}\n` +
     `📍 *PK:* ${km}+${mStr}` +
     coordLine
@@ -3089,21 +3429,22 @@ async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'S
     }
   }
 
-  // ── INTENT 2: Fallback — clipboard + descàrrega + obrir WhatsApp ─────────
+  // ── INTENT 2: Fallback — clipboard + obrir WhatsApp (SENSE descàrrega automàtica) ──
+  // La foto JA es queda a la galeria interna de l'app (IndexedDB).
+  // NO la guardem al carret del mòbil — l'operari decideix quan fer-ho (botó "Guardar").
   let textCopiat = false;
   try {
     await navigator.clipboard.writeText(textWA);
     textCopiat = true;
   } catch (_) {}
 
-  // Descarrega la foto al dispositiu (sense hora al nom de fitxer)
-  descarregarBlob(blob, nom);
-
+  // Toast clar per a l'operari — l'informa que ha de seleccionar la foto a WA
   const toastMsg = textCopiat
     ? '📋 ¡Text copiat! Selecciona la última foto a WhatsApp.'
-    : '📲 Foto descarregada. Obre WhatsApp i adjunta-la.';
+    : '📲 Obre WhatsApp, enganxa el text i adjunta la foto.';
   showToast(toastMsg, 'ok', 5000);
 
+  // Obre WhatsApp amb el text pre-emplenat
   setTimeout(() => {
     window.open(
       `https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`,
