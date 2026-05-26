@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>PK·MAPA — Supermapa de Carreteres</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   PK·MAPA v3 — Supermapa Independent
+   Paleta dark professional: antracita + cian + verd + ambre
+══════════════════════════════════════════════════════════════ */
+:root{
+  --bg0:#111214;--bg1:#18191C;--bg2:#1F2023;--bg3:#27282C;
+  --accent:#00D4FF;--accent-d:rgba(0,212,255,.13);--accent-g:rgba(0,212,255,.35);
+  --green:#22D97A;--green-d:rgba(34,217,122,.12);
+  --amber:#F5A623;--amber-d:rgba(245,166,35,.13);
+  --red:#FF5A6E;--red-d:rgba(255,90,110,.13);
+  --text1:#FFFFFF;--text2:#C4C9D4;--text3:#8A909E;
+  --border:rgba(255,255,255,.09);--border-a:rgba(0,212,255,.3);
+  --r:8px;--r2:14px;--r3:20px;
+  --font:'Barlow',sans-serif;
+  --cond:'Barlow Condensed',sans-serif;
+  --mono:'Roboto Mono',monospace;
+  --shadow:0 8px 32px rgba(0,0,0,.6);
+  --tr:all .2s cubic-bezier(.4,0,.2,1);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:var(--bg0);color:var(--text1);
+  font-family:var(--font);font-size:14px;-webkit-font-smoothing:antialiased;}
+
+/* ── LAYOUT BASE: mapa ocupa tot ── */
+#app{position:fixed;inset:0;}
+#leafletMap{position:absolute;inset:0;z-index:1;}
+
+/* ── PANEL FLOTANT ── */
+#panel{
+  position:absolute;top:12px;left:12px;z-index:900;
+  width:min(296px,calc(100vw - 24px));
+  background:rgba(13,17,27,.94);
+  border:1px solid rgba(0,212,255,.18);
+  border-radius:18px;
+  box-shadow:0 8px 40px rgba(0,0,0,.65),0 0 0 1px rgba(0,212,255,.07);
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  overflow:hidden;
+  transition:box-shadow .3s;
+  max-height:calc(100vh - 24px);
+  display:flex;flex-direction:column;
+}
+@media(max-width:600px){
+  #panel{
+    top:auto;bottom:12px;left:8px;right:8px;width:auto;
+    max-height:52vh;
+    border-radius:16px;
+  }
+  /* En mòbil, quan col·lapsat, va dalt a l'esquerra */
+  #panel.collapsed{
+    top:12px;bottom:auto;left:8px;right:auto;
+    width:auto;max-height:none;
+  }
+}
+
+/* Capçalera del panel */
+#panelHead{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 14px;
+  cursor:pointer;user-select:none;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;
+}
+#panelHead:hover{background:rgba(255,255,255,.03);}
+.panel-logo{
+  width:30px;height:30px;border-radius:8px;
+  background:linear-gradient(135deg,#00D4FF,#0095b3);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--cond);font-size:.6rem;font-weight:900;
+  color:#fff;letter-spacing:-.5px;flex-shrink:0;
+}
+.panel-brand{flex:1;}
+.panel-name{font-family:var(--cond);font-size:.95rem;font-weight:700;color:var(--accent);letter-spacing:1.5px;}
+.panel-sub{font-size:.58rem;color:var(--text3);letter-spacing:.3px;margin-top:1px;}
+#panelToggle{
+  width:28px;height:28px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);
+  color:var(--text2);font-size:.8rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:var(--tr);flex-shrink:0;
+}
+#panelToggle:hover{background:var(--accent-d);border-color:var(--accent);color:var(--accent);}
+
+/* Buscador ràpid — sempre visible */
+#panelSearch{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.05);flex-shrink:0;}
+
+/* Cos plegable */
+#panelBody{
+  overflow-y:auto;overflow-x:hidden;
+  padding:8px 10px 12px;
+  display:flex;flex-direction:column;gap:9px;
+  flex:1;min-height:0;
+}
+#panelBody::-webkit-scrollbar{width:3px;}
+#panelBody::-webkit-scrollbar-thumb{background:rgba(0,212,255,.25);border-radius:2px;}
+
+/* Col·lapsat */
+#panel.collapsed #panelBody,
+#panel.collapsed #panelSearch{display:none;}
+#panel.collapsed{border-radius:14px;max-height:none;}
+
+/* ── COMPONENTS INTERNS ── */
+.sec-label{
+  font-size:.57rem;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--text2);margin-bottom:5px;
+}
+
+/* Resultat PK */
+.result-card{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--r2);padding:11px 13px;transition:all .3s;
+}
+.result-card.ok{border-color:rgba(34,217,122,.3);background:rgba(34,217,122,.05);}
+.result-card.warn{border-color:rgba(245,166,35,.3);background:rgba(245,166,35,.04);}
+.result-card.err{border-color:rgba(255,90,110,.3);}
+.result-idle{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 0;}
+.result-idle-ico{font-size:1.8rem;opacity:.25;}
+.result-idle-txt{font-size:.7rem;color:var(--text3);text-align:center;line-height:1.5;}
+.result-road{
+  font-family:var(--cond);font-size:.68rem;font-weight:700;
+  letter-spacing:1.8px;color:var(--text2);text-transform:uppercase;margin-bottom:3px;
+}
+.result-pk{
+  font-family:var(--mono);font-size:2rem;font-weight:700;
+  color:var(--green);line-height:1;letter-spacing:-1px;
+}
+.result-pk .sep{color:var(--text2);font-size:1.4rem;}
+.result-dist{font-size:.64rem;color:var(--text2);margin-top:3px;font-weight:500;}
+.result-warn-title{font-size:.8rem;font-weight:700;color:var(--amber);}
+.result-warn-sub{font-size:.67rem;color:var(--text2);margin-top:3px;line-height:1.4;}
+.result-actions{display:flex;gap:5px;margin-top:8px;}
+.ra-btn{
+  flex:1;padding:7px 4px;border-radius:var(--r);
+  font-family:var(--cond);font-size:.64rem;font-weight:700;letter-spacing:.5px;
+  cursor:pointer;border:1px solid var(--border);background:var(--bg3);color:var(--text2);
+  transition:var(--tr);
+}
+.ra-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-d);}
+
+/* Buscador */
+.search-wrap{position:relative;}
+.search-inp{
+  width:100%;padding:8px 30px 8px 10px;border-radius:var(--r);
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);
+  color:var(--text1);font-family:var(--font);font-size:.77rem;
+  outline:none;transition:border-color .2s;
+}
+.search-inp:focus{border-color:var(--accent);background:rgba(0,212,255,.05);}
+.search-inp::placeholder{color:var(--text3);}
+.search-ico{position:absolute;right:10px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none;}
+.search-drop{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:9999;
+  background:rgba(13,17,27,.98);border:1px solid rgba(0,212,255,.2);
+  border-radius:var(--r);max-height:170px;overflow-y:auto;
+  display:none;box-shadow:0 10px 30px rgba(0,0,0,.6);
+}
+.search-drop.open{display:block;}
+.search-item{
+  padding:8px 10px;cursor:pointer;font-size:.75rem;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  display:flex;align-items:center;gap:8px;transition:background .12s;
+}
+.search-item:last-child{border-bottom:none;}
+.search-item:hover{background:var(--accent-d);}
+.search-item-road{font-family:var(--mono);font-weight:600;color:var(--accent);min-width:46px;}
+.search-item-pks{font-size:.62rem;color:var(--text3);}
+
+/* Formulari PK */
+.form-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:var(--r);padding:8px 10px;}
+.pk-row{display:flex;align-items:center;gap:3px;}
+.pk-inp{
+  padding:7px 4px;border-radius:var(--r);
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);
+  color:var(--text1);font-family:var(--mono);font-size:.76rem;
+  outline:none;transition:border-color .2s;text-align:center;
+  -webkit-appearance:none;min-width:0;
+}
+.pk-inp:focus{border-color:var(--accent);}
+.pk-inp::placeholder{color:var(--text3);font-size:.6rem;}
+.pk-inp.road{width:60px;flex:none;text-align:left;padding-left:6px;}
+.pk-inp.km{width:46px;flex:none;}
+.pk-inp.m{width:40px;flex:none;}
+.pk-sep{color:var(--text3);font-size:.85rem;flex-shrink:0;}
+.pk-btn{
+  flex:1;padding:7px 5px;border-radius:var(--r);
+  border:1px solid var(--accent);background:var(--accent-d);
+  color:var(--accent);font-family:var(--cond);font-size:.7rem;
+  font-weight:700;letter-spacing:.5px;cursor:pointer;transition:var(--tr);white-space:nowrap;
+}
+.pk-btn:hover{background:rgba(0,212,255,.22);}
+
+/* Coordenades acordió */
+.coord-acc{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:var(--r);overflow:hidden;}
+.coord-acc-head{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;cursor:pointer;user-select:none;transition:background .15s;}
+.coord-acc-head:hover{background:rgba(255,255,255,.04);}
+.coord-acc-lbl{font-size:.73rem;font-weight:600;color:var(--text2);}
+.coord-acc-arrow{font-size:.65rem;color:var(--text3);transition:transform .25s;}
+.coord-acc.open .coord-acc-arrow{transform:rotate(180deg);}
+.coord-acc-body{display:none;padding:0 8px 8px;flex-direction:column;gap:6px;}
+.coord-acc.open .coord-acc-body{display:flex;}
+.coord-inp{
+  width:100%;padding:8px;border-radius:var(--r);
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);
+  color:var(--text1);font-family:var(--mono);font-size:.78rem;
+  outline:none;transition:border-color .2s;-webkit-appearance:none;
+}
+.coord-inp:focus{border-color:var(--accent);}
+.coord-inp::placeholder{color:var(--text3);}
+.coord-hint{font-size:.58rem;color:var(--text3);line-height:1.5;}
+.coord-btn{
+  width:100%;padding:9px;border-radius:var(--r);
+  border:1px solid var(--accent);background:var(--accent-d);
+  color:var(--accent);font-family:var(--cond);font-size:.78rem;
+  font-weight:700;cursor:pointer;transition:var(--tr);
+}
+.coord-btn:hover{background:rgba(0,212,255,.22);}
+
+/* Amidament */
+.amid-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--r2);overflow:hidden;transition:border-color .3s;}
+.amid-card.active{border-color:rgba(245,166,35,.4);}
+.amid-head{padding:9px 11px;display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;}
+.amid-head:hover{background:rgba(255,255,255,.03);}
+.amid-toggle-btn{
+  padding:3px 9px;border-radius:20px;font-size:.62rem;font-weight:700;cursor:pointer;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);
+  color:var(--text2);font-family:var(--font);transition:var(--tr);margin-left:auto;
+}
+.amid-toggle-btn.on{background:rgba(245,166,35,.15);border-color:rgba(245,166,35,.4);color:var(--amber);}
+.amid-body{padding:0 10px 10px;display:flex;flex-direction:column;gap:8px;}
+.amid-tabs{display:flex;border:1px solid rgba(255,255,255,.1);border-radius:var(--r);overflow:hidden;}
+.amid-tab{flex:1;padding:6px;text-align:center;font-size:.63rem;font-weight:700;cursor:pointer;
+  color:var(--text2);background:rgba(255,255,255,.04);border:none;font-family:var(--cond);letter-spacing:.5px;transition:var(--tr);}
+.amid-tab.active{background:var(--accent);color:#000;}
+.amid-tab:not(:last-child){border-right:1px solid rgba(255,255,255,.1);}
+.amid-pts{display:flex;flex-direction:column;gap:4px;}
+.amid-pt{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:var(--r);
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);font-size:.65rem;transition:border-color .3s;}
+.amid-pt.set{border-color:rgba(245,166,35,.35);background:rgba(245,166,35,.05);}
+.amid-pt-dot{width:8px;height:8px;border-radius:50%;border:2px solid rgba(255,255,255,.2);flex-shrink:0;transition:all .3s;}
+.amid-pt.set .amid-pt-dot{background:var(--amber);border-color:var(--amber);}
+.amid-pt-lbl{font-weight:700;color:var(--text1);min-width:12px;font-family:var(--mono);}
+.amid-pt-val{flex:1;color:var(--text2);font-size:.61rem;font-family:var(--mono);}
+.amid-pt.set .amid-pt-val{color:var(--text1);}
+.amid-pt-pk{font-family:var(--mono);font-size:.58rem;font-weight:600;color:var(--amber);
+  background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.25);border-radius:20px;
+  padding:1px 6px;white-space:nowrap;flex-shrink:0;}
+.amid-pt-pk.loading{color:var(--text3);background:transparent;border-color:rgba(255,255,255,.08);}
+.amid-pt-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.8rem;padding:1px;line-height:1;}
+.amid-pt-del:hover{color:var(--red);}
+.amid-hint{font-size:.64rem;color:var(--text2);text-align:center;padding:3px;line-height:1.6;}
+/* mode free */
+.amid-free-pts{display:flex;flex-direction:column;gap:3px;max-height:100px;overflow-y:auto;}
+.amid-free-pt{display:flex;align-items:center;gap:5px;padding:4px 7px;border-radius:var(--r);
+  border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.04);font-size:.63rem;}
+.amid-free-pt-n{font-weight:700;color:var(--accent);min-width:16px;font-family:var(--mono);}
+.amid-free-pt-val{flex:1;color:var(--text1);font-family:var(--mono);}
+.amid-free-pt-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:.72rem;line-height:1;}
+.amid-free-pt-del:hover{color:var(--red);}
+.amid-add-btn{width:100%;padding:6px;border-radius:var(--r);font-family:var(--font);font-size:.63rem;
+  font-weight:600;cursor:pointer;border:1px dashed rgba(255,255,255,.15);background:transparent;
+  color:var(--text2);transition:var(--tr);}
+.amid-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-d);}
+/* mode manual */
+.amid-man-row{display:flex;align-items:center;gap:3px;margin-bottom:4px;}
+.amid-man-lbl{font-size:.65rem;font-weight:700;color:var(--amber);min-width:14px;font-family:var(--mono);}
+.amid-man-inp{flex:1;padding:6px 4px;border-radius:6px;border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.06);color:var(--text1);font-family:var(--mono);font-size:.73rem;
+  outline:none;text-align:center;-webkit-appearance:none;min-width:0;}
+.amid-man-inp:focus{border-color:rgba(245,166,35,.5);}
+.amid-man-inp::placeholder{color:var(--text3);font-size:.58rem;}
+.amid-man-sep{color:var(--text2);font-size:.8rem;flex-shrink:0;}
+/* resultat amidament */
+.amid-result{
+  background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.28);
+  border-radius:var(--r);padding:10px 12px;display:none;
+}
+.amid-result.show{display:block;}
+.amid-result-dist{font-family:var(--mono);font-size:1.65rem;font-weight:700;
+  color:var(--amber);letter-spacing:-1px;line-height:1.1;}
+.amid-result-sub{font-size:.66rem;color:var(--text2);margin-top:3px;font-weight:500;}
+.amid-result-detail{
+  font-size:.63rem;color:var(--text2);margin-top:8px;padding-top:8px;
+  border-top:1px solid rgba(255,255,255,.08);line-height:1.9;
+  white-space:pre-line;word-break:break-word;
+}
+.amid-calc-btn{width:100%;padding:8px;border-radius:var(--r);font-family:var(--cond);font-size:.7rem;
+  font-weight:700;cursor:pointer;letter-spacing:.5px;transition:var(--tr);
+  border:1px solid rgba(245,166,35,.4);background:rgba(245,166,35,.1);color:var(--amber);}
+.amid-calc-btn:hover{background:rgba(245,166,35,.2);}
+.amid-clear-btn{width:100%;padding:6px;border-radius:var(--r);font-family:var(--cond);font-size:.63rem;
+  font-weight:700;cursor:pointer;transition:var(--tr);
+  border:1px solid rgba(255,90,110,.2);background:rgba(255,90,110,.07);color:var(--red);}
+.amid-clear-btn:hover{background:rgba(255,90,110,.15);}
+
+/* Barra GPS GPS */
+.gps-strip{display:flex;align-items:center;gap:7px;padding:6px 10px 8px;}
+.gps-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);flex-shrink:0;transition:background .3s;}
+.gps-strip.searching .gps-dot{background:var(--amber);animation:gpsBlink 1s infinite;}
+.gps-strip.locked .gps-dot{background:var(--green);}
+.gps-strip.err .gps-dot{background:var(--red);}
+@keyframes gpsBlink{0%,100%{opacity:1}50%{opacity:.3}}
+.gps-text{flex:1;font-size:.68rem;color:var(--text2);font-weight:500;}
+.gps-strip.searching .gps-text{color:var(--amber);}
+.gps-strip.locked .gps-text{color:var(--green);}
+.gps-strip.err .gps-text{color:var(--red);}
+.gps-btn{padding:4px 10px;border-radius:20px;font-size:.62rem;font-weight:700;cursor:pointer;
+  border:1px solid rgba(0,212,255,.3);background:var(--accent-d);color:var(--accent);
+  font-family:var(--cond);letter-spacing:.5px;transition:var(--tr);}
+.gps-btn:hover{background:rgba(0,212,255,.22);}
+
+/* Botó centrar mapa */
+#btnGPS{
+  position:absolute;bottom:20px;right:16px;z-index:800;
+  width:48px;height:48px;border-radius:50%;
+  border:2px solid rgba(0,212,255,.35);background:rgba(13,17,27,.93);
+  color:var(--accent);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(0,0,0,.55);transition:var(--tr);backdrop-filter:blur(10px);
+}
+#btnGPS:hover{background:var(--accent);color:#000;transform:scale(1.08);}
+
+/* Firma */
+.firma{font-size:.58rem;color:var(--text3);text-align:center;padding:4px 0 2px;letter-spacing:.3px;}
+.firma em{color:var(--accent);}
+
+/* Loading overlay */
+#mapLoading{position:absolute;inset:0;z-index:500;background:rgba(10,13,20,.7);backdrop-filter:blur(4px);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  opacity:0;pointer-events:none;transition:opacity .25s;z-index:800;}
+#mapLoading.visible{opacity:1;pointer-events:all;}
+.loading-ring{width:32px;height:32px;border:3px solid rgba(0,212,255,.2);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:.68rem;color:var(--text1);letter-spacing:.5px;text-transform:uppercase;font-family:var(--cond);}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(13,17,27,.96);border:1px solid rgba(0,212,255,.2);
+  color:var(--text1);font-size:.78rem;font-weight:500;
+  padding:9px 18px;border-radius:20px;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);pointer-events:none;
+  opacity:0;transition:opacity .25s,transform .25s;z-index:9999;white-space:nowrap;
+  max-width:calc(100vw - 32px);text-align:center;
+}
+#toast.ok{border-color:rgba(34,217,122,.35);color:var(--green);}
+#toast.warn{border-color:rgba(245,166,35,.35);color:var(--amber);}
+#toast.err{border-color:rgba(255,90,110,.35);color:var(--red);}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* Leaflet tweaks */
+.leaflet-container{background:#060a14;}
+.leaflet-tile{filter:saturate(.85) brightness(.92);}
+.leaflet-popup-content-wrapper{background:rgba(13,17,27,.97);border:1px solid rgba(0,212,255,.25);color:var(--text1);border-radius:12px;}
+.leaflet-popup-tip{background:rgba(13,17,27,.97);}
+.leaflet-popup-content{font-family:var(--cond);font-weight:700;font-size:.88rem;color:var(--accent);letter-spacing:1px;}
+.leaflet-control-zoom a{background:rgba(13,17,27,.9)!important;color:var(--text1)!important;border-color:rgba(0,212,255,.2)!important;}
+.leaflet-control-zoom a:hover{background:var(--accent-d)!important;color:var(--accent)!important;}
+.leaflet-control-attribution{background:rgba(6,10,20,.7)!important;color:var(--text3)!important;font-size:.5rem!important;}
+/* Zoom a la dreta per no solapar el panel esquerre */
+.leaflet-control-zoom{margin-right:16px!important;margin-top:16px!important;margin-left:auto!important;}
+.leaflet-control-container .leaflet-top.leaflet-left{display:none;}
+.leaflet-control-container .leaflet-top.leaflet-right{display:block;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MAPA DE FONS -->
+  <div id="leafletMap"></div>
+  <div id="mapLoading">
+    <div class="loading-ring"></div>
+    <div class="loading-txt">Calculant PK...</div>
+  </div>
+
+  <!-- BOTÓ GPS CENTRAR -->
+  <button id="btnGPS" onclick="localitzarGPS()" title="Centrar a la meva posició">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+      <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
+    </svg>
+  </button>
+
+  <!-- PANEL FLOTANT D'EINES -->
+  <div id="panel">
+
+    <!-- Capçalera (sempre visible) -->
+    <div id="panelHead" onclick="togglePanel()">
+      <div class="panel-logo">PK</div>
+      <div class="panel-brand">
+        <div class="panel-name">PK·MAPA</div>
+        <div class="panel-sub">Localitzador · Amidament · Cerca</div>
+      </div>
+      <button id="panelToggle" title="Plegar/Desplegar" onclick="event.stopPropagation();togglePanel()">▲</button>
+    </div>
+
+    <!-- Buscador ràpid (sempre visible) -->
+    <div id="panelSearch">
+      <div class="search-wrap">
+        <input class="search-inp" id="searchInp" type="text"
+          placeholder="🔍 Cerca carretera: C-26, N-II, AP-7..."
+          autocomplete="off" oninput="onSearchInput(this.value)">
+        <span class="search-ico">⌕</span>
+        <div class="search-drop" id="searchDrop"></div>
+      </div>
+    </div>
+
+    <!-- Cos plegable -->
+    <div id="panelBody">
+
+      <!-- GPS Strip -->
+      <div class="gps-strip" id="gpsStrip">
+        <div class="gps-dot"></div>
+        <span class="gps-text" id="gpsText">GPS no inicialitzat</span>
+        <button class="gps-btn" onclick="localitzarGPS()">📡 GPS</button>
+      </div>
+
+      <!-- RESULTAT PK -->
+      <div>
+        <div class="sec-label">📍 Punt Kilométric</div>
+        <div class="result-card" id="resultCard">
+          <div class="result-idle" id="resultIdle">
+            <div class="result-idle-ico">🛣️</div>
+            <div class="result-idle-txt">Mou el pin o usa el GPS<br>per detectar el PK</div>
+          </div>
+          <div id="resultData" style="display:none;">
+            <div class="result-road" id="rRoad">—</div>
+            <div class="result-pk" id="rPK">—</div>
+            <div class="result-dist" id="rDist"></div>
+          </div>
+          <div id="resultWarn" style="display:none;">
+            <div class="result-warn-title">⚠ Fora de Carretera</div>
+            <div class="result-warn-sub" id="warnSub"></div>
+          </div>
+        </div>
+        <div class="result-actions" id="resultActions" style="display:none;">
+          <button class="ra-btn" onclick="obrirMaps()">🗺️ Maps</button>
+          <button class="ra-btn" onclick="compartirWA()">💬 WA</button>
+          <button class="ra-btn" onclick="copiarResultat()">📋</button>
+        </div>
+      </div>
+
+      <!-- ANAR A PK -->
+      <div>
+        <div class="sec-label">🎯 Anar a PK Exacte</div>
+        <div class="form-card">
+          <div class="pk-row">
+            <input class="pk-inp road" id="lkCarr" type="text" placeholder="Carr."
+              maxlength="10" oninput="this.value=this.value.toUpperCase()">
+            <input class="pk-inp km" id="lkKm" type="number" placeholder="KM" min="0" max="9999">
+            <span class="pk-sep">+</span>
+            <input class="pk-inp m" id="lkM" type="number" placeholder="m" min="0" max="999">
+            <button class="pk-btn" onclick="anarAPK()">IR→</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- COORDENADES MANUALS -->
+      <div>
+        <div class="sec-label">Introduir Coordenades</div>
+        <div class="coord-acc" id="coordAcc">
+          <div class="coord-acc-head" onclick="toggleCoordAcc()">
+            <span class="coord-acc-lbl">📍 Enganxa des de Google Maps</span>
+            <span class="coord-acc-arrow">▼</span>
+          </div>
+          <div class="coord-acc-body" id="coordAccBody">
+            <input class="coord-inp" id="coordLat" type="number" placeholder="Latitud  (41.6xxx)" step="any">
+            <input class="coord-inp" id="coordLon" type="number" placeholder="Longitud  (1.2xxx)" step="any">
+            <div class="coord-hint">Enganxa format "41.xxx, 1.xxx" directament al camp de latitud</div>
+            <button class="coord-btn" onclick="anarACoords()">→ ANAR A AQUESTES COORDENADES</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- AMIDAMENT -->
+      <div>
+        <div class="sec-label">Amidament de Distància</div>
+        <div class="amid-card" id="amidCard">
+          <div class="amid-head" onclick="toggleAmidament()">
+            <span style="font-size:.95rem;">📐</span>
+            <span style="font-size:.74rem;font-weight:600;color:var(--text2);">Mesurar distància</span>
+            <button class="amid-toggle-btn" id="amidToggleBtn">Activar</button>
+          </div>
+          <div class="amid-body" id="amidBody" style="display:none;">
+            <div class="amid-tabs">
+              <button class="amid-tab active" id="tabPins" onclick="canviarModeAmid('pins')">2 Punts</button>
+              <button class="amid-tab" id="tabFree" onclick="canviarModeAmid('free')">Polilínia</button>
+              <button class="amid-tab" id="tabManual" onclick="canviarModeAmid('manual')">Per PK</button>
+            </div>
+            <!-- 2 punts -->
+            <div id="modePins">
+              <div class="amid-pts">
+                <div class="amid-pt" id="amidPt1">
+                  <div class="amid-pt-dot"></div>
+                  <span class="amid-pt-lbl">A</span>
+                  <span class="amid-pt-val" id="amidVal1">Clica al mapa</span>
+                  <span class="amid-pt-pk loading" id="amidPk1" style="display:none;">—</span>
+                  <button class="amid-pt-del" id="amidDel1" onclick="esborrarPuntAmid(1)" style="display:none;">✕</button>
+                </div>
+                <div class="amid-pt" id="amidPt2">
+                  <div class="amid-pt-dot"></div>
+                  <span class="amid-pt-lbl">B</span>
+                  <span class="amid-pt-val" id="amidVal2">Clica al mapa</span>
+                  <span class="amid-pt-pk loading" id="amidPk2" style="display:none;">—</span>
+                  <button class="amid-pt-del" id="amidDel2" onclick="esborrarPuntAmid(2)" style="display:none;">✕</button>
+                </div>
+              </div>
+              <div class="amid-hint" id="amidHintPins">Clica dos punts. Si és la mateixa carretera, calcula la distància real per la via.</div>
+            </div>
+            <!-- Polilínia -->
+            <div id="modeFree" style="display:none;">
+              <div class="amid-free-pts" id="freePtsList"></div>
+              <div class="amid-hint" id="freeHint">Clica al mapa per afegir punts.</div>
+              <button class="amid-add-btn" onclick="toast('Clica al mapa per afegir el punt','ok',2500)">+ Afegir punt</button>
+            </div>
+            <!-- Manual PK -->
+            <div id="modeManual" style="display:none;">
+              <div class="amid-man-row">
+                <span class="amid-man-lbl">A</span>
+                <input class="amid-man-inp" id="mCarrA" type="text" placeholder="C-26" maxlength="10" oninput="this.value=this.value.toUpperCase()" style="max-width:56px;">
+                <input class="amid-man-inp" id="mKmA" type="number" placeholder="KM" style="max-width:44px;">
+                <span class="amid-man-sep">+</span>
+                <input class="amid-man-inp" id="mMA" type="number" placeholder="m" min="0" max="999" style="max-width:38px;">
+              </div>
+              <div class="amid-man-row">
+                <span class="amid-man-lbl">B</span>
+                <input class="amid-man-inp" id="mCarrB" type="text" placeholder="C-26" maxlength="10" oninput="this.value=this.value.toUpperCase()" style="max-width:56px;">
+                <input class="amid-man-inp" id="mKmB" type="number" placeholder="KM" style="max-width:44px;">
+                <span class="amid-man-sep">+</span>
+                <input class="amid-man-inp" id="mMB" type="number" placeholder="m" min="0" max="999" style="max-width:38px;">
+              </div>
+              <button class="amid-calc-btn" onclick="amidamentManual()">📐 CALCULAR AL MAPA</button>
+            </div>
+            <!-- Resultat -->
+            <div class="amid-result" id="amidResult">
+              <div class="amid-result-dist" id="amidDistText">—</div>
+              <div class="amid-result-sub" id="amidDistSub"></div>
+              <div class="amid-result-detail" id="amidDetail"></div>
+            </div>
+            <button class="amid-clear-btn" onclick="esborrarAmidament()">🗑️ Esborrar amidament</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="firma">creat per <em>N.Arroyo</em> · PK-MAPA v3.0 · 2025</div>
+    </div><!-- /panelBody -->
+  </div><!-- /panel -->
+
+</div><!-- /app -->
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+'use strict';
+/* ══════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════ */
+const ARCGIS = 'https://services1.arcgis.com/nCKYwcSONQTkPA4K/arcgis/rest/services/Puntos_kilometricos_Espana/FeatureServer/0/query';
+const LLINDAR = 300; // metres màxim a la carretera
+
+/* ══════════════════════════════════════════════
+   ESTAT GLOBAL
+══════════════════════════════════════════════ */
+let map, dragPin, userMarker;
+let pkCache = [];
+let carreteres = []; // [{nom}]
+let ultimRes = null;
+let searchTm = null;
+
+// Amidament
+let amidActiu = false;
+let modeAmid  = 'pins';
+let amidPunts = [null, null];
+let amidMk    = [null, null];
+let amidLinia = null;
+let amidEt    = null;
+let freePunts = [];
+let freeMk    = [];
+let freeLinia = null;
+let freeEt    = null;
+let manMk     = [null, null];
+let manLinia  = null;
+let manEt     = null;
+
+/* ══════════════════════════════════════════════
+   INIT MAPA
+══════════════════════════════════════════════ */
+window.addEventListener('load', () => {
+  map = L.map('leafletMap', {
+    center:[41.65,1.62], zoom:9,
+    zoomControl:true,
+    attributionControl:true,
+  });
+
+  // Capes: satèl·lit ESRI + etiquetes
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {attribution:'ESRI World Imagery',maxZoom:20}).addTo(map);
+  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:20,opacity:.82}).addTo(map);
+
+  // ── Pin arrossegable ──────────────────────────────────────────────
+  const pinIcon = L.divIcon({
+    html:`<svg xmlns="http://www.w3.org/2000/svg" width="34" height="46" viewBox="0 0 34 46">
+      <filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity=".45"/></filter>
+      <g filter="url(#ds)">
+        <path d="M17 0C10.4 0 5 5.4 5 12c0 10 12 30 12 30s12-20 12-30C29 5.4 23.6 0 17 0z" fill="#00D4FF"/>
+        <circle cx="17" cy="12" r="6.5" fill="#fff" opacity=".9"/>
+        <circle cx="17" cy="12" r="3.5" fill="#00D4FF"/>
+      </g></svg>`,
+    className:'',iconSize:[34,46],iconAnchor:[17,46],popupAnchor:[0,-48],
+  });
+
+  dragPin = L.marker([41.65,1.62],{icon:pinIcon,draggable:true,zIndexOffset:1000}).addTo(map);
+
+  dragPin.on('drag', _debounce(() => {
+    const ll = dragPin.getLatLng();
+    calcPK(ll.lat, ll.lng, false);
+  }, 320));
+
+  dragPin.on('dragend', async () => {
+    const ll = dragPin.getLatLng();
+    await calcPK(ll.lat, ll.lng, true);
+  });
+
+  map.on('click', async e => {
+    const {lat, lng:lon} = e.latlng;
+    if (amidActiu) { await registrarClicAmid(lat, lon); return; }
+    dragPin.setLatLng(e.latlng);
+    await calcPK(lat, lon, true);
+  });
+
+  // Inicialitza el panel (col·lapsat en mòbil, obert en PC)
+  _initPanel();
+  localitzarGPS();
+});
+
+/* ══════════════════════════════════════════════
+   GPS
+══════════════════════════════════════════════ */
+function localitzarGPS() {
+  if (!navigator.geolocation) { setGPSUI('err','GPS no disponible en aquest navegador'); return; }
+  setGPSUI('searching','Cercant posició GPS...');
+  navigator.geolocation.getCurrentPosition(
+    async pos => {
+      const {latitude:lat, longitude:lon, accuracy:acc} = pos.coords;
+      setGPSUI('locked',`GPS actiu · ±${Math.round(acc)} m`);
+      const uIcon = L.divIcon({
+        html:`<svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="9" fill="#22D97A" opacity=".25"/><circle cx="11" cy="11" r="5.5" fill="#22D97A"/><circle cx="11" cy="11" r="2.5" fill="#fff"/></svg>`,
+        className:'',iconSize:[22,22],iconAnchor:[11,11],
+      });
+      if (userMarker) userMarker.setLatLng([lat,lon]);
+      else userMarker = L.marker([lat,lon],{icon:uIcon}).addTo(map);
+      dragPin.setLatLng([lat,lon]);
+      map.flyTo([lat,lon],15,{animate:true,duration:1});
+      await calcPK(lat,lon,true);
+    },
+    err => {
+      const m={1:'Permís GPS denegat',2:'GPS no disponible',3:'Temps GPS exhaurit'};
+      setGPSUI('err', m[err.code]||'Error GPS');
+      toast('GPS: '+(m[err.code]||'Error')+'. Usa el pin manualment.','warn');
+    },
+    {enableHighAccuracy:true, timeout:20000, maximumAge:3000}
+  );
+}
+function setGPSUI(state,text){
+  document.getElementById('gpsStrip').className='gps-strip '+state;
+  document.getElementById('gpsText').textContent=text;
+}
+
+/* ══════════════════════════════════════════════
+   ARCGIS — motor de consulta sense bug decimals
+══════════════════════════════════════════════ */
+async function consultarZona(lat,lon,buf){
+  const params=new URLSearchParams({
+    where:'1=1',outFields:'nombre,numero',returnGeometry:true,outSR:'4326',f:'json',
+    geometry:JSON.stringify({xmin:lon-buf,ymin:lat-buf,xmax:lon+buf,ymax:lat+buf,spatialReference:{wkid:4326}}),
+    geometryType:'esriGeometryEnvelope',spatialRel:'esriSpatialRelIntersects',resultRecordCount:500,
+  });
+  const r=await fetch(`${ARCGIS}?${params}`,{signal:AbortSignal.timeout(15000)});
+  if(!r.ok)throw new Error(`HTTP ${r.status}`);
+  const j=await r.json();
+  if(j.error)throw new Error(j.error.message);
+  const punts=(j.features||[]).map(f=>({
+    carretera:(f.attributes.nombre||'').trim().toUpperCase(),
+    pk:parseFloat(f.attributes.numero)||0,
+    lat:f.geometry.y,lon:f.geometry.x,
+  })).filter(p=>p.carretera&&!isNaN(p.pk));
+  punts.forEach(p=>{if(!pkCache.find(c=>c.carretera===p.carretera&&c.pk===p.pk))pkCache.push(p);});
+  _indexarCarreteres(punts);
+  return punts;
+}
+
+// Descarrega tota la carretera sense filtre numèric — evita el bug de decimals ArcGIS
+async function consultarCarretera(carr){
+  const params=new URLSearchParams({
+    where:`UPPER(nombre)='${carr}'`,outFields:'nombre,numero',returnGeometry:true,
+    outSR:'4326',f:'json',resultRecordCount:2000,orderByFields:'numero ASC',
+  });
+  const r=await fetch(`${ARCGIS}?${params}`,{signal:AbortSignal.timeout(20000)});
+  const j=await r.json();
+  if(j.error)throw new Error(j.error.message);
+  const punts=(j.features||[]).map(f=>({
+    carretera:(f.attributes.nombre||'').trim().toUpperCase(),
+    pk:parseFloat(f.attributes.numero)||0,
+    lat:f.geometry.y,lon:f.geometry.x,
+  })).filter(p=>!isNaN(p.pk));
+  punts.forEach(p=>{if(!pkCache.find(c=>c.carretera===p.carretera&&c.pk===p.pk))pkCache.push(p);});
+  _indexarCarreteres(punts);
+  return punts.sort((a,b)=>a.pk-b.pk);
+}
+
+function filtrarCache(lat,lon,buf){
+  return pkCache.filter(p=>p.lat>=lat-buf&&p.lat<=lat+buf&&p.lon>=lon-buf&&p.lon<=lon+buf);
+}
+function _indexarCarreteres(punts){
+  punts.forEach(p=>{if(p.carretera&&!carreteres.find(c=>c.nom===p.carretera))carreteres.push({nom:p.carretera});});
+}
+
+/* ══════════════════════════════════════════════
+   MOTOR PK — Haversine + Interpolació lineal
+══════════════════════════════════════════════ */
+function haversineM(lat1,lon1,lat2,lon2){
+  const R=6371000,r=d=>d*Math.PI/180;
+  const dLat=r(lat2-lat1),dLon=r(lon2-lon1);
+  const a=Math.sin(dLat/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.asin(Math.sqrt(a));
+}
+function interpolarPK(uLat,uLon,A,B){
+  const dA=haversineM(uLat,uLon,A.lat,A.lon);
+  const dB=haversineM(uLat,uLon,B.lat,B.lon);
+  const dAB=haversineM(A.lat,A.lon,B.lat,B.lon);
+  if(dAB<1)return null;
+  const t=Math.max(0,Math.min(1,(dAB**2+dA**2-dB**2)/(2*dAB**2)));
+  const pkDec=A.pk+t*(B.pk-A.pk);
+  const dist=Math.sqrt(Math.max(0,dA**2-(t*dAB)**2));
+  return{km:Math.floor(pkDec),m:Math.round((pkDec%1)*1000),carretera:A.carretera,dist,pkDec};
+}
+function calcularMillorPK(uLat,uLon,punts){
+  if(!punts?.length)return null;
+  const grups={};
+  punts.forEach(p=>{(grups[p.carretera]=grups[p.carretera]||[]).push(p);});
+  let millor=null;
+  for(const pks of Object.values(grups)){
+    pks.sort((a,b)=>a.pk-b.pk);
+    for(let i=0;i<pks.length-1;i++){
+      const r=interpolarPK(uLat,uLon,pks[i],pks[i+1]);
+      if(r&&(!millor||r.dist<millor.dist))millor=r;
+    }
+    if(pks.length===1){
+      const d=haversineM(uLat,uLon,pks[0].lat,pks[0].lon);
+      if(!millor||d<millor.dist)
+        millor={km:Math.floor(pks[0].pk),m:Math.round((pks[0].pk%1)*1000),carretera:pks[0].carretera,dist:d,pkDec:pks[0].pk};
+    }
+  }
+  return millor;
+}
+function interpolarPosPK(punts,pkT){
+  for(let i=0;i<punts.length-1;i++){
+    if(punts[i].pk<=pkT&&punts[i+1].pk>=pkT){
+      const t=(pkT-punts[i].pk)/(punts[i+1].pk-punts[i].pk);
+      return{lat:punts[i].lat+t*(punts[i+1].lat-punts[i].lat),lon:punts[i].lon+t*(punts[i+1].lon-punts[i].lon)};
+    }
+  }
+  const mes=punts.reduce((a,b)=>Math.abs(b.pk-pkT)<Math.abs(a.pk-pkT)?b:a);
+  return{lat:mes.lat,lon:mes.lon};
+}
+async function buscarPosPK(carr,km,m){
+  const pkT=km+m/1000;
+  let punts=pkCache.filter(p=>p.carretera===carr);
+  if(punts.length<2)punts=await consultarCarretera(carr);
+  if(!punts.length)return null;
+  return interpolarPosPK(punts,pkT);
+}
+
+/* ══════════════════════════════════════════════
+   CÀLCUL PK PER POSICIÓ (pin / GPS)
+══════════════════════════════════════════════ */
+async function calcPK(lat,lon,final){
+  if(final)loading(true);
+  try{
+    let p=filtrarCache(lat,lon,0.05);
+    if(p.length<2)p=await consultarZona(lat,lon,0.07);
+    if(p.length<2)p=await consultarZona(lat,lon,0.15);
+    const res=calcularMillorPK(lat,lon,p);
+    if(!res||res.dist>LLINDAR)mostrarFora(res);
+    else mostrarOK(lat,lon,res);
+  }catch(e){mostrarFora(null);toast('Error: '+e.message,'err');}
+  finally{if(final)loading(false);}
+}
+
+/* ══════════════════════════════════════════════
+   UI RESULTAT
+══════════════════════════════════════════════ */
+function mostrarOK(lat,lon,res){
+  ultimRes={...res,lat,lon};
+  const mStr=String(res.m).padStart(3,'0');
+  document.getElementById('resultIdle').style.display='none';
+  document.getElementById('resultWarn').style.display='none';
+  document.getElementById('resultData').style.display='block';
+  document.getElementById('resultActions').style.display='flex';
+  document.getElementById('resultCard').className='result-card ok';
+  document.getElementById('rRoad').textContent=res.carretera;
+  document.getElementById('rPK').innerHTML=`${res.km}<span class="sep">+</span>${mStr}`;
+  document.getElementById('rDist').textContent=`A ${Math.round(res.dist)} m de la calçada`;
+  dragPin.bindPopup(`<b>${res.carretera}</b><br>PK ${res.km}+${mStr}<br><small style="color:#8A909E">${lat.toFixed(5)}, ${lon.toFixed(5)}</small>`).openPopup();
+}
+function mostrarFora(res){
+  ultimRes=null;
+  document.getElementById('resultIdle').style.display='none';
+  document.getElementById('resultData').style.display='none';
+  document.getElementById('resultWarn').style.display='block';
+  document.getElementById('resultActions').style.display='none';
+  document.getElementById('resultCard').className='result-card warn';
+  const d=res?` Carretera més propera: ${res.carretera} a ${Math.round(res.dist)} m.`:'';
+  document.getElementById('warnSub').textContent='Punt fora de la xarxa de carreteres.'+d;
+  dragPin.closePopup();
+}
+function loading(v){document.getElementById('mapLoading').classList.toggle('visible',v);}
+
+/* ══════════════════════════════════════════════
+   COMPARTIR / ACCIONS
+══════════════════════════════════════════════ */
+function obrirMaps(){
+  if(ultimRes)window.open(`https://maps.google.com/?q=${ultimRes.lat},${ultimRes.lon}`,'_blank');
+}
+async function compartirWA(){
+  if(!ultimRes)return;
+  const{carretera,km,m,lat,lon}=ultimRes;
+  const mStr=String(m).padStart(3,'0');
+  const text=`🛣️ Carretera: ${carretera}\n📍 PK: ${km}+${mStr}\n🌐 Ubicació: http://maps.google.com/maps?q=${lat},${lon}`;
+  if(navigator.canShare?.({text})){try{await navigator.share({text});return;}catch(e){if(e.name==='AbortError')return;}}
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,'_blank');
+}
+async function copiarResultat(){
+  if(!ultimRes)return;
+  const{carretera,km,m,lat,lon}=ultimRes;
+  const text=`${carretera} PK ${km}+${String(m).padStart(3,'0')} | ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+  try{await navigator.clipboard.writeText(text);toast('📋 Copiat al porta-retalls','ok');}
+  catch{toast('No s\'ha pogut copiar','err');}
+}
+
+/* ══════════════════════════════════════════════
+   BUSCADOR CARRETERES
+══════════════════════════════════════════════ */
+function onSearchInput(val){
+  clearTimeout(searchTm);
+  const drop=document.getElementById('searchDrop');
+  if(!val){drop.classList.remove('open');return;}
+  searchTm=setTimeout(async()=>{
+    const q=val.toUpperCase().trim();
+    let res=carreteres.filter(c=>c.nom.includes(q)).slice(0,8);
+    if(res.length<3){
+      try{
+        const params=new URLSearchParams({where:`UPPER(nombre) LIKE '${q}%'`,outFields:'nombre,numero',returnGeometry:true,outSR:'4326',f:'json',resultRecordCount:200});
+        const r=await fetch(`${ARCGIS}?${params}`,{signal:AbortSignal.timeout(8000)});
+        const j=await r.json();
+        const p=(j.features||[]).map(f=>({carretera:(f.attributes.nombre||'').trim().toUpperCase(),pk:parseFloat(f.attributes.numero)||0,lat:f.geometry.y,lon:f.geometry.x}));
+        _indexarCarreteres(p);
+        p.forEach(pp=>{if(!pkCache.find(c=>c.carretera===pp.carretera&&c.pk===pp.pk))pkCache.push(pp);});
+        res=carreteres.filter(c=>c.nom.includes(q)).slice(0,8);
+      }catch(_){}
+    }
+    if(!res.length){drop.classList.remove('open');return;}
+    drop.innerHTML=res.map(c=>{
+      const pks=pkCache.filter(p=>p.carretera===c.nom).map(p=>p.pk);
+      const rang=pks.length?`PK ${Math.min(...pks).toFixed(0)}–${Math.max(...pks).toFixed(0)}`:'';
+      return `<div class="search-item" onclick="seleccionarCarretera('${c.nom}')"><span class="search-item-road">${c.nom}</span><span class="search-item-pks">${rang}</span></div>`;
+    }).join('');
+    drop.classList.add('open');
+  },300);
+}
+function seleccionarCarretera(nom){
+  document.getElementById('searchInp').value=nom;
+  document.getElementById('searchDrop').classList.remove('open');
+  document.getElementById('lkCarr').value=nom;
+  const p=pkCache.find(pp=>pp.carretera===nom);
+  if(p){map.flyTo([p.lat,p.lon],13,{animate:true,duration:1});dragPin.setLatLng([p.lat,p.lon]);calcPK(p.lat,p.lon,true);}
+  toast(`Carretera ${nom} seleccionada`,'ok');
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.search-wrap'))document.getElementById('searchDrop').classList.remove('open');});
+
+/* ══════════════════════════════════════════════
+   ANAR A PK — sempre descarrega tota la carretera
+══════════════════════════════════════════════ */
+async function anarAPK(){
+  const carr=document.getElementById('lkCarr').value.trim().toUpperCase();
+  const km=parseInt(document.getElementById('lkKm').value)||0;
+  const m=Math.min(999,parseInt(document.getElementById('lkM').value)||0);
+  if(!carr){toast('Introdueix la carretera','warn');return;}
+  loading(true);
+  toast(`Buscant ${carr} PK ${km}+${String(m).padStart(3,'0')}...`,'ok');
+  try{
+    let punts=pkCache.filter(p=>p.carretera===carr);
+    if(punts.length<2)punts=await consultarCarretera(carr);
+    if(!punts.length){toast(`No s'ha trobat ${carr}`,'err');return;}
+    const pos=interpolarPosPK(punts,km+m/1000);
+    map.flyTo([pos.lat,pos.lon],15,{animate:true,duration:1.2});
+    dragPin.setLatLng([pos.lat,pos.lon]);
+    await calcPK(pos.lat,pos.lon,false);
+    toast(`${carr} PK ${km}+${String(m).padStart(3,'0')} localitzat`,'ok');
+  }catch(e){toast('Error: '+e.message,'err');}
+  finally{loading(false);}
+}
+
+/* ══════════════════════════════════════════════
+   COORDENADES MANUALS
+══════════════════════════════════════════════ */
+async function anarACoords(){
+  let lat=parseFloat(document.getElementById('coordLat').value);
+  let lon=parseFloat(document.getElementById('coordLon').value);
+  const raw=document.getElementById('coordLat').value.trim();
+  if(raw.includes(',')){
+    const parts=raw.split(',').map(s=>parseFloat(s.trim()));
+    if(parts.length>=2&&!isNaN(parts[0])&&!isNaN(parts[1])){lat=parts[0];lon=parts[1];document.getElementById('coordLat').value=lat;document.getElementById('coordLon').value=lon;}
+  }
+  if(isNaN(lat)||isNaN(lon)){toast('Coordenades no vàlides','err');return;}
+  if(lat<39||lat>44||lon<-2||lon>4){toast('Coordenades fora de Catalunya','warn');return;}
+  dragPin.setLatLng([lat,lon]);
+  map.flyTo([lat,lon],16,{animate:true,duration:1});
+  await calcPK(lat,lon,true);
+}
+// Paste "lat, lon" al camp latitud
+document.addEventListener('DOMContentLoaded',()=>{
+  const el=document.getElementById('coordLat');
+  if(el)el.addEventListener('paste',e=>{
+    setTimeout(()=>{
+      const v=e.target.value.trim();
+      if(v.includes(',')){const p=v.split(',').map(s=>parseFloat(s.trim()));if(p.length>=2&&!isNaN(p[0])&&!isNaN(p[1])){document.getElementById('coordLat').value=p[0];document.getElementById('coordLon').value=p[1];}}
+    },10);
+  });
+});
+
+/* ══════════════════════════════════════════════
+   AMIDAMENT
+══════════════════════════════════════════════ */
+function toggleAmidament(){
+  amidActiu=!amidActiu;
+  const btn=document.getElementById('amidToggleBtn');
+  const body=document.getElementById('amidBody');
+  const card=document.getElementById('amidCard');
+  btn.textContent=amidActiu?'Desactivar':'Activar';
+  btn.className='amid-toggle-btn'+(amidActiu?' on':'');
+  card.className='amid-card'+(amidActiu?' active':'');
+  body.style.display=amidActiu?'flex':'none';
+  map.getContainer().style.cursor=amidActiu?'crosshair':'';
+  if(!amidActiu)esborrarAmidament(true);
+  else toast('Clica al mapa per fixar el punt A','ok',3500);
+}
+
+function canviarModeAmid(mode){
+  modeAmid=mode;
+  ['pins','free','manual'].forEach(m=>{
+    const k=m.charAt(0).toUpperCase()+m.slice(1);
+    document.getElementById('tab'+k).classList.toggle('active',m===mode);
+    document.getElementById('mode'+k).style.display=m===mode?'block':'none';
+  });
+  esborrarAmidament(true);
+  if(amidActiu)toast({pins:'Clica el punt A al mapa',free:'Clica al mapa per afegir punts',manual:'Introdueix els PKs'}[mode]||'','ok',3000);
+}
+
+async function registrarClicAmid(lat,lon){
+  if(modeAmid==='pins')await registrarPins(lat,lon);
+  else if(modeAmid==='free')registrarFree(lat,lon);
+}
+
+/* ── MODE 2 PUNTS ── */
+function _iconaAmid(txt,color='#00D4FF'){
+  return L.divIcon({
+    html:`<div style="width:20px;height:20px;border-radius:50%;border:3px solid ${color};background:rgba(13,17,27,.9);box-shadow:0 0 10px ${color}88;display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:800;color:${color};font-family:'Roboto Mono',monospace;">${txt}</div>`,
+    className:'',iconSize:[20,20],iconAnchor:[10,10],
+  });
+}
+
+async function registrarPins(lat,lon){
+  const idx=(!amidPunts[0])?0:(!amidPunts[1])?1:-1;
+  if(idx===-1){esborrarAmidamentPins(true);await registrarPins(lat,lon);return;}
+  amidPunts[idx]={lat,lon,pk:null};
+  if(amidMk[idx]){amidMk[idx].setLatLng([lat,lon]);}
+  else{
+    const mk=L.marker([lat,lon],{icon:_iconaAmid(idx===0?'A':'B'),draggable:true,zIndexOffset:2000}).addTo(map);
+    mk.on('drag',()=>{amidPunts[idx]={lat:mk.getLatLng().lat,lon:mk.getLatLng().lng,pk:null};actualitzarLiniaRecta();});
+    mk.on('dragend',async()=>{const ll=mk.getLatLng();amidPunts[idx]={lat:ll.lat,lon:ll.lng,pk:null};actualitzarUIAmidPt(idx,ll.lat,ll.lng);actualitzarLiniaRecta();await calcPKAmid(idx,ll.lat,ll.lng);});
+    amidMk[idx]=mk;
+  }
+  actualitzarUIAmidPt(idx,lat,lon);
+  if(amidPunts[0]&&amidPunts[1])actualitzarLiniaRecta();
+  if(idx===0)toast('Ara clica el punt B al mapa','ok',2500);
+  calcPKAmid(idx,lat,lon);
+}
+
+async function calcPKAmid(idx,lat,lon){
+  const pkEl=document.getElementById(`amidPk${idx+1}`);
+  pkEl.style.display='inline';pkEl.className='amid-pt-pk loading';pkEl.textContent='…';
+  try{
+    let p=filtrarCache(lat,lon,0.06);
+    if(p.length<2)p=await consultarZona(lat,lon,0.09);
+    const res=calcularMillorPK(lat,lon,p);
+    if(res&&res.dist<=LLINDAR){
+      const mStr=String(res.m).padStart(3,'0');
+      amidPunts[idx].pk={...res,str:`${res.carretera} ${res.km}+${mStr}`};
+      pkEl.className='amid-pt-pk';pkEl.textContent=amidPunts[idx].pk.str;
+    }else{pkEl.className='amid-pt-pk loading';pkEl.textContent='fora carr.';}
+  }catch{pkEl.className='amid-pt-pk loading';pkEl.textContent='error';}
+  // Intenta calcular per carretera si tots dos punts estan assignats i a la mateixa
+  if(amidPunts[0]?.pk&&amidPunts[1]?.pk&&amidPunts[0].pk.carretera===amidPunts[1].pk.carretera){
+    calcDistCarretera(amidPunts[0].pk.carretera,amidPunts[0].pk.pkDec,amidPunts[1].pk.pkDec);
+  }else if(amidPunts[0]&&amidPunts[1]){
+    actualitzarLiniaRecta();
+  }
+}
+
+function actualitzarUIAmidPt(idx,lat,lon){
+  document.getElementById(`amidPt${idx+1}`).classList.add('set');
+  document.getElementById(`amidVal${idx+1}`).textContent=`${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+  document.getElementById(`amidDel${idx+1}`).style.display='inline';
+  const pk=document.getElementById(`amidPk${idx+1}`);
+  pk.style.display='inline';pk.className='amid-pt-pk loading';pk.textContent='…';
+}
+
+function actualitzarLiniaRecta(){
+  const[A,B]=amidPunts;
+  if(!A||!B)return;
+  // Línia entre les coordenades EXACTES dels marcadors (no punts ArcGIS interpolats)
+  if(amidLinia){amidLinia.setLatLngs([[A.lat,A.lon],[B.lat,B.lon]]);}
+  else{amidLinia=L.polyline([[A.lat,A.lon],[B.lat,B.lon]],{color:'#00D4FF',weight:2.5,opacity:.85,dashArray:'8 5'}).addTo(map);}
+  const distR=haversineM(A.lat,A.lon,B.lat,B.lon);
+  mostrarResultatAmid(distR,'Distància en línia recta',A,B);
+}
+
+async function calcDistCarretera(carr,pkA,pkB){
+  const pkMin=Math.min(pkA,pkB),pkMax=Math.max(pkA,pkB);
+  try{
+    let tots=pkCache.filter(p=>p.carretera===carr).sort((a,b)=>a.pk-b.pk);
+    if(tots.length<2)tots=await consultarCarretera(carr);
+    if(tots.length<2)return;
+    const[A,B]=amidPunts;
+    // CRÍTIC: la ruta comença i acaba exactament als marcadors A i B del mapa
+    const ptA=[A.lat,A.lon];
+    const ptB=[B.lat,B.lon];
+    const ints=tots.filter(p=>p.pk>pkMin&&p.pk<pkMax);
+    const ruta=[ptA,...ints.map(p=>[p.lat,p.lon]),ptB];
+    let distV=0;for(let i=0;i<ruta.length-1;i++)distV+=haversineM(ruta[i][0],ruta[i][1],ruta[i+1][0],ruta[i+1][1]);
+    if(amidLinia){map.removeLayer(amidLinia);}
+    amidLinia=L.polyline(ruta,{color:'#F5A623',weight:3,opacity:.95}).addTo(map);
+    mostrarResultatAmid(distV,`Dist. per carretera (${carr})`,A,B,haversineM(A.lat,A.lon,B.lat,B.lon));
+    if(amidEt)amidEt.setLatLng(amidLinia.getCenter());
+  }catch(e){console.warn('calcDistCarretera:',e.message);}
+}
+
+function mostrarResultatAmid(distM,sub,A,B,distR=null){
+  const fmt=d=>d>=1000?`${(d/1000).toFixed(3)} km`:`${Math.round(d)} m`;
+  const el=document.getElementById('amidResult');el.classList.add('show');
+  document.getElementById('amidDistText').textContent=fmt(distM);
+  document.getElementById('amidDistSub').textContent=sub;
+  const pkA=A?.pk?.str||'—',pkB=B?.pk?.str||'—';
+  let det=`A: ${pkA}\nB: ${pkB}`;
+  if(distR!==null)det+=`\nRecta: ${fmt(distR)}`;
+  if(A?.pk&&B?.pk&&A.pk.carretera===B.pk.carretera){
+    const df=Math.abs(A.pk.pkDec-B.pk.pkDec);
+    det+=`\nΔ PK: ${Math.floor(df)}+${String(Math.round((df%1)*1000)).padStart(3,'0')}`;
+  }
+  document.getElementById('amidDetail').textContent=det;
+  document.getElementById('amidHintPins').style.display='none';
+  try{
+    const mid=amidLinia?amidLinia.getCenter():{lat:(A.lat+B.lat)/2,lng:(A.lon+B.lon)/2};
+    const etHtml=`<div style="background:rgba(13,17,27,.95);border:2px solid #F5A623;color:#F5A623;font-family:'Roboto Mono',monospace;font-size:.62rem;font-weight:700;padding:2px 9px;border-radius:14px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.5);" class="amid-et-inner">${fmt(distM)}</div>`;
+    if(amidEt){amidEt.setLatLng(mid);const e=amidEt.getElement()?.querySelector('.amid-et-inner');if(e)e.textContent=fmt(distM);}
+    else{amidEt=L.marker(mid,{icon:L.divIcon({html:etHtml,className:'',iconAnchor:[0,0]}),interactive:false,zIndexOffset:1500}).addTo(map);}
+  }catch{}
+}
+
+function esborrarPuntAmid(num){
+  const idx=num-1;amidPunts[idx]=null;
+  if(amidMk[idx]){map.removeLayer(amidMk[idx]);amidMk[idx]=null;}
+  if(amidLinia){map.removeLayer(amidLinia);amidLinia=null;}
+  if(amidEt){map.removeLayer(amidEt);amidEt=null;}
+  document.getElementById(`amidPt${num}`).classList.remove('set');
+  document.getElementById(`amidVal${num}`).textContent='Clica al mapa';
+  document.getElementById(`amidDel${num}`).style.display='none';
+  const pk=document.getElementById(`amidPk${num}`);pk.style.display='none';pk.textContent='—';
+  document.getElementById('amidResult').classList.remove('show');
+  document.getElementById('amidHintPins').style.display='block';
+}
+
+/* ── MODE POLILÍNIA LLIURE ── */
+function registrarFree(lat,lon){
+  const idx=freePunts.length;
+  freePunts.push({lat,lon});
+  const mk=L.marker([lat,lon],{icon:_iconaAmid(String(idx+1),'#22D97A'),draggable:true,zIndexOffset:2000}).addTo(map);
+  mk.on('drag',()=>{freePunts[idx]={lat:mk.getLatLng().lat,lon:mk.getLatLng().lng};actualitzarFreeLinia();});
+  freeMk.push(mk);
+  actualitzarFreeLinia();
+  renderFreePts();
+}
+function actualitzarFreeLinia(){
+  if(freePunts.length<2){
+    if(freeLinia){map.removeLayer(freeLinia);freeLinia=null;}
+    if(freeEt){map.removeLayer(freeEt);freeEt=null;}
+    document.getElementById('amidResult').classList.remove('show');return;
+  }
+  const coords=freePunts.map(p=>[p.lat,p.lon]);
+  if(freeLinia){freeLinia.setLatLngs(coords);}
+  else{freeLinia=L.polyline(coords,{color:'#22D97A',weight:2.5,opacity:.9}).addTo(map);}
+  let dist=0;for(let i=0;i<freePunts.length-1;i++)dist+=haversineM(freePunts[i].lat,freePunts[i].lon,freePunts[i+1].lat,freePunts[i+1].lon);
+  const fmt=d=>d>=1000?`${(d/1000).toFixed(3)} km`:`${Math.round(d)} m`;
+  const el=document.getElementById('amidResult');el.classList.add('show');
+  document.getElementById('amidDistText').textContent=fmt(dist);
+  document.getElementById('amidDistSub').textContent=`Polilínia lliure · ${freePunts.length} punts`;
+  document.getElementById('amidDetail').textContent='Distància total acumulada';
+  try{
+    const mid=freeLinia.getCenter();
+    const etHtml=`<div style="background:rgba(13,17,27,.95);border:2px solid #22D97A;color:#22D97A;font-family:'Roboto Mono',monospace;font-size:.62rem;font-weight:700;padding:2px 9px;border-radius:14px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.5);" class="free-et-inner">${fmt(dist)}</div>`;
+    if(freeEt){freeEt.setLatLng(mid);const e=freeEt.getElement()?.querySelector('.free-et-inner');if(e)e.textContent=fmt(dist);}
+    else{freeEt=L.marker(mid,{icon:L.divIcon({html:etHtml,className:'',iconAnchor:[0,0]}),interactive:false,zIndexOffset:1500}).addTo(map);}
+  }catch{}
+}
+function renderFreePts(){
+  const cont=document.getElementById('freePtsList');
+  const hint=document.getElementById('freeHint');
+  if(!freePunts.length){cont.innerHTML='';hint.style.display='block';return;}
+  hint.style.display='none';
+  cont.innerHTML=freePunts.map((p,i)=>`<div class="amid-free-pt"><span class="amid-free-pt-n">${i+1}</span><span class="amid-free-pt-val">${p.lat.toFixed(5)}, ${p.lon.toFixed(5)}</span><button class="amid-free-pt-del" onclick="esborrarPtFree(${i})">✕</button></div>`).join('');
+}
+function esborrarPtFree(idx){
+  freePunts.splice(idx,1);if(freeMk[idx]){map.removeLayer(freeMk[idx]);freeMk.splice(idx,1);}
+  freeMk.forEach((mk,i)=>mk.setIcon(_iconaAmid(String(i+1),'#22D97A')));
+  actualitzarFreeLinia();renderFreePts();
+}
+
+/* ── MODE MANUAL PK ── */
+async function amidamentManual(){
+  const carrA=document.getElementById('mCarrA').value.trim().toUpperCase();
+  const kmA=parseInt(document.getElementById('mKmA').value)||0;
+  const mA=Math.min(999,parseInt(document.getElementById('mMA').value)||0);
+  const carrB=document.getElementById('mCarrB').value.trim().toUpperCase();
+  const kmB=parseInt(document.getElementById('mKmB').value)||0;
+  const mB=Math.min(999,parseInt(document.getElementById('mMB').value)||0);
+  if(!carrA||!carrB){toast('Introdueix les dues carreteres','warn');return;}
+  loading(true);toast('Buscant punts...','ok',6000);
+  try{
+    const[posA,posB]=await Promise.all([buscarPosPK(carrA,kmA,mA),buscarPosPK(carrB,kmB,mB)]);
+    if(!posA){toast(`No s'ha trobat ${carrA} PK ${kmA}+${String(mA).padStart(3,'0')}`,'err');return;}
+    if(!posB){toast(`No s'ha trobat ${carrB} PK ${kmB}+${String(mB).padStart(3,'0')}`,'err');return;}
+    [0,1].forEach(i=>{if(manMk[i]){map.removeLayer(manMk[i]);manMk[i]=null;}});
+    if(manLinia){map.removeLayer(manLinia);manLinia=null;}
+    if(manEt){map.removeLayer(manEt);manEt=null;}
+    const mStrA=String(mA).padStart(3,'0'),mStrB=String(mB).padStart(3,'0');
+    const icoM=ll=>L.divIcon({html:`<div style="width:22px;height:22px;border-radius:5px;border:2.5px solid #00D4FF;background:rgba(13,17,27,.9);box-shadow:0 0 10px rgba(0,212,255,.5);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;color:#00D4FF;font-family:'Roboto Mono',monospace;">${ll}</div>`,className:'',iconSize:[22,22],iconAnchor:[11,11]});
+    manMk[0]=L.marker([posA.lat,posA.lon],{icon:icoM('A'),zIndexOffset:3000}).bindPopup(`<b>${carrA} PK ${kmA}+${mStrA}</b>`).addTo(map).openPopup();
+    manMk[1]=L.marker([posB.lat,posB.lon],{icon:icoM('B'),zIndexOffset:3000}).bindPopup(`<b>${carrB} PK ${kmB}+${mStrB}</b>`).addTo(map);
+    let ruta=[[posA.lat,posA.lon],[posB.lat,posB.lon]];
+    let distM=haversineM(posA.lat,posA.lon,posB.lat,posB.lon);
+    let sub='Distància en línia recta';
+    if(carrA===carrB){
+      try{
+        const tots=pkCache.filter(p=>p.carretera===carrA).sort((a,b)=>a.pk-b.pk);
+        if(tots.length>=2){
+          const pkMinT=Math.min(kmA+mA/1000,kmB+mB/1000),pkMaxT=Math.max(kmA+mA/1000,kmB+mB/1000);
+          const ints=tots.filter(p=>p.pk>pkMinT&&p.pk<pkMaxT);
+          ruta=[[posA.lat,posA.lon],...ints.map(p=>[p.lat,p.lon]),[posB.lat,posB.lon]];
+          distM=0;for(let i=0;i<ruta.length-1;i++)distM+=haversineM(ruta[i][0],ruta[i][1],ruta[i+1][0],ruta[i+1][1]);
+          sub=`Distància per carretera (${carrA})`;
+        }
+      }catch{}
+    }
+    manLinia=L.polyline(ruta,{color:'#00D4FF',weight:2.5,opacity:.85,dashArray:carrA===carrB?'':'8 5'}).addTo(map);
+    map.fitBounds([[posA.lat,posA.lon],[posB.lat,posB.lon]],{padding:[60,60],animate:true,duration:1});
+    const fmt=d=>d>=1000?`${(d/1000).toFixed(3)} km`:`${Math.round(d)} m`;
+    const el=document.getElementById('amidResult');el.classList.add('show');
+    document.getElementById('amidDistText').textContent=fmt(distM);
+    document.getElementById('amidDistSub').textContent=sub;
+    let det=`A: ${carrA} PK ${kmA}+${mStrA}\nB: ${carrB} PK ${kmB}+${mStrB}`;
+    if(carrA===carrB){const df=Math.abs(kmA+mA/1000-(kmB+mB/1000));det+=`\nΔ PK: ${Math.floor(df)}+${String(Math.round((df%1)*1000)).padStart(3,'0')}`;}
+    document.getElementById('amidDetail').textContent=det;
+    try{
+      const mid=manLinia.getCenter();
+      const etHtml=`<div style="background:rgba(13,17,27,.95);border:2px solid #00D4FF;color:#00D4FF;font-family:'Roboto Mono',monospace;font-size:.62rem;font-weight:700;padding:2px 9px;border-radius:14px;white-space:nowrap;box-shadow:0 2px 10px rgba(0,0,0,.5);">${fmt(distM)}</div>`;
+      manEt=L.marker(mid,{icon:L.divIcon({html:etHtml,className:'',iconAnchor:[0,0]}),interactive:false,zIndexOffset:2500}).addTo(map);
+    }catch{}
+    toast(`Distància: ${fmt(distM)}`,'ok');
+  }catch(e){toast('Error: '+e.message,'err');}
+  finally{loading(false);}
+}
+
+/* ── ESBORRAR AMIDAMENT ── */
+function esborrarAmidamentPins(s=false){
+  [0,1].forEach(i=>{amidPunts[i]=null;if(amidMk[i]){map.removeLayer(amidMk[i]);amidMk[i]=null;}});
+  if(amidLinia){map.removeLayer(amidLinia);amidLinia=null;}
+  if(amidEt){map.removeLayer(amidEt);amidEt=null;}
+  [1,2].forEach(n=>{document.getElementById(`amidPt${n}`).classList.remove('set');document.getElementById(`amidVal${n}`).textContent='Clica al mapa';document.getElementById(`amidDel${n}`).style.display='none';const pk=document.getElementById(`amidPk${n}`);pk.style.display='none';pk.textContent='—';});
+  document.getElementById('amidHintPins').style.display='block';
+}
+function esborrarAmidamentFree(s=false){
+  freePunts=[];freeMk.forEach(m=>map.removeLayer(m));freeMk=[];
+  if(freeLinia){map.removeLayer(freeLinia);freeLinia=null;}
+  if(freeEt){map.removeLayer(freeEt);freeEt=null;}
+  renderFreePts();
+}
+function esborrarAmidamentManual(s=false){
+  [0,1].forEach(i=>{if(manMk[i]){map.removeLayer(manMk[i]);manMk[i]=null;}});
+  if(manLinia){map.removeLayer(manLinia);manLinia=null;}
+  if(manEt){map.removeLayer(manEt);manEt=null;}
+}
+function esborrarAmidament(silent=false){
+  esborrarAmidamentPins(true);esborrarAmidamentFree(true);esborrarAmidamentManual(true);
+  document.getElementById('amidResult').classList.remove('show');
+  if(!silent)toast('Amidament esborrat','ok',2000);
+}
+
+/* ══════════════════════════════════════════════
+   UI PANEL — Plegar / Desplegar
+══════════════════════════════════════════════ */
+function togglePanel(){
+  const panel=document.getElementById('panel');
+  const btn=document.getElementById('panelToggle');
+  const collapsed=panel.classList.toggle('collapsed');
+  btn.textContent=collapsed?'▼':'▲';
+}
+function toggleCoordAcc(){
+  const acc=document.getElementById('coordAcc');
+  const body=document.getElementById('coordAccBody');
+  const isOpen=acc.classList.toggle('open');
+  body.style.display=isOpen?'flex':'none';
+}
+function _initPanel(){
+  const panel=document.getElementById('panel');
+  const btn=document.getElementById('panelToggle');
+  if(window.innerWidth<600){panel.classList.add('collapsed');btn.textContent='▼';}
+  else{panel.classList.remove('collapsed');btn.textContent='▲';}
+}
+
+/* ══════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════ */
+function _debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
+let _toastTm;
+function toast(msg,type='ok',dur=3500){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className=type+' show';
+  clearTimeout(_toastTm);_toastTm=setTimeout(()=>el.classList.remove('show'),dur);
+}
+</script>
+</body>
+</html>
