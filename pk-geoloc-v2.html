@@ -2166,20 +2166,10 @@ function toggleManualPanel() {
   panel.classList.toggle('open');
 }
 
-/* Obre i inicialitza el panell manual des del modal d'error GPS */
+/* ── Modal error GPS (conservat per a usos no-foto, p.ex. botó principal) ── */
 function acceptarManualGPS() {
   tancarModalGPS();
-  // Obre l'acordió
-  const panel = document.getElementById('manualPanel');
-  panel.classList.add('open');
-  // Habilita els inputs i activa el mode edició
-  const btnEdit = document.getElementById('btnEditToggle');
-  if (btnEdit) btnEdit.click();
-  // Focus al primer camp
-  setTimeout(() => document.getElementById('fCarretera')?.focus(), 100);
-  showToast('✏️ Introdueix la carretera i el PK visualment', 'ok', 4000);
-  // Quan l'usuari apliqui les dades manuals i faci la foto, processem el fitxer pendent
-  _esperantManualPeFoto = true;
+  activarEntradaManualAutomatica();
 }
 
 function tancarModalGPS() {
@@ -2189,18 +2179,76 @@ function tancarModalGPS() {
 // Flag per saber si esperem confirmació manual per processar la foto
 let _esperantManualPeFoto = false;
 
+/**
+ * activarEntradaManualAutomatica
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Obre automàticament el formulari d'entrada manual sense cap clic addicional
+ * de l'usuari. Seqüència:
+ *   1) Navega a screenHome si no hi som ja
+ *   2) Obre l'acordió del panell manual
+ *   3) Activa el mode edició (habilita els inputs)
+ *   4) Fa scroll fins al panell perquè sigui visible
+ *   5) Posa el focus al camp "Carretera" perquè l'usuari pugui escriure
+ *      directament sense cap interacció extra
+ * S'estableix _esperantManualPeFoto=true perquè aplicarManual() processi
+ * el fitxer pendent en acabar.
+ */
+function activarEntradaManualAutomatica() {
+  // 1) Navega a screenHome si l'usuari és en una altra pestanya
+  const homeScreen = document.getElementById('screenHome');
+  if (!homeScreen.classList.contains('active')) {
+    const homeBtn = document.querySelector('.tab-btn[data-tab="screenHome"]');
+    if (homeBtn) canviarTab(homeBtn, 'screenHome');
+  }
+
+  // 2) Obre l'acordió del panell manual
+  const panel = document.getElementById('manualPanel');
+  if (panel && !panel.classList.contains('open')) {
+    panel.classList.add('open');
+  }
+
+  // 3) Activa el mode edició si no estava actiu
+  //    (evita doble-toggle si ja estava en mode edició)
+  if (!modeManual) {
+    const btnEdit = document.getElementById('btnEditToggle');
+    if (btnEdit) btnEdit.click();
+  }
+
+  // 4) Scroll suau fins al panell + 5) focus al primer camp
+  //    Usem un petit delay perquè el DOM acabi de renderitzar l'acordió obert
+  setTimeout(() => {
+    const campCarretera = document.getElementById('fCarretera');
+    if (campCarretera) {
+      campCarretera.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      campCarretera.focus();
+      // Selecciona el contingut existent (si n'hi ha) per facilitar la sobreescriptura
+      campCarretera.select?.();
+    }
+  }, 150);
+
+  // Toast informatiu sense bloquejar la UI
+  showToast('✏️ Sense GPS — introdueix la carretera i el PK directament', 'warn', 5000);
+
+  // Marca que hem d'esperar la confirmació manual per processar la foto pendent
+  _esperantManualPeFoto = true;
+}
+
 // Sobreescribim aplicarManual per captar el cas de foto pendent
 const _aplicarManualOriginal = window.aplicarManual;
 window.aplicarManual = function() {
   if (typeof _aplicarManualOriginal === 'function') _aplicarManualOriginal();
-  // Si hi ha una foto pendent (error GPS), la processem ara amb dades manuals
+  // Si hi ha una foto pendent (error GPS), la processem amb les dades manuals introduïdes
   if (_esperantManualPeFoto && _fitxerPendentGPS) {
     _esperantManualPeFoto = false;
     const fitxer = _fitxerPendentGPS;
     _fitxerPendentGPS = null;
-    // Construïm pos/res des dels camps manuals
+    // Construïm res des dels camps manuals (sempre frescos en aquest moment)
+    const carr = document.getElementById('fCarretera')?.value?.trim()?.toUpperCase() || '—';
+    const km   = parseInt(document.getElementById('fPK')?.value) || 0;
+    const m    = Math.min(999, parseInt(document.getElementById('fM')?.value) || 0);
+    const resManual = { carretera: carr, km, m, dist: 0, pkDec: km + m / 1000 };
+    // pos: reutilitzem l'última posició GPS si la tenim, si no null
     const posManual = ultimaPos || null;
-    const resManual = ultimResultatObj || null;
     setTimeout(() => processarFoto(fitxer, posManual, resManual), 200);
   }
 };
@@ -3419,7 +3467,8 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
 
   if (error && !_modeEnviarFinalitzat) {
     _fitxerPendentGPS = file;
-    document.getElementById('gpsErrorModal').classList.add('open');
+    // Activa el formulari manual automàticament, sense modal ni clics extra
+    activarEntradaManualAutomatica();
     return;
   }
 
