@@ -2166,10 +2166,20 @@ function toggleManualPanel() {
   panel.classList.toggle('open');
 }
 
-/* ── Modal error GPS (conservat per a usos no-foto, p.ex. botó principal) ── */
+/* Obre i inicialitza el panell manual des del modal d'error GPS */
 function acceptarManualGPS() {
   tancarModalGPS();
-  activarEntradaManualAutomatica();
+  // Obre l'acordió
+  const panel = document.getElementById('manualPanel');
+  panel.classList.add('open');
+  // Habilita els inputs i activa el mode edició
+  const btnEdit = document.getElementById('btnEditToggle');
+  if (btnEdit) btnEdit.click();
+  // Focus al primer camp
+  setTimeout(() => document.getElementById('fCarretera')?.focus(), 100);
+  showToast('✏️ Introdueix la carretera i el PK visualment', 'ok', 4000);
+  // Quan l'usuari apliqui les dades manuals i faci la foto, processem el fitxer pendent
+  _esperantManualPeFoto = true;
 }
 
 function tancarModalGPS() {
@@ -2179,76 +2189,18 @@ function tancarModalGPS() {
 // Flag per saber si esperem confirmació manual per processar la foto
 let _esperantManualPeFoto = false;
 
-/**
- * activarEntradaManualAutomatica
- * ─────────────────────────────────────────────────────────────────────────────
- * Obre automàticament el formulari d'entrada manual sense cap clic addicional
- * de l'usuari. Seqüència:
- *   1) Navega a screenHome si no hi som ja
- *   2) Obre l'acordió del panell manual
- *   3) Activa el mode edició (habilita els inputs)
- *   4) Fa scroll fins al panell perquè sigui visible
- *   5) Posa el focus al camp "Carretera" perquè l'usuari pugui escriure
- *      directament sense cap interacció extra
- * S'estableix _esperantManualPeFoto=true perquè aplicarManual() processi
- * el fitxer pendent en acabar.
- */
-function activarEntradaManualAutomatica() {
-  // 1) Navega a screenHome si l'usuari és en una altra pestanya
-  const homeScreen = document.getElementById('screenHome');
-  if (!homeScreen.classList.contains('active')) {
-    const homeBtn = document.querySelector('.tab-btn[data-tab="screenHome"]');
-    if (homeBtn) canviarTab(homeBtn, 'screenHome');
-  }
-
-  // 2) Obre l'acordió del panell manual
-  const panel = document.getElementById('manualPanel');
-  if (panel && !panel.classList.contains('open')) {
-    panel.classList.add('open');
-  }
-
-  // 3) Activa el mode edició si no estava actiu
-  //    (evita doble-toggle si ja estava en mode edició)
-  if (!modeManual) {
-    const btnEdit = document.getElementById('btnEditToggle');
-    if (btnEdit) btnEdit.click();
-  }
-
-  // 4) Scroll suau fins al panell + 5) focus al primer camp
-  //    Usem un petit delay perquè el DOM acabi de renderitzar l'acordió obert
-  setTimeout(() => {
-    const campCarretera = document.getElementById('fCarretera');
-    if (campCarretera) {
-      campCarretera.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      campCarretera.focus();
-      // Selecciona el contingut existent (si n'hi ha) per facilitar la sobreescriptura
-      campCarretera.select?.();
-    }
-  }, 150);
-
-  // Toast informatiu sense bloquejar la UI
-  showToast('✏️ Sense GPS — introdueix la carretera i el PK directament', 'warn', 5000);
-
-  // Marca que hem d'esperar la confirmació manual per processar la foto pendent
-  _esperantManualPeFoto = true;
-}
-
 // Sobreescribim aplicarManual per captar el cas de foto pendent
 const _aplicarManualOriginal = window.aplicarManual;
 window.aplicarManual = function() {
   if (typeof _aplicarManualOriginal === 'function') _aplicarManualOriginal();
-  // Si hi ha una foto pendent (error GPS), la processem amb les dades manuals introduïdes
+  // Si hi ha una foto pendent (error GPS), la processem ara amb dades manuals
   if (_esperantManualPeFoto && _fitxerPendentGPS) {
     _esperantManualPeFoto = false;
     const fitxer = _fitxerPendentGPS;
     _fitxerPendentGPS = null;
-    // Construïm res des dels camps manuals (sempre frescos en aquest moment)
-    const carr = document.getElementById('fCarretera')?.value?.trim()?.toUpperCase() || '—';
-    const km   = parseInt(document.getElementById('fPK')?.value) || 0;
-    const m    = Math.min(999, parseInt(document.getElementById('fM')?.value) || 0);
-    const resManual = { carretera: carr, km, m, dist: 0, pkDec: km + m / 1000 };
-    // pos: reutilitzem l'última posició GPS si la tenim, si no null
+    // Construïm pos/res des dels camps manuals
     const posManual = ultimaPos || null;
+    const resManual = ultimResultatObj || null;
     setTimeout(() => processarFoto(fitxer, posManual, resManual), 200);
   }
 };
@@ -2521,11 +2473,49 @@ function mapCanviarModeAmid(mode) {
 }
 
 /* ── 2 PUNTS ── */
+/* ── Node d'amidament: blanc pur amb anell negre — Google Maps style ── */
 function _mapIconaAmid(txt) {
   return L.divIcon({
-    html: `<div style="width:18px;height:18px;border-radius:50%;border:2.5px solid #ffb300;background:#0f1628;box-shadow:0 0 10px rgba(255,179,0,.6);display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:800;color:#ffb300;font-family:monospace;">${txt}</div>`,
-    className: '', iconSize: [18,18], iconAnchor: [9,9],
+    html: `<div style="width:20px;height:20px;border-radius:50%;border:3px solid #000;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:900;color:#111;font-family:monospace;letter-spacing:0;">${txt}</div>`,
+    className: '', iconSize: [20,20], iconAnchor: [10,10],
   });
+}
+
+/* ── Helpers de posicionament perpendicular i format de distància ── */
+/**
+ * Calcula el punt de posicionament de l'etiqueta perpendicular al darrer segment.
+ * @param {Array} latlngs  Array de [lat,lon] de la polilínia
+ * @param {number} offset  Desplaçament en graus (per defecte ~30m a latitud 41°)
+ * @returns {[number,number]}
+ */
+function _midPerpendicular(latlngs, offset = 0.00027) {
+  if (!latlngs || latlngs.length < 2) return null;
+  // Darrer segment
+  const p1 = latlngs[latlngs.length - 2];
+  const p2 = latlngs[latlngs.length - 1];
+  const [lat1, lon1] = Array.isArray(p1) ? p1 : [p1.lat, p1.lng];
+  const [lat2, lon2] = Array.isArray(p2) ? p2 : [p2.lat, p2.lng];
+  // Punt mig del segment
+  const midLat = (lat1 + lat2) / 2;
+  const midLon = (lon1 + lon2) / 2;
+  // Vector del segment i el seu perpendicular (rotat 90°)
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
+  const len  = Math.sqrt(dLat * dLat + dLon * dLon) || 1e-9;
+  // Perpendicular: (-dLon, dLat) normalitzat * offset
+  return [midLat + (-dLon / len) * offset, midLon + (dLat / len) * offset];
+}
+
+/** Formata una distància amb exactament 2 decimals */
+function _fmtDist(metres) {
+  return metres >= 1000
+    ? `${(metres / 1000).toFixed(2)} km`
+    : `${metres.toFixed(2)} m`;
+}
+
+/** HTML de l'etiqueta flotant: blanc pur, fons transparent, sense caixa */
+function _etiquetaHtml(label, cls = 'map-amid-lbl-inner') {
+  return `<div class="${cls}" style="color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:.78rem;font-weight:700;letter-spacing:.5px;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.9),0 0 6px rgba(0,0,0,.7);pointer-events:none;line-height:1;">${label}</div>`;
 }
 
 async function mapRegistrarClicAmid(lat, lon) {
@@ -2575,10 +2565,11 @@ function mapActualitzarUIAmidPt(idx, lat, lon) {
 function mapActualitzarAmidament() {
   const [A,B] = mapAmidPunts;
   if (!A||!B) return;
-  if (mapAmidLinia) mapAmidLinia.setLatLngs([[A.lat,A.lon],[B.lat,B.lon]]);
-  else mapAmidLinia = L.polyline([[A.lat,A.lon],[B.lat,B.lon]], {color:'#ffb300',weight:2.5,opacity:.9,dashArray:'8 5'}).addTo(map);
+  const coords = [[A.lat,A.lon],[B.lat,B.lon]];
+  if (mapAmidLinia) mapAmidLinia.setLatLngs(coords);
+  else mapAmidLinia = L.polyline(coords, {color:'#fff',weight:3,opacity:1,dashArray:'10 6'}).addTo(map);
   const distRecta = haversineM(A.lat,A.lon,B.lat,B.lon);
-  _mapMostrarResultatAmid(distRecta, 'Distància en línia recta', A, B);
+  _mapMostrarResultatAmid(distRecta, 'Distància en línia recta', A, B, coords);
   if (A.pk && B.pk && A.pk.carretera===B.pk.carretera) mapCalcDistCarretera(A.pk.carretera, A.pk.pkDec, B.pk.pkDec);
 }
 
@@ -2593,27 +2584,34 @@ async function mapCalcDistCarretera(carr, pkA, pkB) {
     const ruta=[[posA.lat,posA.lon],...ints.map(p=>[p.lat,p.lon]),[posB.lat,posB.lon]];
     let distV=0; for(let i=0;i<ruta.length-1;i++) distV+=haversineM(ruta[i][0],ruta[i][1],ruta[i+1][0],ruta[i+1][1]);
     if (mapAmidLinia) { map.removeLayer(mapAmidLinia); }
-    mapAmidLinia = L.polyline(ruta, {color:'#ffb300',weight:3,opacity:.95}).addTo(map);
+    mapAmidLinia = L.polyline(ruta, {color:'#fff',weight:3,opacity:1}).addTo(map);
     const [A,B] = mapAmidPunts;
-    _mapMostrarResultatAmid(distV, `Dist. per carretera (${carr})`, A, B, haversineM(A.lat,A.lon,B.lat,B.lon));
-    if (mapAmidEtiqueta) mapAmidEtiqueta.setLatLng(mapAmidLinia.getCenter());
+    _mapMostrarResultatAmid(distV, `Dist. per carretera (${carr})`, A, B, ruta);
   } catch {}
 }
 
-function _mapMostrarResultatAmid(distM, sub, A, B, rectaM) {
-  const distKm = distM/1000;
-  const etLabel = distM>=1000 ? `${distKm.toFixed(3)} km` : `${Math.round(distM)} m`;
-  const midLat=(A.lat+B.lat)/2, midLon=(A.lon+B.lon)/2;
-  const etHtml=`<div style="background:rgba(6,10,20,.95);border:1px solid #ffb300;color:#ffb300;font-family:monospace;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;box-shadow:0 0 10px rgba(255,179,0,.3);" class="map-amid-lbl-inner">${etLabel}</div>`;
-  if (mapAmidEtiqueta) { mapAmidEtiqueta.setLatLng([midLat,midLon]); const el=mapAmidEtiqueta.getElement()?.querySelector('.map-amid-lbl-inner'); if(el) el.textContent=etLabel; }
-  else mapAmidEtiqueta = L.marker([midLat,midLon],{icon:L.divIcon({html:etHtml,className:'',iconAnchor:[0,0]}),interactive:false,zIndexOffset:1500}).addTo(map);
+function _mapMostrarResultatAmid(distM, sub, A, B, coords) {
+  const etLabel = _fmtDist(distM);
+  // Posicionament perpendicular al darrer segment de la polilínia
+  const perpPos = _midPerpendicular(coords);
+  const pos = perpPos || [(A.lat+B.lat)/2, (A.lon+B.lon)/2];
+  const etHtml = _etiquetaHtml(etLabel, 'map-amid-lbl-inner');
+  if (mapAmidEtiqueta) {
+    mapAmidEtiqueta.setLatLng(pos);
+    const el = mapAmidEtiqueta.getElement()?.querySelector('.map-amid-lbl-inner');
+    if (el) el.textContent = etLabel;
+  } else {
+    mapAmidEtiqueta = L.marker(pos, {
+      icon: L.divIcon({html:etHtml, className:'', iconAnchor:[0,8]}),
+      interactive: false, zIndexOffset: 1500
+    }).addTo(map);
+  }
   const res = document.getElementById('mapAmidResult');
   res.classList.add('show');
   document.getElementById('mapAmidDistText').textContent = etLabel;
   document.getElementById('mapAmidDistSub').textContent = sub;
   const pkA=A?.pk?.str||'—', pkB=B?.pk?.str||'—';
   let detail = `A: ${pkA} · B: ${pkB}`;
-  if (rectaM) detail += `\nRecta: ${rectaM>=1000?(rectaM/1000).toFixed(3)+' km':Math.round(rectaM)+' m'}`;
   if (A?.pk && B?.pk && A.pk.carretera===B.pk.carretera) {
     const dif=Math.abs(A.pk.pkDec-B.pk.pkDec), dk=Math.floor(dif), dm=Math.round((dif%1)*1000);
     detail += `\nΔ PK: ${dk}+${String(dm).padStart(3,'0')}`;
@@ -2651,18 +2649,28 @@ function mapAfegirPuntLliure(lat, lon) {
 function mapActualitzarFreeLinia() {
   const coords = mapFreePunts.map(p=>[p.lat,p.lon]);
   if (mapFreeLinia) { mapFreeLinia.setLatLngs(coords); }
-  else if (coords.length>=2) mapFreeLinia = L.polyline(coords,{color:'#00d4ff',weight:2.5,opacity:.9,dashArray:'8 5'}).addTo(map);
+  else if (coords.length>=2) mapFreeLinia = L.polyline(coords,{color:'#fff',weight:3,opacity:1,dashArray:'10 6'}).addTo(map);
   if (mapFreePunts.length < 2) return;
   let d=0; for(let i=0;i<coords.length-1;i++) d+=haversineM(coords[i][0],coords[i][1],coords[i+1][0],coords[i+1][1]);
-  const etLabel = d>=1000 ? `${(d/1000).toFixed(3)} km` : `${Math.round(d)} m`;
-  const mid = mapFreeLinia?.getCenter();
-  const etHtml=`<div style="background:rgba(6,10,20,.95);border:1px solid #00d4ff;color:#00d4ff;font-family:monospace;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;" class="map-free-lbl">${etLabel}</div>`;
-  if (mapFreeEtiqueta) { mapFreeEtiqueta.setLatLng(mid); const el=mapFreeEtiqueta.getElement()?.querySelector('.map-free-lbl'); if(el) el.textContent=etLabel; }
-  else if (mid) mapFreeEtiqueta=L.marker(mid,{icon:L.divIcon({html:etHtml,className:'',iconAnchor:[0,0]}),interactive:false,zIndexOffset:1500}).addTo(map);
+  const etLabel = _fmtDist(d);
+  const perpPos = _midPerpendicular(coords);
+  const mid = perpPos || mapFreeLinia?.getCenter();
+  const pos = mid ? (Array.isArray(mid) ? mid : [mid.lat, mid.lng]) : coords[coords.length-1];
+  const etHtml = _etiquetaHtml(etLabel, 'map-free-lbl');
+  if (mapFreeEtiqueta) {
+    mapFreeEtiqueta.setLatLng(pos);
+    const el = mapFreeEtiqueta.getElement()?.querySelector('.map-free-lbl');
+    if (el) el.textContent = etLabel;
+  } else {
+    mapFreeEtiqueta = L.marker(pos, {
+      icon: L.divIcon({html:etHtml, className:'', iconAnchor:[0,8]}),
+      interactive: false, zIndexOffset: 1500
+    }).addTo(map);
+  }
   const res=document.getElementById('mapAmidResult'); res.classList.add('show');
   document.getElementById('mapAmidDistText').textContent=etLabel;
   document.getElementById('mapAmidDistSub').textContent=`Polilínia (${mapFreePunts.length} punts)`;
-  document.getElementById('mapAmidDetail').textContent=`${Math.round(d)} metres totals`;
+  document.getElementById('mapAmidDetail').textContent=`${_fmtDist(d)} en total`;
 }
 
 function mapRenderFreePts() {
@@ -2696,7 +2704,7 @@ async function mapAmidamentManual() {
     if(mapManualLinia){map.removeLayer(mapManualLinia);mapManualLinia=null;}
     if(mapManualEtiq){map.removeLayer(mapManualEtiq);mapManualEtiq=null;}
     const mStrA=String(mA).padStart(3,'0'),mStrB=String(mB).padStart(3,'0');
-    const iconaM=ll=>L.divIcon({html:`<div style="width:20px;height:20px;border-radius:4px;border:2px solid #00d4ff;background:#0f1628;box-shadow:0 0 8px rgba(0,212,255,.5);display:flex;align-items:center;justify-content:center;font-size:.58rem;font-weight:800;color:#00d4ff;font-family:monospace;">${ll}</div>`,className:'',iconSize:[20,20],iconAnchor:[10,10]});
+    const iconaM=ll=>L.divIcon({html:`<div style="width:20px;height:20px;border-radius:50%;border:3px solid #000;background:#fff;box-shadow:0 1px 5px rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:900;color:#111;font-family:monospace;">${ll}</div>`,className:'',iconSize:[20,20],iconAnchor:[10,10]});
     mapManualMarkers[0]=L.marker([posA.lat,posA.lon],{icon:iconaM('A'),zIndexOffset:3000}).bindPopup(`<b>${carrA} PK ${kmA}+${mStrA}</b>`).addTo(map).openPopup();
     mapManualMarkers[1]=L.marker([posB.lat,posB.lon],{icon:iconaM('B'),zIndexOffset:3000}).bindPopup(`<b>${carrB} PK ${kmB}+${mStrB}</b>`).addTo(map);
     let ruta=[[posA.lat,posA.lon],[posB.lat,posB.lon]];
@@ -2712,10 +2720,15 @@ async function mapAmidamentManual() {
         subText=`Dist. per carretera (${carrA})`;
       }
     }
-    mapManualLinia=L.polyline(ruta,{color:'#00d4ff',weight:2.5,opacity:.85,dashArray:'8 5'}).addTo(map);
-    const etLabel=distM>=1000?`${(distM/1000).toFixed(3)} km`:`${Math.round(distM)} m`;
-    const mid=mapManualLinia.getCenter();
-    mapManualEtiq=L.marker(mid,{icon:L.divIcon({html:`<div style="background:rgba(6,10,20,.95);border:1px solid #00d4ff;color:#00d4ff;font-family:monospace;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;">${etLabel}</div>`,className:'',iconAnchor:[0,0]}),interactive:false,zIndexOffset:2500}).addTo(map);
+    mapManualLinia=L.polyline(ruta,{color:'#fff',weight:3,opacity:1,dashArray:'10 6'}).addTo(map);
+    const etLabel=_fmtDist(distM);
+    const perpPos=_midPerpendicular(ruta);
+    const midCenter=mapManualLinia.getCenter();
+    const etPos=perpPos||(midCenter?[midCenter.lat,midCenter.lng]:ruta[0]);
+    mapManualEtiq=L.marker(etPos,{
+      icon:L.divIcon({html:_etiquetaHtml(etLabel,'map-manual-lbl'),className:'',iconAnchor:[0,8]}),
+      interactive:false,zIndexOffset:2500
+    }).addTo(map);
     map.fitBounds([[posA.lat,posA.lon],[posB.lat,posB.lon]],{padding:[50,50],animate:true,duration:1});
     const res=document.getElementById('mapAmidResult'); res.classList.add('show');
     document.getElementById('mapAmidDistText').textContent=etLabel;
@@ -3467,8 +3480,7 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
 
   if (error && !_modeEnviarFinalitzat) {
     _fitxerPendentGPS = file;
-    // Activa el formulari manual automàticament, sense modal ni clics extra
-    activarEntradaManualAutomatica();
+    document.getElementById('gpsErrorModal').classList.add('open');
     return;
   }
 
@@ -3630,22 +3642,7 @@ async function renderitzarFotos() {
       card.innerHTML = `
         <img class="photo-thumb" src="${url}" alt="${foto.nom}" loading="lazy">
         <div class="photo-checkbox">✓</div>
-        <div class="photo-pk-overlay">${foto.carretera||'—'} PK ${foto.km||0}+${mStr}</div>
-        <div class="photo-wa-group">
-          <button class="photo-wa-mini amb-avis" title="Enviar Amb Avís" type="button">✔</button>
-          <button class="photo-wa-mini sense-avis" title="Enviar Sense Avís" type="button">✗</button>
-        </div>`;
-
-      card.querySelector('.photo-wa-mini.amb-avis').addEventListener('click', async e => {
-        e.stopPropagation();
-        await compartirFotoWhatsApp(foto.blob, foto.nom, foto.carretera,
-          foto.km??0, foto.m??0, foto.lat??null, foto.lon??null, 'AMB AVÍS');
-      });
-      card.querySelector('.photo-wa-mini.sense-avis').addEventListener('click', async e => {
-        e.stopPropagation();
-        await compartirFotoWhatsApp(foto.blob, foto.nom, foto.carretera,
-          foto.km??0, foto.m??0, foto.lat??null, foto.lon??null, 'SENSE AVÍS');
-      });
+        <div class="photo-pk-overlay">${foto.carretera||'—'} PK ${foto.km||0}+${mStr}</div>`;
 
       // Clic foto: mode selecció o visor
       card.querySelector('.photo-thumb').addEventListener('click', () => {
