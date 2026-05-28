@@ -477,6 +477,48 @@ body::before{
 .map-search-item-pks{font-size:.6rem;color:var(--text-3);}
 
 /* Coordenades manuals — acordió col·lapsable */
+/* ── Cercador de municipi (Nominatim) ── */
+.muni-search-wrap{
+  position:relative;
+}
+.muni-search-row{
+  display:flex;align-items:center;gap:0;
+  background:var(--bg-3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);transition:border-color .2s;overflow:hidden;
+}
+.muni-search-row:focus-within{border-color:var(--accent);}
+.muni-search-inp{
+  flex:1;padding:9px 10px;background:transparent;border:none;
+  color:var(--text-1);font-family:var(--sans);font-size:.8rem;
+  outline:none;min-width:0;
+}
+.muni-search-inp::placeholder{color:var(--text-3);font-size:.72rem;}
+.muni-search-btn{
+  flex-shrink:0;padding:0 11px;background:none;border:none;
+  color:var(--text-2);font-size:.95rem;cursor:pointer;
+  transition:color .15s;line-height:1;align-self:stretch;
+  display:flex;align-items:center;
+}
+.muni-search-btn:hover{color:var(--accent);}
+.muni-search-btn.loading{animation:muni-spin .7s linear infinite;}
+@keyframes muni-spin{to{transform:rotate(360deg);}}
+.muni-drop{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:600;
+  background:var(--bg-2);border:1px solid var(--border-acc);
+  border-radius:var(--radius-sm);box-shadow:var(--shadow-lg);
+  display:none;flex-direction:column;overflow:hidden;
+  max-height:180px;overflow-y:auto;
+}
+.muni-drop.open{display:flex;}
+.muni-drop-item{
+  padding:9px 12px;font-size:.72rem;color:var(--text-1);
+  cursor:pointer;border-bottom:1px solid var(--border);
+  transition:background .12s;line-height:1.4;
+}
+.muni-drop-item:last-child{border-bottom:none;}
+.muni-drop-item:hover{background:rgba(0,212,255,.08);color:var(--accent);}
+.muni-drop-item.empty{color:var(--text-3);cursor:default;font-style:italic;}
+.muni-drop-item.empty:hover{background:none;color:var(--text-3);}
 .mcoord-accordion{
   background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;
 }
@@ -1789,6 +1831,23 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
         </div>
       </div>
 
+      <!-- BUSCAR MUNICIPI -->
+      <div>
+        <div class="map-sec-label">Buscar Municipi</div>
+        <div class="muni-search-wrap">
+          <div class="muni-search-row">
+            <input class="muni-search-inp" id="muniSearchInp" type="text"
+              placeholder="Buscar municipi..."
+              autocomplete="off" autocorrect="off" spellcheck="false"
+              oninput="muniOnInput(this.value)"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();muniCercar();}">
+            <button class="muni-search-btn" id="muniSearchBtn"
+              onclick="muniCercar()" title="Cercar">⌕</button>
+          </div>
+          <div class="muni-drop" id="muniDrop"></div>
+        </div>
+      </div>
+
       <!-- ANAR A PK -->
       <div>
         <div class="map-sec-label">Anar a PK Exacte</div>
@@ -2345,6 +2404,114 @@ function toggleManualPanel() {
 function toggleMcoordAccordion() {
   document.getElementById('mcoordAccordion').classList.toggle('open');
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CERCADOR DE MUNICIPI — Nominatim (OpenStreetMap)
+═══════════════════════════════════════════════════════════════════ */
+let _muniDebounceT = null;
+let _muniController = null;   // AbortController per cancel·lar fetch anterior
+
+function muniOnInput(val) {
+  clearTimeout(_muniDebounceT);
+  const drop = document.getElementById('muniDrop');
+  if (!val.trim()) { drop.classList.remove('open'); return; }
+  // Debounce 400 ms — no fem fetch a cada tecla
+  _muniDebounceT = setTimeout(() => muniCercar(true), 400);
+}
+
+async function muniCercar(silencious = false) {
+  const inp  = document.getElementById('muniSearchInp');
+  const btn  = document.getElementById('muniSearchBtn');
+  const drop = document.getElementById('muniDrop');
+  const q    = inp.value.trim();
+  if (!q) return;
+
+  // Cancel·la fetch anterior si encara està en vol
+  if (_muniController) _muniController.abort();
+  _muniController = new AbortController();
+
+  // Indicador de càrrega
+  btn.textContent = '↻';
+  btn.classList.add('loading');
+  drop.classList.remove('open');
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(q + ', Catalunya')}&accept-language=ca`;
+    const res = await fetch(url, {
+      signal: _muniController.signal,
+      headers: { 'Accept-Language': 'ca,es;q=0.8' }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    btn.textContent = '⌕';
+    btn.classList.remove('loading');
+
+    if (!data.length) {
+      if (!silencious) showToast(`⚠️ No s'ha trobat "${q}"`, 'warn', 3000);
+      _muniMostrarDrop([{ display_name: `Sense resultats per "${q}"`, _buit: true }]);
+      return;
+    }
+
+    if (data.length === 1) {
+      // Resultat únic — vola directament
+      muniAnarA(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name);
+    } else {
+      // Múltiples resultats — mostra desplegable
+      _muniMostrarDrop(data);
+    }
+  } catch (err) {
+    btn.textContent = '⌕';
+    btn.classList.remove('loading');
+    if (err.name === 'AbortError') return;   // cancel·lat intencionadament
+    const msg = navigator.onLine
+      ? `❌ Error de cerca: ${err.message}`
+      : '📴 Sense connexió a internet';
+    showToast(msg, 'err', 4000);
+  }
+}
+
+function _muniMostrarDrop(items) {
+  const drop = document.getElementById('muniDrop');
+  drop.innerHTML = items.map((item, i) => {
+    if (item._buit) return `<div class="muni-drop-item empty">${item.display_name}</div>`;
+    // Nom curt: primera part abans de la primera coma
+    const nom = item.display_name.split(',').slice(0, 2).join(',').trim();
+    return `<div class="muni-drop-item"
+      onclick="_muniSeleccionar(${i})"
+      data-lat="${item.lat}" data-lon="${item.lon}"
+      data-nom="${item.display_name.replace(/"/g,'&quot;')}">${nom}</div>`;
+  }).join('');
+  drop.classList.add('open');
+}
+
+function _muniSeleccionar(idx) {
+  const drop = document.getElementById('muniDrop');
+  const item = drop.querySelectorAll('.muni-drop-item')[idx];
+  if (!item || item.classList.contains('empty')) return;
+  const lat = parseFloat(item.dataset.lat);
+  const lon = parseFloat(item.dataset.lon);
+  const nom = item.dataset.nom;
+  muniAnarA(lat, lon, nom);
+}
+
+function muniAnarA(lat, lon, nomComplet) {
+  const drop = document.getElementById('muniDrop');
+  const inp  = document.getElementById('muniSearchInp');
+  drop.classList.remove('open');
+  // Mostra nom curt a l'input
+  inp.value = nomComplet.split(',')[0].trim();
+  if (!map) return;
+  map.flyTo([lat, lon], 14, { animate: true, duration: 1.4 });
+  showToast(`📍 ${nomComplet.split(',')[0].trim()}`, 'ok', 2500);
+}
+
+// Tanca el desplegable en clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('.muni-search-wrap')) {
+    document.getElementById('muniDrop')?.classList.remove('open');
+  }
+});
 
 /* Obre i inicialitza el panell manual des del modal d'error GPS */
 function acceptarManualGPS() {
