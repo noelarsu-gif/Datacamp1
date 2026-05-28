@@ -1094,7 +1094,7 @@ body::before{
 }
 .sel-btn-del{border:1px solid rgba(255,59,92,.4);background:var(--red-dim);color:var(--red);}
 .sel-btn-del:hover{background:rgba(255,59,92,.25);}
-.sel-btn-share{border:1px solid rgba(0,212,255,.4);background:var(--accent-dim);color:var(--accent);}
+.sel-btn-share{border:1px solid rgba(0,212,255,.4);background:var(--accent-dim);color:var(--accent);display:inline-flex;align-items:center;gap:5px;}
 .sel-btn-share:hover{background:rgba(0,212,255,.22);}
 
 /* Grid de 3 columnes */
@@ -2030,7 +2030,12 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
   <div class="sel-toolbar" id="selToolbar">
     <span class="sel-count" id="selCount">0 seleccionades</span>
     <div class="sel-actions">
-      <button class="sel-btn sel-btn-share" onclick="compartirSeleccio()">↗️ Exportar</button>
+      <button class="sel-btn sel-btn-share" id="selBtnShare" onclick="compartirSeleccio()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
+          <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-3 3c.36 0 .69-.08 1-.21l-6.83 3.99A2.987 2.987 0 0 0 9 11c-1.66 0-3 1.34-3 3s1.34 3 3 3c.74 0 1.41-.29 1.93-.76l7 4.08A2.97 2.97 0 0 0 18 22a3 3 0 1 0 0-6z"/>
+        </svg>
+        <span id="selShareLabel">Compartir</span>
+      </button>
       <button class="sel-btn sel-btn-del" onclick="eliminarSeleccio()">🗑️ Eliminar</button>
     </div>
   </div>
@@ -4339,12 +4344,15 @@ function toggleFotoSeleccionada(id, card) {
   actualitzarBarraSeleccio();
 }
 function actualitzarBarraSeleccio() {
-  const toolbar = document.getElementById('selToolbar');
-  const count   = document.getElementById('selCount');
+  const toolbar   = document.getElementById('selToolbar');
+  const count     = document.getElementById('selCount');
+  const shareLabel = document.getElementById('selShareLabel');
   if (!toolbar) return;
-  if (modeSeleccio && fotosSeleccionades.size > 0) {
+  const n = fotosSeleccionades.size;
+  if (modeSeleccio && n > 0) {
     toolbar.classList.add('visible');
-    count.textContent = `${fotosSeleccionades.size} seleccionada${fotosSeleccionades.size>1?'s':''}`;
+    count.textContent = `${n} seleccionada${n > 1 ? 's' : ''}`;
+    if (shareLabel) shareLabel.textContent = n > 1 ? `Compartir (${n})` : 'Compartir';
   } else {
     toolbar.classList.remove('visible');
   }
@@ -4368,17 +4376,50 @@ async function eliminarSeleccio() {
 
 async function compartirSeleccio() {
   if (!fotosSeleccionades.size) return;
-  const ids  = [...fotosSeleccionades];
+
+  const ids   = [...fotosSeleccionades];
   const fotos = fotosDB.filter(f => ids.includes(f.id));
   if (!fotos.length) return;
-  if (navigator.share && fotos.length === 1) {
-    const foto = fotos[0];
-    const file = new File([foto.blob], foto.nom, { type:'image/jpeg' });
-    try { await navigator.share({ files:[file], title:'PK-GEOLOC', text: foto.nom }); return; } catch(_) {}
+
+  // Converteix cada blob a File per a la Web Share API
+  const files = fotos.map(f => new File([f.blob], f.nom, { type: 'image/jpeg' }));
+
+  // ── Cas A: Web Share API amb suport de múltiples fitxers ──────────
+  if (navigator.canShare && navigator.canShare({ files })) {
+    try {
+      await navigator.share({ files, title: 'PK-GEOLOC' });
+      desactivarSeleccio();
+      return;
+    } catch (err) {
+      // L'usuari ha cancel·lat el Share Sheet — no fem res
+      if (err.name === 'AbortError') return;
+      // Qualsevol altre error: caiem al fallback
+    }
   }
-  // Descàrrega individual per a cada foto seleccionada
-  fotos.forEach(foto => descarregarBlob(foto.blob, foto.nom));
-  showToast(`⬇️ Descarregant ${fotos.length} foto(s)`,'ok');
+
+  // ── Cas B: navigator.share sense suport multi-fitxer (1 foto) ─────
+  if (navigator.share && files.length === 1) {
+    try {
+      await navigator.share({ files, title: 'PK-GEOLOC', text: files[0].name });
+      desactivarSeleccio();
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+    }
+  }
+
+  // ── Cas C: Descàrrega en lot (fallback per a escriptori o navegadors sense Share API) ──
+  const msg = navigator.share
+    ? `El navegador no permet compartir ${fotos.length} fitxers alhora.\nEs descarregaran directament.`
+    : `El navegador no suporta la funció de compartir.\nEs descarregaran ${fotos.length} foto(s) directament.`;
+
+  showToast(`⬇️ Descarregant ${fotos.length} foto(s)...`, 'ok', 3500);
+
+  // Petita pausa entre descàrregues per evitar bloqueigs del navegador
+  for (let i = 0; i < fotos.length; i++) {
+    descarregarBlob(fotos[i].blob, fotos[i].nom);
+    if (i < fotos.length - 1) await new Promise(r => setTimeout(r, 350));
+  }
   desactivarSeleccio();
 }
 
