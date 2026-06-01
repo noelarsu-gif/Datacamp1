@@ -420,10 +420,8 @@ body::before{
 .map-ra-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
 
 /* ══════════════════════════════════════════════
-   MUC — Capa WMS + Badge + Llegenda
+   MUC — Badge + Toggle + Llegenda
 ══════════════════════════════════════════════ */
-
-/* Badge zona urbana (sota els botons d'acció) */
 #mapUrbanBadge{
   display:none;align-items:center;gap:6px;
   margin-top:5px;padding:5px 9px;
@@ -439,10 +437,8 @@ body::before{
 .urban-dot{ width:7px;height:7px;border-radius:50%;flex-shrink:0;background:currentColor; }
 #mapUrbanBadge.carregant .urban-dot{ animation:dotPulse 1s infinite; }
 
-/* Toggle MUC dins del panell lateral (sota el badge) */
 #mapMucToggleWrap{
-  display:none; /* visible quan hi ha resultat OK */
-  align-items:center;justify-content:space-between;
+  display:none;align-items:center;justify-content:space-between;
   margin-top:5px;padding:5px 9px;
   border-radius:var(--radius-sm);
   background:var(--bg-3);border:1px solid var(--border);
@@ -451,7 +447,6 @@ body::before{
   font-family:var(--font-cond);font-size:.65rem;font-weight:700;
   letter-spacing:.5px;color:var(--text-2);text-transform:uppercase;
 }
-/* Switch iOS-style */
 .muc-switch{ position:relative;width:34px;height:18px;flex-shrink:0; }
 .muc-switch input{ opacity:0;width:0;height:0; }
 .muc-slider{
@@ -465,14 +460,15 @@ body::before{
 .muc-switch input:checked + .muc-slider{ background:var(--accent); }
 .muc-switch input:checked + .muc-slider::before{ transform:translateX(16px); }
 
-/* Llegenda MUC — panell flotant sobre el mapa */
+/* Llegenda flotant sobre el mapa */
 #mucLlegenda{
-  display:none; /* mostra/oculta amb el toggle */
+  display:none;
   position:absolute;bottom:44px;left:8px;z-index:1100;
   background:var(--bg-2);border:1px solid var(--border);
   border-radius:var(--radius);padding:8px 10px;
   font-family:var(--font-cond);font-size:.62rem;
   min-width:170px;box-shadow:0 4px 16px rgba(0,0,0,.45);
+  pointer-events:none;
 }
 #mucLlegenda .muc-leg-title{
   font-size:.6rem;font-weight:700;letter-spacing:1px;
@@ -480,17 +476,14 @@ body::before{
 }
 .muc-leg-row{ display:flex;align-items:center;gap:6px;margin-bottom:4px;line-height:1.2; }
 .muc-leg-row:last-child{ margin-bottom:0; }
-.muc-leg-box{
-  width:13px;height:13px;border-radius:2px;flex-shrink:0;
-  border:1px solid rgba(255,255,255,.12);
-}
+.muc-leg-box{ width:13px;height:13px;border-radius:2px;flex-shrink:0;border:1px solid rgba(255,255,255,.15); }
 .muc-leg-sep{
-  font-size:.58rem;font-weight:700;letter-spacing:1px;
-  color:var(--text-3);text-transform:uppercase;
-  margin:5px 0 3px;border-top:1px solid var(--border);padding-top:4px;
+  font-size:.58rem;font-weight:700;letter-spacing:1px;color:var(--text-3);
+  text-transform:uppercase;margin:5px 0 3px;
+  border-top:1px solid var(--border);padding-top:4px;
 }
-#mucLlegenda .muc-leg-codi{ font-weight:700;color:var(--text-1);min-width:30px; }
-#mucLlegenda .muc-leg-desc{ color:var(--text-2); }
+.muc-leg-codi{ font-weight:700;color:var(--text-1);min-width:30px; }
+.muc-leg-desc{ color:var(--text-2); }
 
 /* Formularis mapa */
 .map-sec-label{
@@ -1903,13 +1896,13 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
           <button class="map-ra-btn" onclick="centrarMapa()">🎯</button>
         </div>
 
-        <!-- BADGE ZONA URBANA (Overpass OSM) -->
+        <!-- Badge zona urbana (Overpass OSM) -->
         <div id="mapUrbanBadge">
           <span class="urban-dot"></span>
           <span id="mapUrbanText">Comprovant zona…</span>
         </div>
 
-        <!-- TOGGLE CAPA MUC -->
+        <!-- Toggle capa MUC -->
         <div id="mapMucToggleWrap">
           <span class="muc-lbl">🗺 Capa MUC Generalitat</span>
           <label class="muc-switch">
@@ -1920,27 +1913,23 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 
       </div><!-- fi map-res-card -->
 
-      <!-- LLEGENDA MUC (flotant sobre el mapa, fora del card) -->
+      <!-- Llegenda MUC flotant (fora del card, posicionada sobre el mapa) -->
       <div id="mucLlegenda">
         <div class="muc-leg-title">Classificació del sòl — MUC</div>
-        <!-- Sòl Urbà -->
         <div class="muc-leg-sep">Sòl Urbà</div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#E8603C"></div><span class="muc-leg-codi">SUC</span><span class="muc-leg-desc">Urbà consolidat</span></div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#F4A460;border-style:dashed"></div><span class="muc-leg-codi">SNC</span><span class="muc-leg-desc">Urbà no consolidat</span></div>
-        <!-- Sòl Urbanitzable -->
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#C0392B"></div><span class="muc-leg-codi">SUC</span><span class="muc-leg-desc">Urbà consolidat</span></div>
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#E67E22;border-style:dashed"></div><span class="muc-leg-codi">SNC</span><span class="muc-leg-desc">Urbà no consolidat</span></div>
         <div class="muc-leg-sep">Sòl Urbanitzable</div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#F5CBA7"></div><span class="muc-leg-codi">SUD</span><span class="muc-leg-desc">Urbanitzable delimitat</span></div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#FDEBD0;border-style:dotted"></div><span class="muc-leg-codi">SND</span><span class="muc-leg-desc">Urbanitzable no delimitat</span></div>
-        <!-- Sòl No Urbanitzable -->
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#F0B27A"></div><span class="muc-leg-codi">SUD</span><span class="muc-leg-desc">Urbanitzable delimitat</span></div>
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#FAD7A0;border-style:dotted"></div><span class="muc-leg-codi">SND</span><span class="muc-leg-desc">Urbanitzable no delimitat</span></div>
         <div class="muc-leg-sep">Sòl No Urbanitzable</div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#D5E8D4"></div><span class="muc-leg-codi">SNU</span><span class="muc-leg-desc">No urbanitzable</span></div>
-        <!-- Qualificacions urbanes principals -->
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#ABEBC6"></div><span class="muc-leg-codi">SNU</span><span class="muc-leg-desc">No urbanitzable</span></div>
         <div class="muc-leg-sep">Qualificacions (Sòl Urbà)</div>
         <div class="muc-leg-row"><div class="muc-leg-box" style="background:#C0392B"></div><span class="muc-leg-codi">R1</span><span class="muc-leg-desc">Nucli antic</span></div>
         <div class="muc-leg-row"><div class="muc-leg-box" style="background:#E67E22"></div><span class="muc-leg-codi">R2–R6</span><span class="muc-leg-desc">Residencial</span></div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#8E44AD"></div><span class="muc-leg-codi">A1–A3</span><span class="muc-leg-desc">Logística/Ind.</span></div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#2980B9"></div><span class="muc-leg-codi">SC</span><span class="muc-leg-desc">Comerç/Serveis</span></div>
-        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#27AE60"></div><span class="muc-leg-codi">SX</span><span class="muc-leg-desc">Verd/Espai obert</span></div>
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#7D3C98"></div><span class="muc-leg-codi">A1–A3</span><span class="muc-leg-desc">Logística/Ind.</span></div>
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#2471A3"></div><span class="muc-leg-codi">SC</span><span class="muc-leg-desc">Comerç/Serveis</span></div>
+        <div class="muc-leg-row"><div class="muc-leg-box" style="background:#1E8449"></div><span class="muc-leg-codi">SX</span><span class="muc-leg-desc">Verd/Espai obert</span></div>
       </div>
 
       <!-- BUSCAR MUNICIPI -->
@@ -4916,61 +4905,75 @@ if ('serviceWorker' in navigator) {
 /* ═══════════════════════════════════════════════════════════════════
    MÒDUL MUC — Capa WMS oficial + Detecció zona urbana (Overpass OSM)
    ─────────────────────────────────────────────────────────────────
-   WMS del MUC (Generalitat): retorna imatge ràster → sense CORS.
-   URL: https://sig.gencat.cat/ows/PLANEJAMENT/wms
-   Capa: MUC_PG  (Pla General sintètic, colors oficials)
+   URL WMS correcta (IDEC / catalegs.ide.cat):
+     https://dtes.gencat.cat/webmap/MUC/service.svc/get
+   (La URL sig.gencat.cat/ows/PLANEJAMENT/wms retorna 400 des de navegadors)
 
-   Detecció de zona: Overpass API (OSM) → CORS obert, gratuït.
-   S'usa per classificar el punt i mostrar el badge de text.
+   CRS suportats pel servei: EPSG:25831, EPSG:4326, EPSG:4258
+   Leaflet usa EPSG:3857 (Web Mercator) internament, però el WMS accepta
+   peticions en CRS:84 / EPSG:4326 via paràmetre SRS/CRS → funciona.
+
+   CORS: el WMS és un servei d'imatge (GetMap) → no té restriccions CORS
+   perquè el navegador no inspecciona les imatges de tiles.
 ═══════════════════════════════════════════════════════════════════ */
 
 // ── Variables d'estat ────────────────────────────────────────────
-let _mucLayer      = null;   // L.tileLayer.wms actiu
-let _urbanLayer    = null;   // L.geoJSON de la detecció OSM (opcional, desactivat per defecte)
-let _urbanAbort    = null;   // AbortController Overpass
-let _urbanDebTimer = null;   // Debounce timer
-const _URBAN_DELAY = 900;    // ms
+let _mucLayer      = null;
+let _urbanAbort    = null;
+let _urbanDebTimer = null;
+const _URBAN_DELAY = 900;
 
-// Tags OSM → zona urbana
 const _URBAN_LANDUSE = new Set(['residential','commercial','industrial','retail',
   'garages','construction','education','civic','institutional','brownfield','greenfield']);
 const _URBAN_PLACE   = new Set(['city','town','village','suburb','neighbourhood','quarter','borough']);
 
 /* ────────────────────────────────────────────────────────────────
-   1. CAPA WMS MUC
+   1. CAPA WMS MUC — URL i paràmetres correctes
    ──────────────────────────────────────────────────────────────── */
 
 /**
- * Activa o desactiva la capa WMS del MUC sobre el mapa Leaflet.
- * Cridat pel toggle switch del panell lateral.
- * @param {boolean} actiu
+ * Activa o desactiva la capa WMS del MUC.
+ * URL oficial: https://dtes.gencat.cat/webmap/MUC/service.svc/get
+ * Capes principals disponibles:
+ *   0  → MUC sintètic complet (classificació + qualificació, colors oficials)
+ * Usem version 1.1.1 + SRS=EPSG:4326 per màxima compatibilitat amb Leaflet.
  */
 function mucToggleCapa(actiu) {
   const llegenda = document.getElementById('mucLlegenda');
 
   if (actiu) {
-    // Crear la capa WMS si no existeix
     if (!_mucLayer) {
-      _mucLayer = L.tileLayer.wms('https://sig.gencat.cat/ows/PLANEJAMENT/wms', {
-        layers:      'MUC_PG',         // Capa del Pla General sintètic (colors oficials MUC)
-        format:      'image/png',
-        transparent:  true,
-        opacity:      0.65,            // Semitransparent per veure el fons del mapa
-        version:     '1.3.0',
-        crs:          L.CRS.EPSG4326, // El MUC publica en EPSG:4326
-        attribution: '© <a href="https://territori.gencat.cat" target="_blank">MUC — Generalitat de Catalunya</a>',
-        // El WMS emetrà errors 400 si les coordenades surten de Catalunya — és normal
-        errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
-      });
+      /*
+       * Leaflet L.tileLayer.wms envia automàticament BBOX en el CRS del mapa
+       * (EPSG:3857). El servidor dtes.gencat.cat accepta EPSG:4326, de manera
+       * que forcem el CRS a EPSG:4326 passant-lo explícitament.
+       * Leaflet reescriu BBOX i CRS/SRS al paràmetre corresponent.
+       */
+      _mucLayer = L.tileLayer.wms(
+        'https://dtes.gencat.cat/webmap/MUC/service.svc/get', {
+          layers:      '0',          // Capa 0 = MUC sintètic complet (colors oficials)
+          format:      'image/png',
+          transparent:  true,
+          opacity:      0.70,
+          version:     '1.1.1',      // 1.1.1 usa SRS= (1.3.0 usa CRS=), més compatible
+          // Forcem el CRS a EPSG:4326 per evitar el bug de tiles en blanc amb EPSG:3857
+          // Leaflet passarà el BBOX en l'ordre correcte (minLon,minLat,maxLon,maxLat)
+          crs:          L.CRS.EPSG4326,
+          uppercase:    true,        // Alguns servidors exigeixen paràmetres en majúscules
+          attribution:  '© <a href="https://territori.gencat.cat" target="_blank">MUC — Generalitat de Catalunya</a>',
+          // Tile en blanc transparent si el servidor no cobreix la zona
+          errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=='
+        }
+      );
     }
+
     if (map && !map.hasLayer(_mucLayer)) {
       _mucLayer.addTo(map);
-      // Portem la capa al davant de les altres capes base però darrere del pin
-      _mucLayer.setZIndex(200);
+      _mucLayer.setZIndex(200);   // Per sobre el basemap, per sota del pin
     }
     if (llegenda) llegenda.style.display = 'block';
+
   } else {
-    // Desactivar: eliminem la capa del mapa (però la conservem en memòria per reutilitzar)
     if (_mucLayer && map && map.hasLayer(_mucLayer)) {
       map.removeLayer(_mucLayer);
     }
@@ -4979,7 +4982,7 @@ function mucToggleCapa(actiu) {
 }
 
 /* ────────────────────────────────────────────────────────────────
-   2. BADGE ZONA URBANA (Overpass OSM)
+   2. BADGE ZONA URBANA — Overpass OSM (CORS obert)
    ──────────────────────────────────────────────────────────────── */
 
 function _urbanBadge(estat, text) {
@@ -4994,7 +4997,6 @@ function _urbanBadge(estat, text) {
 function _urbanReset() {
   const b = document.getElementById('mapUrbanBadge');
   if (b) b.style.display = 'none';
-  if (_urbanLayer && map) { map.removeLayer(_urbanLayer); _urbanLayer = null; }
 }
 
 function _esUrba(tags) {
@@ -5005,10 +5007,6 @@ function _esUrba(tags) {
   return false;
 }
 
-/**
- * Punt d'entrada públic. Aplica debounce per evitar ràfegues de peticions
- * quan l'usuari arrossega el pin.
- */
 function verificarAfectacioUrbana(lat, lon) {
   clearTimeout(_urbanDebTimer);
   _urbanDebTimer = setTimeout(() => _urbanConsultar(lat, lon), _URBAN_DELAY);
@@ -5019,12 +5017,11 @@ async function _urbanConsultar(lat, lon) {
   _urbanAbort = new AbortController();
   _urbanBadge('carregant', 'Comprovant zona…');
 
-  const radi = 300;
-  const query = `[out:json][timeout:10];(way(around:${radi},${lat},${lon})[landuse~"residential|commercial|industrial|retail|garages|construction|education|civic"];way(around:${radi},${lat},${lon})[place~"city|town|village|suburb|neighbourhood|quarter"];);out geom;`;
+  const q = `[out:json][timeout:10];(way(around:300,${lat},${lon})[landuse~"residential|commercial|industrial|retail|garages|construction|education|civic"];way(around:300,${lat},${lon})[place~"city|town|village|suburb|neighbourhood|quarter"];);out tags;`;
 
-  async function _fetch(url) {
+  async function _doFetch(url) {
     const r = await fetch(url, {
-      method: 'POST', body: query, signal: _urbanAbort.signal,
+      method: 'POST', body: q, signal: _urbanAbort.signal,
       headers: { 'Content-Type': 'text/plain' }
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -5033,28 +5030,27 @@ async function _urbanConsultar(lat, lon) {
 
   try {
     let data;
-    try      { data = await _fetch('https://overpass-api.de/api/interpreter'); }
-    catch(e1){ if (e1.name==='AbortError') return;
-               data = await _fetch('https://overpass.kumi.systems/api/interpreter'); }
+    try      { data = await _doFetch('https://overpass-api.de/api/interpreter'); }
+    catch(e1){ if (e1.name === 'AbortError') return;
+               data = await _doFetch('https://overpass.kumi.systems/api/interpreter'); }
 
-    const elements = data.elements || [];
-    const urbans   = elements.filter(el => _esUrba(el.tags));
-
+    const urbans = (data.elements || []).filter(el => _esUrba(el.tags));
     if (urbans.length > 0) {
-      const tipus = urbans[0].tags?.landuse || urbans[0].tags?.place || 'urbà';
+      const t = urbans[0].tags;
+      const tipus = t.landuse || t.place || 'urbà';
       _urbanBadge('urbana', `🏙 Zona Urbana (${tipus})`);
     } else {
       _urbanBadge('interurba', '🌿 Zona Interurbana / Rural');
     }
   } catch(err) {
     if (err.name === 'AbortError') return;
-    console.warn('[MUC-Urban] Overpass error:', err.message);
+    console.warn('[MUC] Overpass error:', err.message);
     _urbanBadge('error-muc', '⚠ Zona: sense connexió');
   }
 }
 
 /* ────────────────────────────────────────────────────────────────
-   3. INTEGRACIÓ NO DESTRUCTIVA amb mapMostrarOK / mapMostrarFora
+   3. INTEGRACIÓ — patch no destructiu de mapMostrarOK / mapMostrarFora
    ──────────────────────────────────────────────────────────────── */
 (function _patchMUC() {
   const _origOK   = window.mapMostrarOK   || mapMostrarOK;
@@ -5062,20 +5058,21 @@ async function _urbanConsultar(lat, lon) {
 
   window.mapMostrarOK = function(lat, lon, res) {
     _origOK(lat, lon, res);
-    // Mostra el toggle MUC i el badge
+    // Mostra el toggle MUC
     document.getElementById('mapMucToggleWrap').style.display = 'flex';
-    // Refresca la capa WMS si estava activa (el pin ha canviat de posició)
-    if (document.getElementById('mucToggleChk')?.checked) {
-      if (_mucLayer && map) { map.removeLayer(_mucLayer); _mucLayer = null; }
+    // Si la capa ja estava activa, la refresquem per la nova posició
+    const chk = document.getElementById('mucToggleChk');
+    if (chk && chk.checked && _mucLayer && map) {
+      map.removeLayer(_mucLayer);
+      _mucLayer = null;
       mucToggleCapa(true);
     }
-    // Detecció zona urbana
+    // Detecció de zona urbana (amb debounce)
     verificarAfectacioUrbana(lat, lon);
   };
 
   window.mapMostrarFora = function(res) {
     _origFora(res);
-    // Oculta toggle, badge i llegenda
     document.getElementById('mapMucToggleWrap').style.display = 'none';
     document.getElementById('mucLlegenda').style.display = 'none';
     clearTimeout(_urbanDebTimer);
