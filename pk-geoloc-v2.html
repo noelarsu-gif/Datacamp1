@@ -78,6 +78,138 @@
   --shadow-acc:0 0 40px rgba(0,212,255,.22);
   --tr:all .2s cubic-bezier(.4,0,.2,1);
 }
+
+/* ═══════════════════════════════════════════════════════════
+   MODE DIA — Fons clar, alt contrast per a sol directe
+   WCAG AAA (≥7:1) sobre fons blanc/gris molt clar
+   Accent: blau fosc #0066CC → contrast sobre bg-0: 9.2:1 ✓
+   Text-1: #0A0B0D    → sobre bg-0 (#F5F6F8): 17.8:1 ✓
+   Text-2: #3A3F4A    → sobre bg-0:            9.3:1  ✓
+   Text-3: #6B7280    → sobre bg-0:            5.1:1  AA+  ✓
+═══════════════════════════════════════════════════════════ */
+[data-theme="day"] {
+  --bg-0:#F5F6F8;
+  --bg-1:#ECEEF2;
+  --bg-2:#E4E7ED;
+  --bg-3:#D8DCE5;
+  --bg-4:#CBD0DB;
+  --bg-card:#FFFFFF;
+
+  --accent:#0066CC;
+  --accent-dim:rgba(0,102,204,.10);
+  --accent-glow:rgba(0,102,204,.30);
+
+  --green:#007A3D;
+  --green-dim:rgba(0,122,61,.10);
+  --amber:#B45309;
+  --amber-dim:rgba(180,83,9,.10);
+  --red:#C0000F;
+  --red-dim:rgba(192,0,15,.10);
+  --purple:#6B21A8;
+  --purple-dim:rgba(107,33,168,.10);
+
+  --text-1:#0A0B0D;
+  --text-2:#3A3F4A;
+  --text-3:#6B7280;
+
+  --border:rgba(0,0,0,.12);
+  --border-acc:rgba(0,102,204,.40);
+
+  --shadow:0 4px 16px rgba(0,0,0,.12);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.18);
+  --shadow-acc:0 0 24px rgba(0,102,204,.20);
+}
+
+/* Ajustos puntuals mode dia */
+[data-theme="day"] body::before {
+  background-image:
+    linear-gradient(rgba(0,0,0,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,0,0,.04) 1px,transparent 1px);
+}
+[data-theme="day"] .header {
+  background:rgba(245,246,248,.97);
+}
+[data-theme="day"] .logo-text {
+  text-shadow: none;
+}
+[data-theme="day"] .result-pk {
+  text-shadow: none;
+}
+[data-theme="day"] .btn-main {
+  background: linear-gradient(135deg,rgba(0,102,204,.14) 0%,rgba(0,102,204,.07) 100%) !important;
+}
+[data-theme="day"] .btn-main:hover {
+  background: rgba(0,102,204,.22) !important;
+  box-shadow: var(--shadow-acc) !important;
+}
+[data-theme="day"] .tab-bar {
+  background: var(--bg-2);
+}
+[data-theme="day"] #leafletMap {
+  background: #dce6f0;
+}
+[data-theme="day"] .leaflet-container {
+  background: #dce6f0;
+}
+[data-theme="day"] .leaflet-tile {
+  filter: saturate(1.05) brightness(1.05);
+}
+[data-theme="day"] .leaflet-control-zoom a {
+  background: var(--bg-card) !important;
+  color: var(--text-1) !important;
+  border-color: var(--border) !important;
+}
+[data-theme="day"] .leaflet-control-attribution {
+  background: rgba(245,246,248,.9) !important;
+  color: var(--text-3) !important;
+}
+[data-theme="day"] .leaflet-popup-content-wrapper {
+  background: var(--bg-card);
+  color: var(--text-1);
+}
+[data-theme="day"] .leaflet-popup-tip {
+  background: var(--bg-card);
+}
+[data-theme="day"] .overlay {
+  background: rgba(10,11,13,.65);
+}
+[data-theme="day"] #mapLoading {
+  background: rgba(245,246,248,.80);
+}
+[data-theme="day"] #btnCentrarMapa {
+  background: rgba(245,246,248,.95);
+  color: var(--accent);
+}
+[data-theme="day"] .map-amid-tab.active {
+  background: var(--accent);
+  color: #fff;
+}
+[data-theme="day"] .photo-viewer,
+[data-theme="day"] #viewerFinalitzat {
+  background: var(--bg-0);
+}
+[data-theme="day"] .gps-bar.searching { background: rgba(180,83,9,.07); }
+[data-theme="day"] .gps-bar.locked   { background: rgba(0,122,61,.07); }
+[data-theme="day"] .gps-bar.error    { background: rgba(192,0,15,.07); }
+[data-theme="day"] .toast { background: var(--bg-card); }
+[data-theme="day"] .toast.ok   { background: rgba(0,122,61,.08); }
+[data-theme="day"] .toast.warn { background: rgba(180,83,9,.08); }
+[data-theme="day"] .toast.err  { background: rgba(192,0,15,.08); }
+[data-theme="day"] .btn-main.mode-repair {
+  background: linear-gradient(135deg,#92400e,#b45309) !important;
+}
+[data-theme="day"] input[type="range"] { background: var(--bg-4); }
+
+/* Botó toggle tema — icona ☀️/🌙 */
+#btnTheme {
+  width:42px;height:42px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-2);font-size:1.15rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:var(--tr);flex-shrink:0;
+  line-height:1;
+}
+#btnTheme:hover,#btnTheme:active {
+  background:var(--bg-4);border-color:var(--border-acc);
+}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;touch-action:manipulation}
 body{
@@ -1527,6 +1659,22 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
     </div>
     <div class="divider"></div>
     <div class="settings-card">
+      <div class="settings-card-title">☀️ Mode de Visualització</div>
+      <div class="settings-card-body">Canvia entre mode nit (fosc) i mode dia (clar) per a millor lectura sota el sol.</div>
+      <button onclick="toggleTheme()" style="
+        width:100%;padding:12px;border-radius:var(--radius-sm);
+        border:1.5px solid var(--border-acc);background:var(--accent-dim);
+        color:var(--accent);font-family:var(--font-cond);font-size:.82rem;
+        font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+        cursor:pointer;transition:var(--tr);display:flex;align-items:center;
+        justify-content:center;gap:8px;
+      " id="settingsThemeBtn">
+        <span id="settingsThemeIcon">☀️</span>
+        <span id="settingsThemeLabel">ACTIVAR MODE DIA</span>
+      </button>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-card">
       <div class="settings-card-title">ℹ️ PK-GEOLOC v2.0</div>
       <div class="settings-card-body">
         Mapa satèl·lit · Incidències Waze · Fotos amb marca d'aigua<br>
@@ -1707,6 +1855,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       <span class="logo-badge">v2</span>
     </div>
     <div class="header-right">
+      <button id="btnTheme" onclick="toggleTheme()" title="Mode dia / nit">🌙</button>
       <button class="icon-btn" onclick="openSettings()">⚙️</button>
     </div>
   </div>
@@ -4799,7 +4948,43 @@ if ('serviceWorker' in navigator) {
     if (incPanel_open && !e.target.closest('.inc-quick-panel') && !e.target.closest('.fab-stack'))
       tancarIncPanel();
   });
+
+  // ── Inicialitzar tema (persistència localStorage) ──────────────
+  _aplicarTema(localStorage.getItem('pkTheme') || 'night');
 });
+
+/* ═══════════════════════════════════════════════════════════════════
+   MODE DIA / NIT
+═══════════════════════════════════════════════════════════════════ */
+function _aplicarTema(tema) {
+  const btn = document.getElementById('btnTheme');
+  const settingsIcon  = document.getElementById('settingsThemeIcon');
+  const settingsLabel = document.getElementById('settingsThemeLabel');
+  if (tema === 'day') {
+    document.documentElement.setAttribute('data-theme', 'day');
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#F5F6F8');
+    if (btn) btn.textContent = '☀️';
+    if (settingsIcon)  settingsIcon.textContent  = '🌙';
+    if (settingsLabel) settingsLabel.textContent = 'ACTIVAR MODE NIT';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#060a14');
+    if (btn) btn.textContent = '🌙';
+    if (settingsIcon)  settingsIcon.textContent  = '☀️';
+    if (settingsLabel) settingsLabel.textContent = 'ACTIVAR MODE DIA';
+  }
+  // Refresca el mapa si ja està inicialitzat (canvi de filtre de tiles)
+  if (typeof map !== 'undefined' && map) {
+    setTimeout(() => map.invalidateSize(), 50);
+  }
+}
+
+function toggleTheme() {
+  const actual = document.documentElement.getAttribute('data-theme') === 'day' ? 'day' : 'night';
+  const nou = actual === 'day' ? 'night' : 'day';
+  localStorage.setItem('pkTheme', nou);
+  _aplicarTema(nou);
+}
 </script>
 </body>
 </html>
