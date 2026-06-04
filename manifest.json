@@ -1,7 +1,7 @@
 {
-  "name": "PK-GEOLOC Catalunya v2",
+  "name": "PK-GEOLOC v2",
   "short_name": "PK-GEOLOC",
-  "description": "Localitzador oficial de Punts Kilométrics — Catalunya v2",
+  "description": "Localizador oficial de PK — v2",
   "start_url": "./pk-geoloc-v2.html",
   "display": "standalone",
   "background_color": "#060a14",
