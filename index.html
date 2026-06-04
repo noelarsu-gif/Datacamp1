@@ -1805,7 +1805,7 @@ function _mostrarApp() {
 
 <!-- ════ FAB STACK flotant (incidència + càmera) ════ -->
 <div class="fab-stack" id="fabStack">
-  <button class="fab-cam-float" id="fabCam" onclick="obrirCamera()" title="Fer foto amb marca d'aigua">📷</button>
+  <button class="fab-cam-float" id="fabCam" onclick="obrirCamera()" title="Hacer foto con marca de agua">📷</button>
   <button class="fab-inc" id="fabInc" onclick="toggleIncPanel()" title="Marcar incidència">⚡</button>
 </div>
 
@@ -1822,14 +1822,14 @@ function _mostrarApp() {
   <div class="photo-viewer-img-wrap">
     <img id="photoViewerImg" src="" alt="Foto">
   </div>
-  <!-- Gaveta multi-foto -->
+  <!-- Tira multi-foto -->
   <div class="pv-strip-wrap" id="pvStripWrap">
     <div class="pv-strip-label">Fotos de esta sesión</div>
     <div class="pv-strip" id="pvStrip">
-      <!-- Les miniatures s'afegiran dinàmicament -->
+      <!-- Las miniaturas se añaden dinámicamente -->
       <button class="pv-strip-add" id="pvStripAdd"
         onclick="afegirFotoAlVisor()"
-        title="Afegir més fotos (màx. 5)">+</button>
+        title="Añadir más fotos (máx. 5)">+</button>
     </div>
     <div class="pv-strip-count" id="pvStripCount"></div>
   </div>
@@ -1856,7 +1856,7 @@ function _mostrarApp() {
       </button>
     </div>
     <div class="pv-wa-legend">
-      <span>💡 <b>Con aviso:</b> Notificada al CC</span>
+      <span>💡 <b>Con aviso:</b> Notificada al CCC (Centro Control Carreteras)</span>
       <span>💡 <b>Sin aviso:</b> Detectada en ruta (sin notificación)</span>
       <span>💡 <b>Reparar ahora:</b> Haz la foto del "después" al terminar</span>
     </div>
@@ -1978,7 +1978,7 @@ function _mostrarApp() {
       <div id="resultContent">
         <div class="result-idle">
           <div class="result-idle-icon">🛣️</div>
-          <div class="result-idle-text">Prem "¿DÓNDE ESTOY?" per iniciar la detecció</div>
+          <div class="result-idle-text">Pulsa "¿DÓNDE ESTOY?" para iniciar la detección</div>
         </div>
       </div>
     </div>
@@ -2248,7 +2248,7 @@ function _mostrarApp() {
 <div class="screen" id="screenInc">
   <div class="header">
     <span class="logo-text">INCIDENCIAS</span>
-    <button class="btn-clear-inc" onclick="esborrarIncidencies()">🗑️ Borrar tot</button>
+    <button class="btn-clear-inc" onclick="esborrarIncidencies()">🗑️ Borrar todo</button>
   </div>
   <div class="incidents-header">
     <span class="incidents-count" id="incCount">0 REGISTROS</span>
@@ -2506,7 +2506,7 @@ async function mapCalcPK(lat, lon, final) {
     let punts = filtrarCache(lat, lon, 0.06);
     if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.08);
     if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.15);
-    const res = calcularPK(lat, lon, puntos);
+    const res = calcularPK(lat, lon, punts);
     if (res && res.dist <= llindar * 2) mapMostrarOK(lat, lon, res);
     else mapMostrarFora(res);
   } catch(e) { mapMostrarFora(null); }
@@ -2552,7 +2552,7 @@ async function mapCompartirWA() {
   if (!mapUltimResultat) return;
   const { carretera, km, m, lat, lon } = mapUltimResultat;
   const mStr = String(m).padStart(3, '0');
-  const text = `📍 *Carretera:* ${carretera}\n🛣️ *PK:* ${km}+${mStr}\n🗺️ *Ubicació:* https://maps.google.com/?q=${lat},${lon}`;
+  const text = `📍 *Carretera:* ${carretera}\n🛣️ *PK:* ${km}+${mStr}\n🗺️ *Ubicación:* https://maps.google.com/?q=${lat},${lon}`;
   if (navigator.canShare?.({ text })) { try { await navigator.share({ text }); return; } catch(e) { if (e.name==='AbortError') return; } }
   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
 }
@@ -2822,7 +2822,7 @@ function activarModeReparacio() {
     rpk.textContent = `${_reparacioDades.carretera} · PK ${_reparacioDades.km}+${mStr}`;
   }
 
-  showToast('🚧 Posa\'t a treballar! Fes la foto en acabar.', 'ok', 4000);
+  showToast('🚧 ¡Manos a la obra! Haz la foto al terminar.', 'ok', 4000);
 }
 
 /** Obre la càmera per fer la foto "de finalitzat" */
@@ -2871,13 +2871,13 @@ function guardarFotoFinalitzat() {
 
 async function enviarFinalitzatWA(avis) {
   if (!_reparacioDades) {
-    showToast('⚠️ No hi ha dades de reparació', 'warn'); return;
+    showToast('⚠️ No hay datos de reparación', 'warn'); return;
   }
 
   const mStr     = String(_reparacioDades.m ?? 0).padStart(3, '0');
-  const ccLine   = avis === 'AMB AVÍS' ? '\n📞 [AMB AVÍS CC VIC]' : '';
+  const ccLine   = avis === 'AMB AVÍS' ? '\n📞 [CON AVISO CCC]' : '';
   const coordLine= (_reparacioDades.lat && _reparacioDades.lon)
-    ? `\n🌐 Ubicació: http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
+    ? `\n🌐 Ubicación: http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
     : '';
   const text = (
     `🛣️ Carretera: ${_reparacioDades.carretera}\n` +
@@ -2889,7 +2889,7 @@ async function enviarFinalitzatWA(avis) {
 
   // ── Preparar els dos fitxers (Abans + Després) ─────────────────────────
   const blobAbans   = _reparacioDades.blobAbans;
-  const nomAbans    = _reparacioDades.nomAbans  || 'abans.jpg';
+  const nomAbans    = _reparacioDades.nomAbans  || 'antes.jpg';
   const vfEl        = document.getElementById('viewerFinalitzat');
   const blobDespres = vfEl?._blobDespres ?? null;
   const nomDespres  = 'finalitzat.jpg';
@@ -2919,7 +2919,7 @@ async function enviarFinalitzatWA(avis) {
 
   // ── FALLBACK: clipboard + WhatsApp URL ─────────────────────────────────
   try { await navigator.clipboard.writeText(text); } catch (_) {}
-  showToast('📋 Text copiat! Obre WhatsApp i adjunta les fotos.', 'ok', 5000);
+  showToast('📋 Texto copiado. Abre WhatsApp y adjunta las fotos.', 'ok', 5000);
   setTimeout(() => {
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
   }, 400);
@@ -3050,7 +3050,7 @@ function mapCanviarModeAmid(mode) {
     document.getElementById('mapMode'+k).style.display = m===mode ? 'block' : 'none';
   });
   mapEsborrarAmidament(true);
-  if (mapAmidamentActiu) showToast({ free:'Clica per afegir punts', manual:'Introdueix els PKs' }[mode]||'', 'ok', 2500);
+  if (mapAmidamentActiu) showToast({ free:'Haz clic para añadir puntos', manual:'Introduce los PKs' }[mode]||'', 'ok', 2500);
 }
 
 /* ── 2 PUNTS ── */
@@ -3111,7 +3111,7 @@ async function mapCalcPKAmid(idx, lat, lon) {
     let punts = filtrarCache(lat, lon, 0.06);
     if (punts.length<2) punts = await consultarArcGIS(lat, lon, 0.08);
     if (punts.length<2) punts = await consultarArcGIS(lat, lon, 0.15);
-    const res = calcularPK(lat, lon, puntos);
+    const res = calcularPK(lat, lon, punts);
     if (res && res.dist <= llindar*2) {
       const mStr = String(res.m).padStart(3,'0');
       mapAmidPunts[idx].pk = { ...res, str: `${res.carretera} ${res.km}+${mStr}` };
@@ -3337,7 +3337,7 @@ function _debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>
 ═══════════════════════════════════════════════════════════════════ */
 
 /** Calcula l'àrea d'un polígon en m² usant la fórmula de Shoelace adaptada a WGS84 */
-function _calcularAreaM2(puntos) {
+function _calcularAreaM2(punts) {
   if (punts.length < 3) return 0;
   // Projecció plana aproximada centrada al centroide (vàlida per polígons petits/mitjans)
   const R = 6371000;
@@ -3397,7 +3397,7 @@ function mapAfegirPuntArea(lat, lon) {
   mapAreaMarkers.push(mk);
   mapActualitzarPoligonArea();
   mapRenderAreaPts();
-  if (mapAreaPunts.length === 3) showToast('Añade más puntos o pulsa "Tancar Polígon"', 'ok', 3000);
+  if (mapAreaPunts.length === 3) showToast('Añade más puntos o pulsa "Cerrar Polígono"', 'ok', 3000);
 }
 
 function mapActualitzarPoligonArea() {
@@ -3634,7 +3634,7 @@ function interpolarPK(uLat, uLon, pkA, pkB) {
  * Si TOTES les carreteres estan a la llista negra retorna null i el
  * caller ha d'activar el mode manual.
  */
-function calcularPK(uLat, uLon, puntos) {
+function calcularPK(uLat, uLon, punts) {
   if (!punts?.length) return null;
 
   // Agrupa per carretera EXCLOENT les de la llista negra
@@ -3899,7 +3899,7 @@ async function processarPosicio(pos) {
   if (acc > 300) {
     setBtnLoading(false);
     mostrarResultatError(`Precisión GPS molt baixa (±${Math.round(acc)} m).`);
-    showToast('💻 Precisión insuficient: introdueix les dades manualment','warn');
+    showToast('💻 Precisión insuficiente: introduce los datos manualmente','warn');
     return;
   }
 
@@ -3913,7 +3913,7 @@ async function processarPosicio(pos) {
       fontDades = 'arcgis';
       if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.12);
     }
-    const res = calcularPK(lat, lon, puntos);
+    const res = calcularPK(lat, lon, punts);
 
     if (!res) {
       // null pot significar: (a) totes bloqueadas por la lista negra, (b) cap carretera propera
@@ -3921,7 +3921,7 @@ async function processarPosicio(pos) {
       const resSenseFiltres = (() => {
         const llistaBak = llistaNegra;
         llistaNegra = [];
-        const r = calcularPK(lat, lon, puntos);
+        const r = calcularPK(lat, lon, punts);
         llistaNegra = llistaBak;
         return r;
       })();
@@ -4074,7 +4074,7 @@ function obtenirPosicioFrescaAmbPK(timeoutMs = 10000) {
           let punts = filtrarCache(lat, lon, 0.05);
           if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.07);
           if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.12);
-          const r = calcularPK(lat, lon, puntos);
+          const r = calcularPK(lat, lon, punts);
           if (r) {
             resCalc = r;
             historialPos.push({ pkDec: r.pkDec, lat, lon, ts: Date.now() });
@@ -4274,7 +4274,7 @@ async function renderitzarIncidencies() {
 
         // Construeix missatge WA — la línia PK desapareix si sensePK
         const pkLinia = sensePK
-          ? `*Ubicació:* Sin PK asignado (coordenades GPS)\n`
+          ? `*Ubicación:* Sin PK asignado (coordenadas GPS)\n`
           : `*Carretera:* ${inc.carretera}\n*PK:* ${inc.km}+${mStr}\n`;
 
         const waText = encodeURIComponent(
@@ -4778,7 +4778,7 @@ function descarregarFotoVisor() {
 /* Obre la ubicació de la foto a Google Maps */
 function obrirMapsFotoVisor() {
   if (!viewerLat || !viewerLon) {
-    showToast('⚠️ Aquesta foto no té coordenades GPS', 'warn'); return;
+    showToast('⚠️ Esta foto no tiene coordenadas GPS', 'warn'); return;
   }
   window.open(`https://maps.google.com/?q=${viewerLat},${viewerLon}`, '_blank');
 }
@@ -4794,17 +4794,17 @@ function obrirMapsFotoVisor() {
       a) Copia el text al porta-retalls
       b) Descarrega la foto al dispositiu
       c) Toast "Texto copiado + obre WhatsApp"
-      d) Obre WhatsApp API (l'usuari enganxa el text i adjunta la foto)
+      d) Abre WhatsApp API (el usuario pega el texto y adjunta la foto)
 ═══════════════════════════════════════════════════════════════════ */
 
 /**
- * Construeix el text del missatge estil CC Vic.
+ * Construye el texto del mensaje para CCC.
  * Format net, sense "Incidència Carretera" ni triangles d'advertència.
  */
 function _construirTextWA(carr, km, mStr, lat, lon, avis) {
-  const ccLine = avis === 'AMB AVÍS' ? '\n📞 [AMB AVÍS CC VIC]' : '';
+  const ccLine = avis === 'AMB AVÍS' ? '\n📞 [CON AVISO CCC]' : '';
   const coordLine = (lat && lon)
-    ? `\n🌐 Ubicació: http://maps.google.com/maps?q=${lat},${lon}`
+    ? `\n🌐 Ubicación: http://maps.google.com/maps?q=${lat},${lon}`
     : '';
   return (
     `🛣️ Carretera: ${carr || '—'}\n` +
@@ -4818,7 +4818,7 @@ function _construirTextWA(carr, km, mStr, lat, lon, avis) {
  * Funció central: comparteix TOTES les fotos de la sessió + text per WhatsApp.
  * Usa sessionFotos[] si hi ha multi-foto, sinó usa el blob individual.
  */
-async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SENSE AVÍS') {
+async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SIN AVISO') {
   const mStr   = String(m ?? 0).padStart(3, '0');
   const textWA = _construirTextWA(carr, km, mStr, lat, lon, avis);
 
@@ -4850,8 +4850,8 @@ async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'S
   } catch (_) {}
 
   const toastMsg = textCopiat
-    ? '📋 Text copiat! Selecciona les fotos a WhatsApp.'
-    : '📲 Obre WhatsApp, enganxa el text i adjunta les fotos.';
+    ? '📋 Texto copiado. Selecciona las fotos en WhatsApp.'
+    : '📲 Abre WhatsApp, pega el texto y adjunta las fotos.';
   showToast(toastMsg, 'ok', 5000);
 
   setTimeout(() => {
@@ -4863,7 +4863,7 @@ async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'S
 }
 
 /* ── Punt d'entrada des del visor de foto ── */
-async function compartirWhatsAppFotoVisor(avis = 'SENSE AVÍS') {
+async function compartirWhatsAppFotoVisor(avis = 'SIN AVISO') {
   if (!viewerBlob || !viewerNomFitxer) {
     showToast('⚠️ No hi ha foto oberta', 'warn'); return;
   }
