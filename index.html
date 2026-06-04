@@ -2336,7 +2336,7 @@ let llindar = 150;
    a diferent nivell, carreteres paral·leles massa properes, etc.)
    L'operari pot modificar-la des de Configuració.
 ══════════════════════════════════════════════════════════════════ */
-let llistaNegra = ['A-2', 'C-25', 'AP-7'];
+let llistaNegra = [];
 let pkCache = null;
 let ultimResultat = null;
 let ultimaPos = null;       // {lat,lon,acc}
@@ -2942,7 +2942,7 @@ function toggleManualPanel() {
 /* ══════════════════════════════════════════════════════════════════
    GESTIÓ LLISTA NEGRA DE CARRETERES
 ══════════════════════════════════════════════════════════════════ */
-const _LLISTA_NEGRA_DEFAULT = ['A-2', 'C-25', 'AP-7'];
+const _LLISTA_NEGRA_DEFAULT = [];
 
 /** Parseja el text del textarea i actualitza la llista negra global */
 function actualitzarLlistaNegra(text) {
