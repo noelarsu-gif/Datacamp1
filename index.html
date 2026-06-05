@@ -1510,7 +1510,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       <div id="accessError" style="
         display:none;margin-top:10px;padding:10px 12px;border-radius:8px;
         background:rgba(255,90,110,.1);border:1px solid rgba(255,90,110,.35);
-        color:#FF5A6E;font-size:.78rem;font-weight:600;text-align:center;line-height:1.5;
+        color:#FF5A6E;font-size:.78rem;font-weight:600;text-align:center;line-height:1.6;
+        white-space:pre-wrap;word-break:break-word;
       "></div>
       <button onclick="validarAcceso()" style="
         margin-top:16px;width:100%;padding:15px;border-radius:10px;
@@ -1536,33 +1537,32 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 <div id="appContent" style="display:none;">
 
 <script>
+/* (bloc substituït per SISTEMA DE LICENCIAS v3 — vegeu abaix) */
+
 /* ════════════════════════════════════════════════════════════════
-   SISTEMA DE LICENCIAS — PRUEBA PILOTO v2 (con Device Binding)
+   SISTEMA DE LICENCIAS v3 — CONTROL EXCLUSIVO POR DISPOSITIVO
    ────────────────────────────────────────────────────────────────
-   Para añadir o modificar códigos, edita el objeto licenciasPiloto.
-   Formato de fecha de caducidad: 'AAAA-MM-DD'
+   Cada entrada del diccionario és un codi COMPOST: 'BASE-XXXX'
+   on XXXX és el pk_device_unique_id de 4 dígits del dispositiu.
+   Exemple: 'SACYR-5319' → codi base "SACYR", dispositiu "5319"
 
-   LÓGICA DE DEVICE BINDING (sin servidor):
+   FLUX DE VALIDACIÓ:
    ─────────────────────────────────────────
-   LS_SESSION  → { codigo, caducidad, deviceId }   (por código validado)
-   LS_DEVICE   → { deviceId }                       (identidad de este dispositivo)
-   LS_BINDING  → { [codigo]: deviceId, ... }        (tabla de vinculaciones)
+   1. L'usuari introdueix un codi BASE sense guió (ex: "SACYR"):
+      → Es mostra l'avís amb el codi compost per enviar a Noel.
+   2. L'usuari introdueix un codi COMPOST (ex: "SACYR-5319"):
+      → Es comprova que els dígits finals coincideixen exactament
+        amb el pk_device_unique_id d'aquest dispositiu.
+      → Si coincideix i el codi és al diccionari → accés OK.
+      → Si no coincideix → bloqueig amb missatge d'error.
 
-   Flujo de primera activación:
-     1. Se genera un deviceId aleatorio único y se guarda en LS_DEVICE.
-     2. Se guarda la vinculación código→deviceId en LS_BINDING.
-     3. Se guarda la sesión en LS_SESSION.
-
-   Flujo en activaciones posteriores del MISMO código:
-     - Si el deviceId del navegador coincide con el vinculado → acceso OK.
-     - Si NO coincide (otro dispositivo, o localStorage limpiado) → BLOQUEADO.
-
-   Nota sobre seguridad: toda la validación es client-side, por lo que
-   un usuario con conocimientos técnicos podría manipularlo. Para una
-   prueba piloto sin servidor es suficiente. Para producción, usar un
-   backend con validación server-side.
+   CLAUS localStorage:
+   ─────────────────────────────────────────
+   pk_device_unique_id  → ID numèric de 4 dígits d'aquest dispositiu
+   pkgeoloc_session_v3  → sessió activa (v3 forçarà re-login als usuaris anteriors)
 ════════════════════════════════════════════════════════════════ */
 
+/* ── Diccionari de codis vàlids: 'BASE-DEVICEID' → 'AAAA-MM-DD' ── */
 const licenciasPiloto = {
   'PILOTO-2025-A1':  '2026-12-31',
   'PILOTO-2025-B2':  '2026-12-31',
@@ -1594,93 +1594,104 @@ const licenciasPiloto = {
    'MANUEL-B3':      '2026-07-05',
    'PEDRO-ALIC':     '2026-07-05',
    'CARMELO-VYA':    '2026-07-05',
+  /* ── Afegeix aquí els codis compostos nous (BASE-DEVICEID): ──
+     Exemple: 'SACYR-5319': '2026-12-31',                        */
 };
 
-const LS_SESSION = 'pkgeoloc_session_v2';
-const LS_DEVICE  = 'pkgeoloc_device_v2';
-const LS_BINDING = 'pkgeoloc_binding_v2';
+/* ── Claus localStorage ── */
+const LS_SESSION = 'pkgeoloc_session_v3';   /* v3 → invalida sessions anteriors */
+const LS_DEVICE  = 'pk_device_unique_id';
 
-/* ── Genera o recupera el Device ID de este navegador ── */
+/* ── Genera o recupera l'ID de 4 dígits d'aquest dispositiu ── */
 function _getOrCreateDeviceId() {
   try {
-    const stored = JSON.parse(localStorage.getItem(LS_DEVICE) || 'null');
-    if (stored?.deviceId) return stored.deviceId;
+    const stored = localStorage.getItem(LS_DEVICE);
+    if (stored && /^\d{4}$/.test(stored)) return stored;
   } catch (_) {}
-  // Genera un token aleatorio de 32 caracteres hex
-  const arr = new Uint8Array(16);
-  crypto.getRandomValues(arr);
-  const deviceId = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-  localStorage.setItem(LS_DEVICE, JSON.stringify({ deviceId, creadoEl: new Date().toISOString() }));
-  return deviceId;
+  /* Genera un número aleatori de 4 dígits (1000–9999) */
+  const id = String(Math.floor(1000 + Math.random() * 9000));
+  try { localStorage.setItem(LS_DEVICE, id); } catch (_) {}
+  return id;
 }
 
-/* ── Lee la tabla de vinculaciones código→deviceId ── */
-function _getBindings() {
-  try { return JSON.parse(localStorage.getItem(LS_BINDING) || '{}'); }
-  catch (_) { return {}; }
-}
-
-/* ── Escribe una vinculación nueva ── */
-function _setBinding(codigo, deviceId) {
-  const bindings = _getBindings();
-  bindings[codigo] = deviceId;
-  localStorage.setItem(LS_BINDING, JSON.stringify(bindings));
-}
-
-/* ── Función principal de validación ── */
+/* ── Funció principal de validació ── */
 function validarAcceso() {
-  const input   = document.getElementById('accessCodeInput');
-  const codigo  = (input.value || '').trim().toUpperCase();
+  const input  = document.getElementById('accessCodeInput');
+  const codigo = (input.value || '').trim().toUpperCase();
 
   if (!codigo) {
-    _mostrarErrorAcceso('Introduce un código de activación.');
+    _mostrarErrorAcceso('Introdueix un codi d\'activació.');
     return;
   }
 
-  // 1. ¿Existe el código en el diccionario?
+  const deviceId = _getOrCreateDeviceId();
+
+  /* ── CAS A: codi sense guió → codi BASE, mostrar avís ── */
+  if (!codigo.includes('-')) {
+    /* Comprovem si és un codi base que existeix com a prefix en el diccionari */
+    const existeixComABase = Object.keys(licenciasPiloto).some(k => k.startsWith(codigo + '-'));
+    /* Si no existeix ni com a base ni com a clau exacta, error genèric */
+    if (!existeixComABase && !licenciasPiloto[codigo]) {
+      _mostrarErrorAcceso('Codi no reconegut. Contacta amb l\'administrador.');
+      input.value = '';
+      return;
+    }
+    /* Mostrar avís amb el codi compost a enviar */
+    _mostrarErrorAcceso(
+      `⚠️ Per activar l\'accés exclusiu en aquest mòbil, copia\'l aquest codi a en Noel per WhatsApp:\n` +
+      `${codigo}-${deviceId}`,
+      'warn'
+    );
+    return;
+  }
+
+  /* ── CAS B: codi amb guió → codi COMPOST (BASE-DEVICEID) ── */
+  /* Separa l'últim segment (ID de dispositiu) */
+  const parts        = codigo.split('-');
+  const deviceSuffix = parts[parts.length - 1];
+
+  /* Comprova que el sufix coincideix amb el deviceId d'aquest dispositiu */
+  if (deviceSuffix !== deviceId) {
+    _mostrarErrorAcceso('❌ Aquest codi d\'accés ja està vinculat a un altre dispositiu mòbil.');
+    input.value = '';
+    return;
+  }
+
+  /* Comprova que el codi compost existeix al diccionari */
   const caducidad = licenciasPiloto[codigo];
   if (!caducidad) {
-    _mostrarErrorAcceso('Código no reconocido. Contacta con el administrador.');
+    _mostrarErrorAcceso('Codi no autoritzat. Contacta amb l\'administrador per activar-lo.');
     input.value = '';
     return;
   }
 
-  // 2. ¿Ha caducado?
+  /* Comprova caducitat */
   const hoy = new Date().toISOString().slice(0, 10);
   if (hoy > caducidad) {
-    _mostrarErrorAcceso(`Código caducado el ${caducidad}. Solicita renovación al administrador.`);
+    _mostrarErrorAcceso(`Codi caducat el ${caducidad}. Sol·licita renovació a l\'administrador.`);
     input.value = '';
     return;
   }
 
-  // 3. Obtén el Device ID de este navegador/dispositivo
-  const deviceId   = _getOrCreateDeviceId();
-  const bindings   = _getBindings();
-  const deviceVinculado = bindings[codigo];
-
-  if (!deviceVinculado) {
-    // Primera vez que se usa este código: vincula al dispositivo actual
-    _setBinding(codigo, deviceId);
-  } else if (deviceVinculado !== deviceId) {
-    // El código ya está vinculado a OTRO dispositivo → bloquear
-    _mostrarErrorAcceso(
-      'Este código de activación ya está vinculado a otro dispositivo. ' +
-      'Contacta con el administrador.'
-    );
-    input.value = '';
-    return;
-  }
-  // Si deviceVinculado === deviceId → mismo dispositivo, OK
-
-  // 4. Guarda la sesión y muestra la app
+  /* Tot OK → guarda sessió i obre l'app */
   localStorage.setItem(LS_SESSION, JSON.stringify({ codigo, caducidad, deviceId, validadoEl: hoy }));
   _mostrarApp();
 }
 
-function _mostrarErrorAcceso(msg) {
+function _mostrarErrorAcceso(msg, tipus) {
   const el = document.getElementById('accessError');
   el.textContent = msg;
   el.style.display = 'block';
+  /* Avís informatiu (⚠️) → ambre; error de bloqueig → vermell (per defecte) */
+  if (tipus === 'warn') {
+    el.style.background  = 'rgba(245,166,35,.13)';
+    el.style.borderColor = 'rgba(245,166,35,.5)';
+    el.style.color       = '#F5A623';
+  } else {
+    el.style.background  = 'rgba(255,90,110,.10)';
+    el.style.borderColor = 'rgba(255,90,110,.35)';
+    el.style.color       = '#FF5A6E';
+  }
 }
 
 function _mostrarApp() {
@@ -1688,7 +1699,7 @@ function _mostrarApp() {
   document.getElementById('appContent').style.display = 'block';
 }
 
-/* ── Comprobación automática al cargar (si ya hay sesión guardada) ── */
+/* ── Comprovació automàtica en carregar (si ja hi ha sessió guardada) ── */
 (function comprobarSesionGuardada() {
   try {
     const session = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
@@ -1696,36 +1707,27 @@ function _mostrarApp() {
 
     const hoy = new Date().toISOString().slice(0, 10);
 
-    // ¿Caducada?
+    /* Caducada? */
     if (hoy > session.caducidad) {
       localStorage.removeItem(LS_SESSION);
       return;
     }
 
-    // ¿El código sigue en el diccionario y vigente?
+    /* El codi segueix al diccionari i vigent? */
     const caducidadActual = licenciasPiloto[session.codigo];
     if (!caducidadActual || hoy > caducidadActual) {
       localStorage.removeItem(LS_SESSION);
       return;
     }
 
-    // ¿El Device ID de este navegador coincide con el de la sesión guardada?
-    // (detecta limpieza de caché: LS_DEVICE borrado pero LS_SESSION intacto)
-    let deviceIdActual;
-    try {
-      const d = JSON.parse(localStorage.getItem(LS_DEVICE) || 'null');
-      deviceIdActual = d?.deviceId || null;
-    } catch (_) { deviceIdActual = null; }
-
+    /* El deviceId d'aquesta sessió coincideix amb el del dispositiu actual? */
+    const deviceIdActual = localStorage.getItem(LS_DEVICE) || null;
     if (!deviceIdActual || deviceIdActual !== session.deviceId) {
-      // El Device ID no coincide: datos de sesión de otro dispositivo
-      // o el localStorage fue parcialmente limpiado.
-      // Limpiamos la sesión pero NO los bindings (la vinculación se mantiene).
       localStorage.removeItem(LS_SESSION);
       return;
     }
 
-    // Todo OK → muestra la app directamente sin pedir código
+    /* Tot OK → obre l'app directament */
     _mostrarApp();
   } catch (_) {
     localStorage.removeItem(LS_SESSION);
