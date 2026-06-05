@@ -1504,15 +1504,46 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
           outline:none;transition:border-color .2s;
           -webkit-appearance:none;
         "
-        oninput="this.value=this.value.toUpperCase();document.getElementById('accessError').style.display='none';"
+        oninput="this.value=this.value.toUpperCase();_ocultarPaneles();"
         onkeydown="if(event.key==='Enter')validarAcceso();"
       >
+      <!-- Panel error genérico (rojo) -->
       <div id="accessError" style="
         display:none;margin-top:10px;padding:10px 12px;border-radius:8px;
         background:rgba(255,90,110,.1);border:1px solid rgba(255,90,110,.35);
         color:#FF5A6E;font-size:.78rem;font-weight:600;text-align:center;line-height:1.6;
-        white-space:pre-wrap;word-break:break-word;
+        word-break:break-word;
       "></div>
+      <!-- Panel aviso dispositivo (ámbar) -->
+      <div id="accessWarn" style="
+        display:none;margin-top:10px;padding:14px 14px 12px;border-radius:10px;
+        background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.45);
+        text-align:center;
+      ">
+        <div style="font-size:.75rem;font-weight:700;color:#F5A623;line-height:1.6;margin-bottom:10px;">
+          ⚠️ Para activar el acceso en este móvil, envía este código a Noel por WhatsApp:
+        </div>
+        <div id="warnCodigo" style="
+          font-family:'Roboto Mono',monospace;font-size:1.25rem;font-weight:700;
+          letter-spacing:4px;color:#fff;background:#27282C;
+          border-radius:8px;padding:10px 12px;margin-bottom:10px;
+          border:1px solid rgba(245,166,35,.3);word-break:break-all;
+        "></div>
+        <div style="display:flex;gap:8px;">
+          <button id="btnCopiarCodigo" onclick="_copiarCodigoWarn()" style="
+            flex:1;padding:10px 6px;border-radius:8px;cursor:pointer;transition:all .2s;
+            border:1.5px solid rgba(255,255,255,.2);background:#27282C;
+            color:#C4C9D4;font-family:'Barlow Condensed',sans-serif;
+            font-size:.8rem;font-weight:700;letter-spacing:1px;
+          ">📋 COPIAR</button>
+          <button onclick="_compartirWhatsApp()" style="
+            flex:2;padding:10px 6px;border-radius:8px;cursor:pointer;transition:all .2s;
+            border:1.5px solid rgba(37,211,102,.5);background:rgba(37,211,102,.12);
+            color:#25D366;font-family:'Barlow Condensed',sans-serif;
+            font-size:.8rem;font-weight:700;letter-spacing:1px;
+          ">💬 ENVIAR POR WHATSAPP</button>
+        </div>
+      </div>
       <button onclick="validarAcceso()" style="
         margin-top:16px;width:100%;padding:15px;border-radius:10px;
         border:2px solid rgba(0,212,255,.5);
@@ -1614,84 +1645,114 @@ function _getOrCreateDeviceId() {
   return id;
 }
 
-/* ── Funció principal de validació ── */
+/* ── Función principal de validación ── */
 function validarAcceso() {
   const input  = document.getElementById('accessCodeInput');
   const codigo = (input.value || '').trim().toUpperCase();
 
+  _ocultarPaneles();
+
   if (!codigo) {
-    _mostrarErrorAcceso('Introdueix un codi d\'activació.');
+    _mostrarErrorAcceso('Introduce un código de activación.');
     return;
   }
 
   const deviceId = _getOrCreateDeviceId();
 
-  /* ── CAS A: codi sense guió → codi BASE, mostrar avís ── */
+  /* ── CASO A: código sin guión → código BASE, mostrar aviso ── */
   if (!codigo.includes('-')) {
-    /* Comprovem si és un codi base que existeix com a prefix en el diccionari */
-    const existeixComABase = Object.keys(licenciasPiloto).some(k => k.startsWith(codigo + '-'));
-    /* Si no existeix ni com a base ni com a clau exacta, error genèric */
-    if (!existeixComABase && !licenciasPiloto[codigo]) {
-      _mostrarErrorAcceso('Codi no reconegut. Contacta amb l\'administrador.');
+    const existeComoBase = Object.keys(licenciasPiloto).some(k => k.startsWith(codigo + '-'));
+    if (!existeComoBase && !licenciasPiloto[codigo]) {
+      _mostrarErrorAcceso('Código no reconocido. Contacta con el administrador.');
       input.value = '';
       return;
     }
-    /* Mostrar avís amb el codi compost a enviar */
-    _mostrarErrorAcceso(
-      `⚠️ Per activar l\'accés exclusiu en aquest mòbil, copia\'l aquest codi a en Noel per WhatsApp:\n` +
-      `${codigo}-${deviceId}`,
-      'warn'
-    );
+    /* Mostrar panel ámbar con el código compuesto */
+    _mostrarAviso(`${codigo}-${deviceId}`);
     return;
   }
 
-  /* ── CAS B: codi amb guió → codi COMPOST (BASE-DEVICEID) ── */
-  /* Separa l'últim segment (ID de dispositiu) */
+  /* ── CASO B: código con guión → código COMPUESTO (BASE-DEVICEID) ── */
   const parts        = codigo.split('-');
   const deviceSuffix = parts[parts.length - 1];
 
-  /* Comprova que el sufix coincideix amb el deviceId d'aquest dispositiu */
   if (deviceSuffix !== deviceId) {
-    _mostrarErrorAcceso('❌ Aquest codi d\'accés ja està vinculat a un altre dispositiu mòbil.');
+    _mostrarErrorAcceso('❌ Este código de acceso ya está vinculado a otro dispositivo móvil.');
     input.value = '';
     return;
   }
 
-  /* Comprova que el codi compost existeix al diccionari */
   const caducidad = licenciasPiloto[codigo];
   if (!caducidad) {
-    _mostrarErrorAcceso('Codi no autoritzat. Contacta amb l\'administrador per activar-lo.');
+    _mostrarErrorAcceso('Código no autorizado. Contacta con el administrador para activarlo.');
     input.value = '';
     return;
   }
 
-  /* Comprova caducitat */
   const hoy = new Date().toISOString().slice(0, 10);
   if (hoy > caducidad) {
-    _mostrarErrorAcceso(`Codi caducat el ${caducidad}. Sol·licita renovació a l\'administrador.`);
+    _mostrarErrorAcceso(`Código caducado el ${caducidad}. Solicita renovación al administrador.`);
     input.value = '';
     return;
   }
 
-  /* Tot OK → guarda sessió i obre l'app */
+  /* Todo OK → guarda sesión y abre la app */
   localStorage.setItem(LS_SESSION, JSON.stringify({ codigo, caducidad, deviceId, validadoEl: hoy }));
   _mostrarApp();
 }
 
-function _mostrarErrorAcceso(msg, tipus) {
+/* ── Oculta ambos paneles de feedback ── */
+function _ocultarPaneles() {
+  document.getElementById('accessError').style.display = 'none';
+  document.getElementById('accessWarn').style.display  = 'none';
+}
+
+/* ── Panel rojo: error de bloqueo ── */
+function _mostrarErrorAcceso(msg) {
   const el = document.getElementById('accessError');
   el.textContent = msg;
   el.style.display = 'block';
-  /* Avís informatiu (⚠️) → ambre; error de bloqueig → vermell (per defecte) */
-  if (tipus === 'warn') {
-    el.style.background  = 'rgba(245,166,35,.13)';
-    el.style.borderColor = 'rgba(245,166,35,.5)';
-    el.style.color       = '#F5A623';
-  } else {
-    el.style.background  = 'rgba(255,90,110,.10)';
-    el.style.borderColor = 'rgba(255,90,110,.35)';
-    el.style.color       = '#FF5A6E';
-  }
+}
+
+/* ── Panel ámbar: aviso de activación con botones ── */
+let _codigoWarnActual = '';
+function _mostrarAviso(codigoCompuesto) {
+  _codigoWarnActual = codigoCompuesto;
+  document.getElementById('warnCodigo').textContent = codigoCompuesto;
+  document.getElementById('accessWarn').style.display = 'block';
+}
+
+/* ── Copiar código al portapapeles ── */
+function _copiarCodigoWarn() {
+  if (!_codigoWarnActual) return;
+  navigator.clipboard.writeText(_codigoWarnActual).then(() => {
+    const btn = document.getElementById('btnCopiarCodigo');
+    btn.textContent = '✅ COPIADO';
+    btn.style.color = '#22D97A';
+    btn.style.borderColor = 'rgba(34,217,122,.5)';
+    setTimeout(() => {
+      btn.textContent = '📋 COPIAR';
+      btn.style.color = '#C4C9D4';
+      btn.style.borderColor = 'rgba(255,255,255,.2)';
+    }, 2000);
+  }).catch(() => {
+    /* Fallback para navegadores sin clipboard API */
+    const ta = document.createElement('textarea');
+    ta.value = _codigoWarnActual;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+/* ── Compartir por WhatsApp ── */
+function _compartirWhatsApp() {
+  if (!_codigoWarnActual) return;
+  const msg = encodeURIComponent(
+    'Hola Noel, mi código de activación para PK-GEOLOC es: ' + _codigoWarnActual
+  );
+  window.open('https://wa.me/?text=' + msg, '_blank');
 }
 
 function _mostrarApp() {
