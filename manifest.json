@@ -2,7 +2,7 @@
   "name": "PK-GEOLOC v2",
   "short_name": "PK-GEOLOC",
   "description": "Localizador oficial de PK — v2",
-  "start_url": "./pk-geoloc-v2.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#060a14",
   "theme-color": "#060a14",
