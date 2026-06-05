@@ -1,6 +1,6 @@
 const CACHE_NAME = 'pk-geoloc-cache-v2';
 const ASSETS = [
-  './pk-geoloc-v2.html',
+  './index.html',
   './manifest.json',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
 ];
