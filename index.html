@@ -1457,6 +1457,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media(max-height:640px){.result-card{min-height:130px;padding:18px 16px}.result-pk{font-size:2.2rem}.btn-main{padding:16px}}
 </style>
+<script src="PK_SEED_para_app.js"></script>
 </head>
 <body>
 
@@ -3904,6 +3905,28 @@ function filtrarCache(lat, lon, bufGraus = 0.05) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   SEED OFFLINE — consulta local sense xarxa
+   PK_SEED format: { carretera: [[pk_decimal, lat, lng], ...] }
+   Retorna el mateix format que filtrarCache/consultarArcGIS
+═══════════════════════════════════════════════════════════════════ */
+function filtrarSeed(lat, lon, bufGraus = 0.08) {
+  if (typeof PK_SEED === 'undefined') return [];
+  const resultat = [];
+  const latMin = lat - bufGraus, latMax = lat + bufGraus;
+  const lonMin = lon - bufGraus, lonMax = lon + bufGraus;
+  for (const carretera in PK_SEED) {
+    const punts = PK_SEED[carretera];
+    for (let i = 0; i < punts.length; i++) {
+      const [pk, pLat, pLon] = punts[i];
+      if (pLat >= latMin && pLat <= latMax && pLon >= lonMin && pLon <= lonMax) {
+        resultat.push({ carretera, pk, lat: pLat, lon: pLon });
+      }
+    }
+  }
+  return resultat;
+}
+
 function actualitzarUICache() {
   const badge = document.getElementById('syncBadge');
   const info  = document.getElementById('syncInfo');
@@ -4091,6 +4114,12 @@ async function processarPosicio(pos) {
     let punts = filtrarCache(lat, lon, 0.05);
     let fontDades = 'cache';
     if (punts.length < 2) {
+      // Intentar amb el seed offline (no requereix xarxa)
+      punts = filtrarSeed(lat, lon, 0.08);
+      fontDades = 'seed';
+      if (punts.length < 2) punts = filtrarSeed(lat, lon, 0.15);
+    }
+    if (punts.length < 2) {
       setGPSBar('searching','Consultando ArcGIS...', acc);
       punts = await consultarArcGIS(lat, lon, 0.06);
       fontDades = 'arcgis';
@@ -4130,17 +4159,24 @@ async function processarPosicio(pos) {
       calcularSentitAutomatic(res.pkDec);
       mostrarResultatOK(res);
       const mStr = String(res.m).padStart(3,'0');
-      showToast(`📍 ${res.carretera} · PK ${res.km}+${mStr} · ${fontDades==='cache'?'Cache':'ArcGIS'}`, 'ok');
+      showToast(`📍 ${res.carretera} · PK ${res.km}+${mStr} · ${fontDades==='cache'?'Cache':fontDades==='seed'?'Offline Seed':'ArcGIS'}`, 'ok');
       // Actualitzar mapa si és obert
       actualitzarMarkerMapa(lat, lon, res);
     }
     setGPSBar('locked','GPS activo', acc);
   } catch(e) {
-    const puntsCache = filtrarCache(lat, lon, 0.12);
-    if (puntsCache.length) {
-      const res = calcularPK(lat, lon, puntsCache);
-      if (res && res.dist <= llindar) { mostrarResultatOK(res); showToast('📴 Modo offline — caché local','warn'); }
-      else { mostrarResultatFora(res?.carretera, res?.dist); showToast('📴 Offline: sin datos para la zona','warn'); }
+    // Fallback offline: primer caché local, després seed embegut
+    let puntsFallback = filtrarCache(lat, lon, 0.12);
+    let fontFallback = 'caché local';
+    if (!puntsFallback.length) {
+      puntsFallback = filtrarSeed(lat, lon, 0.12);
+      if (puntsFallback.length < 2) puntsFallback = filtrarSeed(lat, lon, 0.20);
+      fontFallback = 'seed offline';
+    }
+    if (puntsFallback.length) {
+      const res = calcularPK(lat, lon, puntsFallback);
+      if (res && res.dist <= llindar) { mostrarResultatOK(res); showToast(`📴 Modo offline — ${fontFallback}`,'warn'); }
+      else { mostrarResultatFora(res?.carretera, res?.dist); showToast(`📴 Offline: sin datos precisos para la zona (${fontFallback})`,'warn'); }
     } else {
       mostrarResultatError(`Error ArcGIS: ${e.message}`);
       showToast(`❌ ${e.message}`, 'err');
