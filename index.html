@@ -817,6 +817,76 @@ body::before{
 }
 .pk-db.cancel-dec:hover{background:var(--bg-4);color:var(--text-2);}
 
+/* ── Modal confirmació PK abans d'incrustar a la foto ── */
+.pk-confirm-modal{
+  position:fixed;inset:0;z-index:920;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(8px);
+  display:none;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.pk-confirm-modal.open{display:flex;}
+.pk-confirm-box{
+  background:var(--bg-2);border:1px solid var(--border-acc);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding:24px 22px 32px;width:100%;max-width:480px;
+  box-shadow:var(--shadow-lg);
+}
+.pk-confirm-handle{
+  width:40px;height:4px;border-radius:2px;background:var(--border);
+  margin:0 auto 18px;
+}
+.pk-confirm-title{
+  font-family:var(--font-cond);font-size:.92rem;font-weight:900;
+  letter-spacing:1.5px;color:var(--accent);text-align:center;
+  margin-bottom:4px;
+}
+.pk-confirm-sub{
+  font-size:.75rem;color:var(--text-2);text-align:center;
+  margin-bottom:16px;line-height:1.5;
+}
+.pk-confirm-preview{
+  background:var(--bg-3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;
+  font-family:var(--font-mono);font-size:.85rem;font-weight:700;
+  color:var(--green);letter-spacing:.5px;text-align:center;
+}
+.pk-confirm-fields{
+  display:flex;flex-direction:column;gap:8px;
+  background:var(--bg-3);border:1px solid var(--border);
+  border-radius:var(--radius);padding:12px 14px;margin-bottom:14px;
+}
+.pk-confirm-row{display:flex;align-items:center;gap:6px;}
+.pk-confirm-label{
+  font-size:.6rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--text-2);min-width:60px;
+}
+.pk-confirm-inp{
+  flex:1;padding:9px 10px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--border);background:var(--bg-4);
+  color:var(--text-1);font-family:var(--font-mono);font-size:.88rem;
+  font-weight:600;outline:none;transition:border-color .2s;
+  -webkit-appearance:none;min-width:0;
+}
+.pk-confirm-inp:focus{border-color:var(--border-acc);}
+.pk-confirm-inp::placeholder{color:var(--text-3);font-size:.72rem;}
+.pk-confirm-sep{color:var(--text-2);font-size:.9rem;flex-shrink:0;}
+.pk-confirm-btns{display:flex;flex-direction:column;gap:9px;}
+.pk-cb{
+  width:100%;padding:15px 14px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.88rem;font-weight:700;
+  letter-spacing:1.2px;cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.pk-cb.ok{
+  border:2px solid var(--green);background:rgba(34,217,122,.12);color:var(--green);
+}
+.pk-cb.ok:hover{background:rgba(34,217,122,.22);}
+.pk-cb.cancel-pk{
+  border:1px solid var(--border);background:var(--bg-3);color:var(--text-3);
+  font-size:.78rem;padding:10px;
+}
+.pk-cb.cancel-pk:hover{background:var(--bg-4);color:var(--text-2);}
+
 /* ── Panell manual Home — acordió desplegable ── */
 .manual-panel{
   background:var(--bg-card);border:1px solid var(--border);
@@ -1589,6 +1659,9 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
     <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
       🔒 Acceso restringido a participantes de la prueba piloto.
     </div>
+    <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
+      📴 Sin conexión — la validación funciona igualmente
+    </div>
   </div>
 </div>
 
@@ -1706,7 +1779,6 @@ const licenciasPiloto = {
     'ALBERTOALVAC2-1348':        '2026-07-09',
    'CARLOS3-5129':        '2026-07-09',
    'NOEL2-4412':        '2026-12-09',
-   'PEDRO-2819':        '2026-07-09',
     };
 
 /* ── Claus localStorage ── */
@@ -2156,6 +2228,40 @@ async function _forzarActualizacion() {
   </div>
 </div>
 
+<!-- ════ MODAL CONFIRMACIÓ PK FOTO (abans d'incrustar) ════ -->
+<div class="pk-confirm-modal" id="pkConfirmModal">
+  <div class="pk-confirm-box">
+    <div class="pk-confirm-handle"></div>
+    <div class="pk-confirm-title">✏️ CONFIRMAR DATOS DE LA FOTO</div>
+    <div class="pk-confirm-sub">Revisa o corrige la carretera y el PK<br>antes de incrustar en la imagen.</div>
+    <div class="pk-confirm-preview" id="pkConfirmPreview">C-16, PK 42+500</div>
+    <div class="pk-confirm-fields">
+      <div class="pk-confirm-row">
+        <span class="pk-confirm-label">Carretera</span>
+        <input class="pk-confirm-inp" id="pkConfCarr" type="text" placeholder="C-16"
+          maxlength="12" oninput="this.value=this.value.toUpperCase();_pkConfActualitzarPreview()">
+      </div>
+      <div class="pk-confirm-row">
+        <span class="pk-confirm-label">PK</span>
+        <input class="pk-confirm-inp" id="pkConfKm" type="number" placeholder="42" min="0" max="9999"
+          style="max-width:80px;" oninput="_pkConfActualitzarPreview()">
+        <span class="pk-confirm-sep">+</span>
+        <input class="pk-confirm-inp" id="pkConfM" type="number" placeholder="500" min="0" max="999"
+          style="max-width:72px;" oninput="_pkConfActualitzarPreview()">
+        <span class="pk-confirm-sep" style="font-size:.65rem;color:var(--text-3);">m</span>
+      </div>
+    </div>
+    <div class="pk-confirm-btns">
+      <button class="pk-cb ok" onclick="_pkConfirmarOK()">
+        📸 INCRUSTAR Y GUARDAR FOTO
+      </button>
+      <button class="pk-cb cancel-pk" onclick="_pkConfirmarCancel()">
+        ✕ Cancelar
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════════════════════════════════════════════
      SCREEN 1 — LOCALITZADOR
 ════════════════════════════════════════════════ -->
@@ -2174,6 +2280,11 @@ async function _forzarActualizacion() {
     <div class="gps-dot"></div>
     <span class="gps-label" id="gpsLabel">GPS no inicializado</span>
     <span class="gps-acc hidden" id="gpsAcc">—</span>
+  </div>
+
+  <!-- Banner modo offline -->
+  <div id="offlineBanner" style="display:none;margin:6px 12px 0;padding:7px 12px;border-radius:var(--radius-sm);background:rgba(245,166,35,.12);border:1px solid rgba(245,166,35,.35);font-size:.7rem;color:var(--amber);font-family:var(--font-cond);font-weight:700;letter-spacing:.8px;align-items:center;gap:7px;">
+    <span>📴</span><span>MODO OFFLINE — PKs desde datos locales · Fotos con PK embebido</span>
   </div>
 
   <!-- Sentido de la marcha -->
@@ -2705,7 +2816,7 @@ function centrarMapa() {
       const msg = { 1: 'Permiso GPS denegado', 2: 'Posición no disponible', 3: 'Tiempo GPS agotado' };
       showToast(`⚠️ ${msg[err.code] || 'Error GPS'}`, 'warn');
     },
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
+    { enableHighAccuracy: true, timeout: 35000, maximumAge: 5000 }
   );
 }
 
@@ -3156,13 +3267,20 @@ function toggleManualPanel() {
    GESTIÓ LLISTA NEGRA DE CARRETERES
 ══════════════════════════════════════════════════════════════════ */
 const _LLISTA_NEGRA_DEFAULT = [];
+const LS_LLISTA_NEGRA = 'pkgeoloc_llista_negra_v1';
 
-/** Parseja el text del textarea i actualitza la llista negra global */
+/** Desa la llista negra actual a localStorage */
+function _guardarLlistaNegra() {
+  try { localStorage.setItem(LS_LLISTA_NEGRA, JSON.stringify(llistaNegra)); } catch(_) {}
+}
+
+/** Parseja el text del textarea, actualitza i desa la llista negra global */
 function actualitzarLlistaNegra(text) {
   llistaNegra = text
     .split(/[\n,]+/)
     .map(s => s.trim().toUpperCase())
     .filter(Boolean);
+  _guardarLlistaNegra();
 }
 
 /** Restaura la llista negra als valors per defecte */
@@ -3170,11 +3288,19 @@ function resetLlistaNegra() {
   llistaNegra = [..._LLISTA_NEGRA_DEFAULT];
   const ta = document.getElementById('llistaNegraInput');
   if (ta) ta.value = _LLISTA_NEGRA_DEFAULT.join(', ');
+  _guardarLlistaNegra();
   showToast('↺ Lista negra restaurada por defecto', 'ok', 2500);
 }
 
-/** Inicialitza el textarea amb els valors actuals de la llista negra */
+/** Inicialitza el textarea carregant des de localStorage (o valors per defecte) */
 function inicialitzarUILlistaNegra() {
+  try {
+    const saved = localStorage.getItem(LS_LLISTA_NEGRA);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) llistaNegra = parsed;
+    }
+  } catch(_) {}
   const ta = document.getElementById('llistaNegraInput');
   if (ta) ta.value = llistaNegra.join(', ');
 }
@@ -3718,8 +3844,9 @@ function mapLnAfegir() {
   if (llistaNegra.includes(val)) { showToast(`⚠️ ${val} ya está en la lista`, 'warn', 2000); return; }
   llistaNegra.push(val);
   inp.value = '';
-  // Sincronitza amb el textarea de Configuració
+  // Sincronitza amb el textarea de Configuració i desa
   _sincronitzarLlistaNegraTaConf();
+  _guardarLlistaNegra();
   mapLnRenderTags();
   showToast(`🚫 ${val} añadida a la lista negra`, 'ok', 2000);
 }
@@ -3728,6 +3855,7 @@ function mapLnAfegir() {
 function mapLnEliminar(carr) {
   llistaNegra = llistaNegra.filter(c => c !== carr);
   _sincronitzarLlistaNegraTaConf();
+  _guardarLlistaNegra();
   mapLnRenderTags();
   showToast(`✓ ${carr} eliminada de la lista negra`, 'ok', 2000);
 }
@@ -3736,6 +3864,7 @@ function mapLnEliminar(carr) {
 function mapLnReset() {
   llistaNegra = [..._LLISTA_NEGRA_DEFAULT];
   _sincronitzarLlistaNegraTaConf();
+  _guardarLlistaNegra();
   mapLnRenderTags();
   showToast('↺ Lista negra restaurada por defecto', 'ok', 2500);
 }
@@ -4119,7 +4248,7 @@ async function executarGeolocal() {
   navigator.geolocation.getCurrentPosition(
     pos => processarPosicio(pos),
     err => gestionarErrorGPS(err),
-    { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
+    { enableHighAccuracy: true, timeout: 35000, maximumAge: 5000 }
   );
 }
 
@@ -4217,15 +4346,17 @@ async function processarPosicio(pos) {
 
 function gestionarErrorGPS(err) {
   setBtnLoading(false);
+  // Codi 2 (POSITION_UNAVAILABLE) és el més comú en tablets Android sense SIM:
+  // el proveïdor de xarxa no existeix i el GPS tarda molt en arrancar en fred.
   const msgs = {
-    1:['🚫 Permiso GPS denegado.','Permiso GPS denegado'],
-    2:['📡 Posición no disponible.','GPS no disponible'],
-    3:['⏱️ Tiempo GPS agotado.','Tiempo GPS agotado'],
+    1: ['🚫 Permiso GPS denegado. Ve a Ajustes → Apps → PK-GEOLOC → Permisos y activa Ubicación.', 'Permiso GPS denegado'],
+    2: ['📡 Señal GPS no disponible. En tablets sin SIM, activa la ubicación en Ajustes y espera unos segundos al aire libre antes de reintentar.', 'GPS no disponible'],
+    3: ['⏱️ Tiempo de espera GPS agotado. En tablets sin SIM puede tardar más; inténtalo de nuevo o introduce el PK manualmente.', 'Tiempo GPS agotado'],
   };
-  const [toast, label] = msgs[err.code]||['❓ Error GPS.','Error GPS'];
+  const [toast, label] = msgs[err.code] || ['❓ Error GPS desconocido.', 'Error GPS'];
   setGPSBar('error', label, null);
   mostrarResultatError(toast);
-  showToast('💻 GPS no disponible: introduce los datos manualmente','warn');
+  showToast('💻 GPS no disponible: introduce los datos manualmente', 'warn');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -4316,12 +4447,21 @@ function obtenirPosicioFrescaAmbPK(timeoutMs = 10000) {
         document.getElementById('cAcc').textContent = `±${Math.round(acc)} m`;
         ultimaPos = pos;
 
-        // Càlcul PK fresc (cache local primer, ArcGIS si cal)
+        // Càlcul PK fresc (cache local primer, seed offline, ArcGIS si cal i hi ha xarxa)
         let resCalc = null;
         try {
           let punts = filtrarCache(lat, lon, 0.05);
-          if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.07);
-          if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.12);
+          let fontDades = 'cache';
+          if (punts.length < 2) {
+            punts = filtrarSeed(lat, lon, 0.08);
+            fontDades = 'seed';
+            if (punts.length < 2) punts = filtrarSeed(lat, lon, 0.15);
+          }
+          if (punts.length < 2 && navigator.onLine) {
+            punts = await consultarArcGIS(lat, lon, 0.07);
+            fontDades = 'arcgis';
+            if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.12);
+          }
           const r = calcularPK(lat, lon, punts);
           if (r) {
             resCalc = r;
@@ -4332,8 +4472,12 @@ function obtenirPosicioFrescaAmbPK(timeoutMs = 10000) {
           }
         } catch (_) {
           try {
-            const puntsCache = filtrarCache(lat, lon, 0.12);
-            const r = calcularPK(lat, lon, puntsCache);
+            let puntsFallback = filtrarCache(lat, lon, 0.12);
+            if (!puntsFallback.length) {
+              puntsFallback = filtrarSeed(lat, lon, 0.15);
+              if (puntsFallback.length < 2) puntsFallback = filtrarSeed(lat, lon, 0.22);
+            }
+            const r = calcularPK(lat, lon, puntsFallback);
             if (r) { resCalc = r; if (r.dist <= llindar) { mostrarResultatOK(r); ultimResultatObj = r; } }
           } catch (_2) {}
         }
@@ -4623,6 +4767,43 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
   await processarFoto(file, pos, resAuto);
 });
 
+/* ═══════════════════════════════════════════════════════════════════
+   MODAL CONFIRMACIÓ PK FOTO — editar carretera/PK abans d'incrustar
+═══════════════════════════════════════════════════════════════════ */
+let _pkConfirmResolve = null;
+
+/** Mostra el modal de confirmació i retorna Promise<{carretera,km,m}|null> */
+function _mostrarModalConfirmPK(carretera, km, m) {
+  return new Promise(resolve => {
+    _pkConfirmResolve = resolve;
+    document.getElementById('pkConfCarr').value = carretera || '';
+    document.getElementById('pkConfKm').value   = km ?? '';
+    document.getElementById('pkConfM').value    = m  ?? '';
+    _pkConfActualitzarPreview();
+    document.getElementById('pkConfirmModal').classList.add('open');
+  });
+}
+
+function _pkConfActualitzarPreview() {
+  const carr = document.getElementById('pkConfCarr').value.trim().toUpperCase() || '—';
+  const km   = document.getElementById('pkConfKm').value   || '0';
+  const m    = String(parseInt(document.getElementById('pkConfM').value) || 0).padStart(3,'0');
+  document.getElementById('pkConfirmPreview').textContent = `${carr}, PK ${km}+${m}`;
+}
+
+function _pkConfirmarOK() {
+  const carr = document.getElementById('pkConfCarr').value.trim().toUpperCase();
+  const km   = parseInt(document.getElementById('pkConfKm').value) || 0;
+  const m    = Math.min(999, parseInt(document.getElementById('pkConfM').value) || 0);
+  document.getElementById('pkConfirmModal').classList.remove('open');
+  if (_pkConfirmResolve) { _pkConfirmResolve({ carretera: carr || '—', km, m }); _pkConfirmResolve = null; }
+}
+
+function _pkConfirmarCancel() {
+  document.getElementById('pkConfirmModal').classList.remove('open');
+  if (_pkConfirmResolve) { _pkConfirmResolve(null); _pkConfirmResolve = null; }
+}
+
 async function processarFoto(file, pos, resAuto) {
   // ── Detecta si cal decisió manual (fora de trassa o res invàlid) ──
   let res = resAuto;
@@ -4649,14 +4830,38 @@ async function processarFoto(file, pos, resAuto) {
   const lon       = pos?.lon ?? null;
 
   // ── Peu de foto (marca d'aigua) ────────────────────────────────
-  const pkStr = sensePK
-    ? (lat && lon ? `GPS ${lat.toFixed(5)}, ${lon.toFixed(5)}` : 'Sense PK')
-    : `${carretera}, PK ${km}+${mStr}`;
+  let pkStr, nomFitxer;
+  if (sensePK) {
+    pkStr     = (lat && lon ? `GPS ${lat.toFixed(5)}, ${lon.toFixed(5)}` : 'Sense PK');
+    nomFitxer = generarNomFitxer('GPS', 0, '000', ara);
+  } else {
+    // ── Confirmació editable del PK abans d'incrustar ─────────────
+    const confirmat = await _mostrarModalConfirmPK(carretera, km, m);
+    if (confirmat === null) {
+      showToast('❌ Foto cancelada', 'warn', 2500);
+      return;
+    }
+    // Actualitzar dades amb el que l'usuari ha confirmat/corregit
+    const carrFinal = confirmat.carretera;
+    const kmFinal   = confirmat.km;
+    const mFinal    = confirmat.m;
+    const mStrFinal = String(mFinal).padStart(3, '0');
+    pkStr     = `${carrFinal}, PK ${kmFinal}+${mStrFinal}`;
+    nomFitxer = generarNomFitxer(carrFinal, kmFinal, mStrFinal, ara);
+  }
+
   const sentitStr = `Sentido: ${sentit === 'creciente' ? 'Creciente ↑' : sentit === 'decreciente' ? 'Decreciente ↓' : 'Indeterminado ↔'}`;
 
-  const nomFitxer = sensePK
-    ? generarNomFitxer('GPS', 0, '000', ara)
-    : generarNomFitxer(carretera, km, mStr, ara);
+  // Extraure les dades finals per al registre (post-confirmació si no sensePK)
+  let _carrFinal, _kmFinal, _mFinal, _mStrFinal;
+  if (sensePK) {
+    _carrFinal = null; _kmFinal = null; _mFinal = null; _mStrFinal = '000';
+  } else {
+    const _c = document.getElementById('pkConfCarr').value.trim().toUpperCase() || carretera || '—';
+    const _k = parseInt(document.getElementById('pkConfKm').value) || km || 0;
+    const _me = Math.min(999, parseInt(document.getElementById('pkConfM').value) || m || 0);
+    _carrFinal = _c; _kmFinal = _k; _mFinal = _me; _mStrFinal = String(_me).padStart(3,'0');
+  }
 
   showToast('⏳ Procesando foto...', 'ok', 2500);
 
@@ -4665,20 +4870,20 @@ async function processarFoto(file, pos, resAuto) {
 
     await idbAdd(CFG.STORE_PHOTOS, {
       nom: nomFitxer, blob: blobFinal,
-      carretera: carretera ?? null,
-      km: km ?? null,
-      m: m ?? null,
+      carretera: _carrFinal,
+      km: _kmFinal,
+      m: _mFinal,
       sensePK,
       lat, lon,
       ts: ara.toISOString(),
       ts_legible: sensePK
         ? `GPS ${lat?.toFixed(5) ?? '—'}, ${lon?.toFixed(5) ?? '—'}`
-        : `${carretera} PK ${km}+${mStr}`,
+        : `${_carrFinal} PK ${_kmFinal}+${_mStrFinal}`,
       sentit,
     });
 
     const url = URL.createObjectURL(blobFinal);
-    const fotoObj = { carretera, km, m, lat, lon, sensePK, nom: nomFitxer };
+    const fotoObj = { carretera: _carrFinal, km: _kmFinal, m: _mFinal, lat, lon, sensePK, nom: nomFitxer };
     obrirFotoVisor(url, nomFitxer, null, blobFinal, fotoObj);
     renderitzarFotos();
   } catch(e) {
@@ -5266,12 +5471,74 @@ document.addEventListener('DOMContentLoaded', async () => {
   //    pot mesurar-lo correctament sense cap hack de timing.
   iniciarMapa();
 
-// Registrar el Service Worker para habilitar la instalación
+// ═══════════════════════════════════════════════════════════════════
+// SERVICE WORKER INLINE — cacheja el propi HTML per funcionar 100% offline
+// S'injecta com a blob URL per no dependre de sw.js extern
+// ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
+  const SW_VERSION = 'pkgeoloc-v2-sw-3';
+  const swCode = `
+const CACHE = '${SW_VERSION}';
+const SHELL = ['./'];   // la propia pàgina
+
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  // Deixar passar: ArcGIS, Overpass, Nominatim, tile servers, Leaflet CDN
+  const passThrough = [
+    'arcgis.com','openstreetmap.org','nominatim.openstreetmap',
+    'overpass-api.de','unpkg.com','cdnjs.cloudflare.com',
+    'tile.openstreetmap','arcgisonline.com'
+  ];
+  if (passThrough.some(d => url.hostname.includes(d))) {
+    e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+    return;
+  }
+  // Estratègia shell: cache-first per a la nostra app
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(resp => {
+        if (resp && resp.status === 200 && resp.type !== 'opaque') {
+          const clone = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+        }
+        return resp;
+      }).catch(() => caches.match('./') );
+    })
+  );
+});
+
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
+`;
+  const blob = new Blob([swCode], { type: 'application/javascript' });
+  const swURL = URL.createObjectURL(blob);
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registrado con éxito', reg))
-      .catch(err => console.error('Error al registrar el Service Worker', err));
+    navigator.serviceWorker.register(swURL, { scope: './' })
+      .then(reg => {
+        console.log('[SW] registrat OK', reg.scope);
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      })
+      .catch(err => {
+        // Fallback: intentar el sw.js extern si existeix
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+        console.warn('[SW] blob fallit, intentant sw.js extern:', err);
+      });
   });
 }
 
@@ -5287,6 +5554,17 @@ if ('serviceWorker' in navigator) {
   ip.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 60) tancarIncPanel(); },{ passive:true });
 
   window.addEventListener('popstate', ()=>{ closeSettings(); tancarIncPanel(); });
+
+  // ── Banner offline ──────────────────────────────────────────────
+  function _actualitzarBannerOffline() {
+    const banner = document.getElementById('offlineBanner');
+    if (banner) banner.style.display = navigator.onLine ? 'none' : 'flex';
+    const awBadge = document.getElementById('accessWallOfflineBadge');
+    if (awBadge) awBadge.style.display = navigator.onLine ? 'none' : 'block';
+  }
+  _actualitzarBannerOffline();
+  window.addEventListener('online',  _actualitzarBannerOffline);
+  window.addEventListener('offline', _actualitzarBannerOffline);
 
   // Clic fora del panel d'incidències el tanca
   document.addEventListener('click', e => {
