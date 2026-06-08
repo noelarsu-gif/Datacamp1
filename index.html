@@ -1631,7 +1631,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
           ">💬 ENVIAR POR WHATSAPP</button>
         </div>
       </div>
-      <button onclick="validarAcceso()" style="
+      <button id="btnValidar" onclick="validarAcceso()" style="
         margin-top:16px;width:100%;padding:15px;border-radius:10px;
         border:2px solid rgba(0,212,255,.5);
         background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.07));
@@ -1778,6 +1778,19 @@ async function validarAcceso() {
   if (!codigo) {
     _mostrarErrorAcceso('Introduce un código de activación.');
     return;
+  }
+
+  /* Si el diccionario está vacío (dispositivo nuevo sin red previa),
+     intentar una última descarga antes de rechazar al usuario */
+  if (Object.keys(licenciasPiloto).length === 0) {
+    const btn = document.getElementById('btnValidar');
+    if (btn) { btn.disabled = true; btn.textContent = 'Conectando...'; }
+    await _cargarLicencias();
+    if (btn) { btn.disabled = false; btn.textContent = 'ACTIVAR'; }
+    if (Object.keys(licenciasPiloto).length === 0) {
+      _mostrarErrorAcceso('⚠️ Sin conexión y sin datos locales. Conéctate a internet para la primera activación.');
+      return;
+    }
   }
 
   const deviceId = _getOrCreateDeviceId();
