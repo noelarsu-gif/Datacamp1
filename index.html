@@ -5463,7 +5463,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-3';
+  const SW_VERSION = 'pkgeoloc-v2-sw-4';
   const swCode = `
 const CACHE = '${SW_VERSION}';
 const SHELL = ['./'];   // la propia pàgina
@@ -5490,7 +5490,7 @@ self.addEventListener('fetch', e => {
     'overpass-api.de','unpkg.com','cdnjs.cloudflare.com',
     'tile.openstreetmap','arcgisonline.com'
   ];
-  if (passThrough.some(d => url.hostname.includes(d))) {
+  if (passThrough.some(d => url.hostname.includes(d)) || url.pathname.endsWith('licencias.json')) {
     e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
     return;
   }
