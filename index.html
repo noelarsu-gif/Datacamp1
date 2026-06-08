@@ -1543,6 +1543,19 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:28px 20px;font-family:'Barlow',sans-serif;
 ">
+  <!-- Overlay de carga — visible mientras se resuelven las licencias -->
+  <div id="loadingOverlay" style="
+    position:absolute;inset:0;z-index:10;background:#111214;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  ">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;
+                letter-spacing:3px;color:#00D4FF;text-shadow:0 0 24px rgba(0,212,255,.4);">
+      PK-GEOLOC
+    </div>
+    <div style="width:32px;height:32px;border:3px solid rgba(0,212,255,.2);
+                border-top-color:#00D4FF;border-radius:50%;animation:spin .8s linear infinite;"></div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+  </div>
   <div style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:20px;">
     <!-- Logo -->
     <div style="text-align:center;">
@@ -1553,9 +1566,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
       <div style="font-size:.65rem;font-weight:700;letter-spacing:2px;color:rgba(0,212,255,.6);
                   text-transform:uppercase;margin-top:3px;">
         Prueba Piloto — Acceso Restringido
-      </div>
-      <div style="font-size:.52rem;color:rgba(255,255,255,.25);letter-spacing:.5px;margin-top:6px;text-align:center;line-height:1.5;">
-        © N.Arroyo · Obra registrada en el Registro de la Propiedad Intelectual · Todos los derechos reservados
       </div>
     </div>
     <!-- Card -->
@@ -1698,112 +1708,46 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 ════════════════════════════════════════════════════════════════ */
 
 /* ── Diccionari de codis vàlids: 'BASE-DEVICEID' → 'AAAA-MM-DD' ── */
-const licenciasPiloto = {
-  'PILOTO-2025-A1':  '2026-12-31',
-  'PILOTO-2025-B2':  '2026-12-31',
-  'GEOLOC-TEST-01':  '2026-12-31',
-  'GEOLOC-TEST-02':  '2026-12-31',
-  'DEMO-ACCESS-01':  '2026-06-30',
-   'RAUL-ALVAC-B3':  '2026-07-05',
-  'CARLOS-NORTE-TF': '2026-07-05',
-   'JUAN-ALVAC':     '2026-07-05',
-   'DAVID-UTE-V':    '2026-07-05',
-  'MOHAMED-ALVAC-B3': '2026-07-05',
-   'PEDRO-LE01':      '2026-07-05',
-   'JOSE-DIPU':      '2026-07-05',
-   'FRAN-BECSA':     '2026-07-05',
-   'ALAN-BASCUAS':   '2026-07-05',
-   'LIDIA-B02':      '2026-07-05',
-   'JAVIER-DIPU':    '2026-07-05',
-   'JAVIER2-LUGOSUR': '2026-07-05',
-   'EDU-TERUEL':     '2026-07-05',
-   'ARNOPONTS1':     '2026-09-05',
-   'ARNOPONTS2':     '2026-09-05',
-   'ARNOPONTS3':     '2026-09-05',
-   'ARNOPONTS4':     '2026-09-05',
-   'ARNOPONTS5':     '2026-09-05',
-   'ARNOPONTS6':     '2026-09-05',
-   'ARNOPONTS7':     '2026-09-05',
-   'CARLOS2-ENC':  '2026-07-05',
-   'EDU-TER':        '2026-07-05',
-   'MANUEL-B3':      '2026-07-05',
-   'PEDRO2-ALIC':     '2026-07-05',
-   'CARMELO-VYA':    '2026-07-05',
-   'NOELDOS-TER':    '2026-07-05',
-   'ADOLFO-CANT':    '2026-07-05',
-   'CURRO-DIPU':     '2026-07-05',
-   'AL-55':          '2026-07-05',
-   'ANSELMO':        '2026-07-05',
-   'JUANITO':        '2026-07-05',
-   'JAVIERR':        '2026-07-05',
-   'DAJI':            '2026-07-05',
-   'RUBLO':          '2026-07-05',
-   'SANDRA':         '2026-07-05',
-   'CARLDI':        '2026-07-05',
-   'ENRI':        '2026-07-05',
-   'CESARGAR':        '2026-07-05',
-   'JAVIERTRU':        '2026-07-05',
-   'MARIOMAR':        '2026-07-05',
-   'CESARGAR':        '2026-07-05',
-   'MANUELSAN':        '2026-07-06',
-   'JORGESAN':        '2026-07-05',
-   'MANUELJESUS':   '2026-07-09',
-   'ALBERTOALVAC':        '2026-07-09',
-   'ALBERTOALVAC2':        '2026-07-09',
-    'CARLOS3':        '2026-07-09',
-   'NOEL2':        '2026-07-09',
-   'ALEJANDROMADRID':        '2026-07-09',
-   'XAVIREUS':        '2026-07-09',
-   'ALBERTSARRI':        '2026-07-09',
-   'JOSEPGRAELL':        '2026-07-09',
-   'XAVIREUS2':        '2026-07-09',
-   'JMNADAL':        '2026-07-09',
-   'OSCARAL':        '2026-07-09',
-   'IVANNAVAS':        '2026-07-09',
-   'JAVIERMARTIN':        '2026-07-09',
-   'FCOJAVIER':        '2026-07-09',
-   'JASENSIO':        '2026-07-09',
-   'FCABALLERO':        '2026-07-09',
-   /* ── Afegeix aquí els codis compostos nous (BASE-DEVICEID): ──
-     Exemple: 'SACYR-5319': '2026-12-31',                        */
-   'ARNOPONTS7-4278': '2026-07-05',
-   'CARLOS2-5318':    '2026-07-05',
-   'NOELDOS-8840':    '2026-12-31',     
-   'CARMELO-2307':    '2026-07-05',
-   'ALAN-4707':       '2026-07-05',
-   'MANUEL-9868':     '2026-07-05',
-   'JOSE-5285':       '2026-07-05',
-   'AL-4663':        '2026-07-05',
-   'AL-7643':        '2026-07-07',
-   'JUANITO-5182':   '2026-07-07',
-   'CARLDI-7077':   '2026-07-07',
-   'JAVIERR-1477':   '2026-07-07',
-   'ARNOPONTS6-4400':   '2026-07-07',
-   'LIDIA-4381':   '2026-07-07',
-   'EDU-1028':   '2026-07-07',
-   'DAVID-7205':   '2026-07-07',
-   'ENRI-5979':   '2026-07-09',
-   'JAVIERTRU-5370':        '2026-07-09',
-   'CESARGAR-9256':   '2026-07-09',
-   'MOHAMED-7423':        '2026-07-09',
-   'MANUELJESUS-3009':        '2026-07-09',
-   'ALBERTOALVAC-1348':        '2026-07-09',
-   'ARNOPONTS1-4623':   '2026-12-9',
-   'ARNOPONTS-3393':        '2026-12-05',
-    'ALBERTOALVAC2-1348':        '2026-07-09',
-   'CARLOS3-5129':        '2026-07-09',
-   'NOEL2-4412':        '2026-12-09',
-    'XAVIREUS-4108':        '2026-08-09',
-   'XAVIREUS2-9595':        '2026-08-09',
-   'JMNADAL-3122':        '2026-12-09',
-   'JAVIER-3153':        '2026-07-09',
-   'MARIOMAR-3037':        '2026-07-09',
-   'IVANNAVAS-9683':        '2026-07-09',
-   'JORGESAN-2485':        '2026-07-09',
-   'JORGESAN-7211':        '2026-07-09',
-   'ARNOPONTS3-1452':       '2026-12-09',
-   'JASENSIO-6615':        '2026-08-07',
-    };
+/* ═══════════════════════════════════════════════════════════════════
+   SISTEMA DE LICÈNCIES EXTERN
+   ─────────────────────────────────────────────────────────────────
+   Les llicències viuen a licencias.json (mateix directori).
+   • Amb xarxa: es descarrega i es guarda a localStorage com a cache.
+   • Sense xarxa: s'usa la còpia en localStorage de l'última descàrrega.
+   • Per afegir/revocar usuaris: edita NOMÉS licencias.json i puja'l.
+     No cal tocar aquest HTML.
+═══════════════════════════════════════════════════════════════════ */
+const LS_LICENCIAS = 'pkgeoloc_licencias_v1';
+let licenciasPiloto = {};
+
+async function _cargarLicencias() {
+  /* 1. Intentar descarregar la versió fresca */
+  if (navigator.onLine) {
+    try {
+      const r = await fetch('licencias.json?v=' + Date.now(), { cache: 'no-store' });
+      if (r.ok) {
+        const data = await r.json();
+        licenciasPiloto = data;
+        localStorage.setItem(LS_LICENCIAS, JSON.stringify(data));
+        _ocultarLoadingOverlay();
+        return;
+      }
+    } catch (_) { /* fetch falló → usar còpia local igualmente */ }
+  }
+  /* 2. Offline O fetch fallido → usar còpia cacheada */
+  try {
+    const cached = localStorage.getItem(LS_LICENCIAS);
+    if (cached) { licenciasPiloto = JSON.parse(cached); _ocultarLoadingOverlay(); return; }
+  } catch (_) {}
+  /* 3. Sin red y sin copia → diccionari buit */
+  licenciasPiloto = {};
+  _ocultarLoadingOverlay();
+}
+
+function _ocultarLoadingOverlay() {
+  const el = document.getElementById('loadingOverlay');
+  if (el) el.style.display = 'none';
+}
 
 /* ── Claus localStorage ── */
 const LS_SESSION = 'pkgeoloc_session_v3';   /* v3 → invalida sessions anteriors */
@@ -1822,7 +1766,7 @@ function _getOrCreateDeviceId() {
 }
 
 /* ── Función principal de validación ── */
-function validarAcceso() {
+async function validarAcceso() {
   const input  = document.getElementById('accessCodeInput');
   const codigo = (input.value || '').trim().toUpperCase();
 
@@ -1982,34 +1926,49 @@ async function _forzarActualizacion() {
 }
 
 /* ── Comprovació automàtica en carregar (si ja hi ha sessió guardada) ── */
-(function comprobarSesionGuardada() {
+(async function iniciarApp() {
+  /* 1. Carregar llicències (xarxa o cache local) */
+  await _cargarLicencias();
+
+  /* 2. Comprovar si hi ha sessió guardada vàlida */
   try {
     const session = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
     if (!session?.codigo || !session?.caducidad || !session?.deviceId) return;
 
     const hoy = new Date().toISOString().slice(0, 10);
 
-    /* Caducada? */
+    /* Caducada segons la data guardada a la sessió? */
     if (hoy > session.caducidad) {
       localStorage.removeItem(LS_SESSION);
       return;
     }
 
-    /* El codi segueix al diccionari i vigent? */
-    const caducidadActual = licenciasPiloto[session.codigo];
-    if (!caducidadActual || hoy > caducidadActual) {
-      localStorage.removeItem(LS_SESSION);
-      return;
-    }
-
-    /* El deviceId d'aquesta sessió coincideix amb el del dispositiu actual? */
+    /* DeviceId coincideix? */
     const deviceIdActual = localStorage.getItem(LS_DEVICE) || null;
     if (!deviceIdActual || deviceIdActual !== session.deviceId) {
       localStorage.removeItem(LS_SESSION);
       return;
     }
 
-    /* Tot OK → obre l'app directament */
+    /* Verificació contra el diccionari actual */
+    const caducidadActual = licenciasPiloto[session.codigo];
+    if (caducidadActual) {
+      /* Codi present → verificar caducitat actualitzada */
+      if (hoy > caducidadActual) {
+        localStorage.removeItem(LS_SESSION);
+        return;
+      }
+    } else {
+      /* Codi no trobat al diccionari.
+         Amb xarxa → podria ser revocació → invalidar.
+         Sense xarxa → offline grace, confiar en la sessió guardada. */
+      if (navigator.onLine) {
+        localStorage.removeItem(LS_SESSION);
+        return;
+      }
+    }
+
+    /* Tot OK → obrir l'app */
     _mostrarApp();
   } catch (_) {
     localStorage.removeItem(LS_SESSION);
@@ -2369,7 +2328,6 @@ async function _forzarActualizacion() {
     </div>
 
     <div class="footer-credit">creado por <strong>N.Arroyo</strong> · PK-GEOLOC v2.0 · 2025</div>
-    <div class="footer-credit" style="opacity:.35;margin-top:2px;">© N.Arroyo · Obra registrada en el Registro de la Propiedad Intelectual · Todos los derechos reservados</div>
     <div class="privacy-footer">🔒 Aplicación 100% local y anónima. No se guardan registros ni horarios de trabajo en el servidor.</div>
   </div>
 
