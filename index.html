@@ -1744,7 +1744,6 @@ const licenciasPiloto = {
    'CESARGAR':        '2026-07-05',
    'JAVIERTRU':        '2026-07-05',
    'MARIOMAR':        '2026-07-05',
-   'CESARGAR':        '2026-07-05',
    'MANUELSAN':        '2026-07-06',
    'JORGESAN':        '2026-07-05',
    'MANUELJESUS':   '2026-07-09',
@@ -5566,14 +5565,22 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-4';
+  const SW_VERSION = 'pkgeoloc-v2-sw-5';
   const swCode = `
 const CACHE = '${SW_VERSION}';
-const SHELL = ['./', './PK_SEED_para_app.js'];
+const SHELL_CRITIC = ['./'];          // S'ha de cachear sí o sí
+const SHELL_EXTRA  = ['./PK_SEED_para_app.js']; // Gran — no bloqueja install
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())
+    caches.open(CACHE).then(async c => {
+      // 1. Cachear HTML — crític, si falla el SW no s'instal·la
+      await c.addAll(SHELL_CRITIC);
+      // 2. Cachear seed — opcional, si falla no passa res (s'intentarà després)
+      for (const url of SHELL_EXTRA) {
+        try { await c.add(url); } catch(_) { /* seed no disponible ara, ok */ }
+      }
+    }).then(() => self.skipWaiting())
   );
 });
 
