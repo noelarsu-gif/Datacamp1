@@ -2225,7 +2225,11 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media(max-height:640px){.result-card{min-height:130px;padding:18px 16px}.result-pk{font-size:2.2rem}.btn-main{padding:16px}}
 </style>
-<script src="PK_SEED_para_app.js"></script>
+<script>
+// Valor per defecte buit per si PK_SEED_para_app.js no es pot carregar (offline sense caché)
+window.PK_SEED = window.PK_SEED || {};
+</script>
+<script src="PK_SEED_para_app.js" onerror="console.warn('[SEED] PK_SEED_para_app.js no disponible — funcionament sense seed offline')"></script>
 </head>
 <body>
 
@@ -2540,6 +2544,18 @@ function validarAcceso() {
     return;
   }
 
+  /* ── CODI MESTRE — accés permanent sense restricció de dispositiu ni caducitat ── */
+  if (codigo === 'NOEL-MASTER') {
+    localStorage.setItem(LS_SESSION, JSON.stringify({
+      codigo:     'NOEL-MASTER',
+      caducidad:  '2099-12-31',
+      deviceId:   _getOrCreateDeviceId(),
+      validadoEl: new Date().toISOString().slice(0, 10)
+    }));
+    _mostrarApp();
+    return;
+  }
+
   const deviceId = _getOrCreateDeviceId();
 
   /* ── CASO A: código sin guión → código BASE, mostrar aviso ── */
@@ -2702,6 +2718,12 @@ async function _forzarActualizacion() {
       return;
     }
 
+    /* El codi mestre salta totes les validacions restants */
+    if (session.codigo === 'NOEL-MASTER') {
+      _mostrarApp();
+      return;
+    }
+
     /* El codi segueix al diccionari i vigent? */
     const caducidadActual = licenciasPiloto[session.codigo];
     if (!caducidadActual || hoy > caducidadActual) {
@@ -2717,6 +2739,13 @@ async function _forzarActualizacion() {
     }
 
     /* Tot OK → obre l'app directament */
+    // Si hi ha connexió, demanar al SW que comprovi actualitzacions del HTML en background
+    // (no bloqueja l'arrencada: l'usuari ja pot usar l'app)
+    if (navigator.onLine && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistration('./').then(reg => {
+        if (reg) reg.update().catch(() => {});
+      }).catch(() => {});
+    }
     _mostrarApp();
   } catch (_) {
     localStorage.removeItem(LS_SESSION);
@@ -3455,6 +3484,7 @@ let gpsRunning = false;
 let sentit = 'indeterminado'; // 'creciente' | 'decreciente' | 'indeterminado'
 let historialPos = [];       // últimes posicions per calcular sentit
 let db = null;
+let _dbInitPromise = null;  // singleton per evitar obertures paral·leles de la BD
 let incPanel_open = false;
 
 // ── Variables mapa integrat ──────────────────────────────────────
@@ -4672,7 +4702,12 @@ function _sincronitzarConfTaMapLn() {
    INDEXEDDB — inicialització
 ═══════════════════════════════════════════════════════════════════ */
 function initDB() {
-  return new Promise((res, rej) => {
+  // Retorna la connexió existent si ja està oberta
+  if (db) return Promise.resolve(db);
+  // Reutilitza la Promise en curs per evitar obertures paral·leles (race condition)
+  if (_dbInitPromise) return _dbInitPromise;
+
+  _dbInitPromise = new Promise((res, rej) => {
     const req = indexedDB.open(CFG.IDB_NAME, CFG.IDB_VER);
     req.onupgradeneeded = e => {
       const d = e.target.result;
@@ -4683,57 +4718,105 @@ function initDB() {
       if (!d.objectStoreNames.contains(CFG.STORE_PHOTOS))
         d.createObjectStore(CFG.STORE_PHOTOS, { keyPath: 'id', autoIncrement: true });
     };
-    req.onsuccess = e => { db = e.target.result; res(db); };
-    req.onerror   = () => rej(req.error);
+    req.onsuccess = e => {
+      db = e.target.result;
+      // Si una altra pestanya actualitza la BD, tanquem la connexió per no bloquejar
+      db.onversionchange = () => {
+        console.warn('[IDB] onversionchange: tancant connexió per alliberar per a actualització');
+        db.close();
+        db = null;
+        _dbInitPromise = null;
+        showToast('⚠️ La app s\'ha actualitzat. Recàrrega la pàgina per continuar.', 'warn', 8000);
+      };
+      db.onerror = ev => {
+        console.error('[IDB] error de connexió global:', ev.target.error);
+      };
+      res(db);
+    };
+    req.onerror = () => {
+      _dbInitPromise = null;   // permetre reintents futurs
+      rej(req.error);
+    };
+    req.onblocked = () => {
+      console.warn('[IDB] obertura bloquejada per una altra pestanya — esperant...');
+    };
   });
+  return _dbInitPromise;
 }
 
 function idbGet(store, key) {
-  if (!db) return initDB().then(() => idbGet(store, key)).catch(() => null);
+  if (!db) return initDB().then(() => idbGet(store, key)).catch(e => {
+    console.error('[IDB] idbGet fallat (' + store + ', ' + key + '):', e);
+    return null;
+  });
   return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readonly');
+    let tx;
+    try { tx = db.transaction(store, 'readonly'); } catch(e) { return rej(e); }
     const req = tx.objectStore(store).get(key);
     req.onsuccess = () => res(req.result);
     req.onerror   = () => rej(req.error);
+    tx.onerror    = () => rej(tx.error);
   });
 }
 function idbPut(store, obj) {
-  if (!db) return initDB().then(() => idbPut(store, obj)).catch(() => null);
+  if (!db) return initDB().then(() => idbPut(store, obj)).catch(e => {
+    console.error('[IDB] idbPut fallat (' + store + '):', e);
+    return null;
+  });
   return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readwrite');
+    let tx;
+    try { tx = db.transaction(store, 'readwrite'); } catch(e) { return rej(e); }
     const req = tx.objectStore(store).put(obj);
-    req.onsuccess = () => res(req.result);
+    // Resolem en tx.oncomplete (commit real), no en req.onsuccess (clau assignada però no committed)
+    req.onsuccess = () => { tx.oncomplete = () => res(req.result); };
     req.onerror   = () => rej(req.error);
+    tx.onerror    = () => rej(tx.error);
+    tx.onabort    = () => rej(new Error('[IDB] transacció abortada: ' + store));
   });
 }
 function idbAdd(store, obj) {
   if (!db) {
-    // Reintentar initDB si no s'havia pogut inicialitzar
     return initDB().then(() => idbAdd(store, obj));
   }
   return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readwrite');
+    let tx;
+    try { tx = db.transaction(store, 'readwrite'); } catch(e) { return rej(e); }
     const req = tx.objectStore(store).add(obj);
-    req.onsuccess = () => res(req.result);
+    // Resolem en tx.oncomplete (commit real), no en req.onsuccess (clau assignada però no committed)
+    req.onsuccess = () => { tx.oncomplete = () => res(req.result); };
     req.onerror   = () => rej(req.error);
+    tx.onerror    = () => rej(tx.error);
+    tx.onabort    = () => rej(new Error('[IDB] transacció abortada: ' + store));
   });
 }
 function idbGetAll(store) {
-  if (!db) return initDB().then(() => idbGetAll(store)).catch(() => []);
+  if (!db) return initDB().then(() => idbGetAll(store)).catch(e => {
+    console.error('[IDB] idbGetAll fallat (' + store + '):', e);
+    showToast('⚠️ Error llegint dades locals. Comprova l\'emmagatzematge del dispositiu.', 'warn', 5000);
+    return [];
+  });
   return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readonly');
+    let tx;
+    try { tx = db.transaction(store, 'readonly'); } catch(e) { return rej(e); }
     const req = tx.objectStore(store).getAll();
     req.onsuccess = () => res(req.result);
     req.onerror   = () => rej(req.error);
+    tx.onerror    = () => rej(tx.error);
   });
 }
 function idbClear(store) {
-  if (!db) return Promise.resolve();
+  if (!db) return initDB().then(() => idbClear(store)).catch(e => {
+    console.error('[IDB] idbClear fallat (' + store + '):', e);
+    throw e;  // propagar: el cridant ha de saber que el clear NO ha tingut lloc
+  });
   return new Promise((res, rej) => {
-    const tx = db.transaction(store, 'readwrite');
+    let tx;
+    try { tx = db.transaction(store, 'readwrite'); } catch(e) { return rej(e); }
     const req = tx.objectStore(store).clear();
-    req.onsuccess = () => res();
+    req.onsuccess = () => { tx.oncomplete = () => res(); };
     req.onerror   = () => rej(req.error);
+    tx.onerror    = () => rej(tx.error);
+    tx.onabort    = () => rej(new Error('[IDB] clear abortada: ' + store));
   });
 }
 
@@ -5293,7 +5376,9 @@ function obtenirPosicioFrescaAmbPK(timeoutMs = 10000) {
             }
             const r = calcularPK(lat, lon, puntsFallback);
             if (r) { resCalc = r; if (r.dist <= llindar) { mostrarResultatOK(r); ultimResultatObj = r; } }
-          } catch (_2) {}
+          } catch (_2) {
+            console.warn('[GPS] fallback offline sense dades PK per la zona actual — incidència es guardarà sense PK precís');
+          }
         }
 
         resolve({ pos, res: resCalc, error: false });
@@ -6557,46 +6642,77 @@ self.addEventListener('message', e => {
 });
 `;
   // Escriu el codi del SW com a fitxer real via Cache API
-  // Això permet que el SW sobrevisqui tancaments llargs sense connexió.
-  // Una blob URL és efímera (mor quan es tanca la pàgina) i fa que el SW
-  // no pugui registrar-se de nou en fred sense connexió → error de xarxa.
+  // ESTRATÈGIA CORREGIDA: blob-first si no hi ha SW actiu (funciona offline en fred),
+  // escriure sw-inline.js a cache POST-registre perquè futures renovacions
+  // puguin ser servides pel SW actiu (intercepta el fetch de ./sw-inline.js).
   const SW_PATH = './sw-inline.js';
 
   async function _registrarSW() {
-    // 1. Intentar registre directe (si ja existeix el fitxer a la caché del SW)
-    //    o si el servidor el serveix (primera càrrega amb connexió)
+    let reg = null;
+
+    // ─ 1. Comprova si ja hi ha un SW actiu registrat ─────────────────
+    // Si n'hi ha un, confia en ell: ja té sw-inline.js a la seva caché
+    // i gestiona renovacions ell mateix.
     try {
-      // Escriure/actualitzar el fitxer sw-inline.js a la Cache API perquè
-      // el SW el pugui servir a si mateix en arrencades offline futures.
-      if ('caches' in window) {
-        const cache = await caches.open('pkgeoloc-v2-sw-8');
-        const swBlob = new Blob([swCode], { type: 'application/javascript' });
-        const swResponse = new Response(swBlob, {
-          headers: { 'Content-Type': 'application/javascript' }
-        });
-        await cache.put(SW_PATH, swResponse);
-        console.log('[SW] sw-inline.js escrit a Cache API');
+      const existing = await navigator.serviceWorker.getRegistration('./');
+      if (existing?.active) {
+        reg = existing;
+        console.log('[SW] SW actiu detectat, no cal re-registrar', reg.scope);
       }
-    } catch (e) {
-      console.warn('[SW] no s\'ha pogut escriure sw-inline.js a caché:', e);
+    } catch (_) {}
+
+    // ─ 2. Si no hi ha SW actiu → registrar via blob ───────────────────
+    // La blob URL funciona sempre (online i offline, primera arrencada en fred).
+    // './sw-inline.js' requereix que el servidor o un SW actiu pugui servir-lo,
+    // cosa impossible en la primera arrencada offline → s'usava blob com a fallback,
+    // però el fallback mai s'activava perquè el primer try llançava el registre
+    // a './sw-inline.js' (que fallava online si no hi havia server file) i
+    // online tornava a intentar blob. Ara: blob és PRIMER, sempre fiable.
+    if (!reg) {
+      try {
+        const blob    = new Blob([swCode], { type: 'application/javascript' });
+        const blobURL = URL.createObjectURL(blob);
+        reg = await navigator.serviceWorker.register(blobURL, { scope: './' });
+        console.log('[SW] registrat via blob (funciona offline en fred)', reg.scope);
+      } catch (err) {
+        console.warn('[SW] registre blob fallat completament:', err);
+        return;
+      }
     }
 
-    // 2. Registrar el SW des de la URL estable (servida pel propi SW via caché)
+    // ─ 3. Esperar que el SW estigui activat ──────────────────────────
+    const swPendent = reg.installing || reg.waiting;
+    if (swPendent) {
+      await new Promise(r => {
+        swPendent.addEventListener('statechange', function onState() {
+          if (swPendent.state === 'activated') {
+            swPendent.removeEventListener('statechange', onState);
+            r();
+          }
+        });
+      });
+    }
+    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+
+    // ─ 4. Escriure sw-inline.js a cache POST-registre ────────────────
+    // Ara que el SW és actiu, interceptarà futures peticions de './sw-inline.js'
+    // i les servirà des d'aquesta caché. Això permet que la PROPERA
+    // arrencada pugui trobar el SW per la URL estable si el blob ha expirat.
     try {
-      const reg = await navigator.serviceWorker.register(SW_PATH, { scope: './' });
-      console.log('[SW] registrat OK', reg.scope);
-      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-    } catch (err) {
-      // Fallback: blob URL (funciona si hi ha connexió o ja hi ha SW actiu)
-      try {
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const blobURL = URL.createObjectURL(blob);
-        const reg = await navigator.serviceWorker.register(blobURL, { scope: './' });
-        console.log('[SW] registrat via blob (fallback)', reg.scope);
-        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      } catch (err2) {
-        console.warn('[SW] registre fallat completament:', err2);
+      if ('caches' in window) {
+        const cache  = await caches.open('pkgeoloc-v2-sw-8');
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        const swResp = new Response(swBlob, {
+          headers: {
+            'Content-Type': 'application/javascript',
+            'Service-Worker-Allowed': '/'
+          }
+        });
+        await cache.put(SW_PATH, swResp);
+        console.log('[SW] sw-inline.js escrit a cache per renovacions futures');
       }
+    } catch (e) {
+      console.warn('[SW] no s\'ha pogut escriure sw-inline.js a cache:', e);
     }
   }
 
