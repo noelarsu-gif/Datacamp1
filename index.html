@@ -4689,6 +4689,7 @@ function initDB() {
 }
 
 function idbGet(store, key) {
+  if (!db) return initDB().then(() => idbGet(store, key)).catch(() => null);
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).get(key);
@@ -4697,6 +4698,7 @@ function idbGet(store, key) {
   });
 }
 function idbPut(store, obj) {
+  if (!db) return initDB().then(() => idbPut(store, obj)).catch(() => null);
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).put(obj);
@@ -4705,6 +4707,10 @@ function idbPut(store, obj) {
   });
 }
 function idbAdd(store, obj) {
+  if (!db) {
+    // Reintentar initDB si no s'havia pogut inicialitzar
+    return initDB().then(() => idbAdd(store, obj));
+  }
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).add(obj);
@@ -4713,6 +4719,7 @@ function idbAdd(store, obj) {
   });
 }
 function idbGetAll(store) {
+  if (!db) return initDB().then(() => idbGetAll(store)).catch(() => []);
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).getAll();
@@ -4721,6 +4728,7 @@ function idbGetAll(store) {
   });
 }
 function idbClear(store) {
+  if (!db) return Promise.resolve();
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).clear();
@@ -6474,15 +6482,16 @@ function showToast(msg, type='', duration=3000) {
    INICIALITZACIÓ
 ═══════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
-  await initDB();
-  await carregarCache();
-  inicialitzarUILlistaNegra(); // Inicialitza el textarea de la llista negra amb els valors per defecte
-  mapLnRenderTags();           // Sincronitza el sidebar del mapa amb la llista negra inicial
+  // ── Init DB i cache: aïllats per no bloquejar la UI si falla offline ──
+  try { await initDB(); } catch(e) { console.warn('[INIT] initDB error:', e); }
+  try { await carregarCache(); } catch(e) { console.warn('[INIT] carregarCache error:', e); }
+  try { inicialitzarUILlistaNegra(); } catch(e) { console.warn('[INIT] llistaNegra error:', e); }
+  try { mapLnRenderTags(); } catch(e) { console.warn('[INIT] mapLnRenderTags error:', e); }
 
   // ── Inicialitzar Leaflet ARA: #screenMap és display:flex des d'inici
   //    (visibility:hidden), així el contenidor té dimensions reals i Leaflet
   //    pot mesurar-lo correctament sense cap hack de timing.
-  iniciarMapa();
+  try { iniciarMapa(); } catch(e) { console.warn('[INIT] iniciarMapa error:', e); }
 
 // ═══════════════════════════════════════════════════════════════════
 // SERVICE WORKER INLINE — cacheja el propi HTML per funcionar 100% offline
@@ -6591,7 +6600,7 @@ self.addEventListener('message', e => {
     }
   }
 
-  window.addEventListener('load', _registrarSW);
+  window.addEventListener('load', () => { _registrarSW().catch(e => console.warn('[SW] registre error:', e)); });
 }
 
   // Swipe down per tancar settings
