@@ -1807,10 +1807,6 @@ const licenciasPiloto = {
    'NOELPC':               '2026-08-07',
    'NOELPC-4278':          '2026-08-07',
    'JAVIERTRU2-5316':      '2026-08-07',
-   'JOSEPGRAELL-3362':      '2026-09-09',
-   'OSCARAL-8579':          '2026-07-09',
-   'PEDRO4':                '2026-07-09',
-   'JOSE-4816':              '2026-07-09',
     };
 
 /* ── Claus localStorage ── */
@@ -2284,7 +2280,6 @@ async function _forzarActualizacion() {
       </div>
     </div>
     <div class="pk-confirm-btns">
-      <!-- Toggle fecha/hora -->
       <div style="display:flex;align-items:center;justify-content:space-between;
                   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
                   border-radius:var(--radius-sm);padding:10px 14px;">
@@ -4398,8 +4393,29 @@ async function processarPosicio(pos) {
 
 function gestionarErrorGPS(err) {
   setBtnLoading(false);
-  // Codi 2 (POSITION_UNAVAILABLE) és el més comú en tablets Android sense SIM:
-  // el proveïdor de xarxa no existeix i el GPS tarda molt en arrancar en fred.
+
+  // ── Fallback offline amb última posició coneguda ──────────────────
+  // Quan el GPS fa timeout o no té senyal, intentem calcular el PK
+  // amb el seed embegut usant la darrera posició GPS vàlida.
+  if (ultimaPos && typeof filtrarSeed === 'function') {
+    let punts = filtrarCache(ultimaPos.lat, ultimaPos.lon, 0.08);
+    if (punts.length < 2) {
+      punts = filtrarSeed(ultimaPos.lat, ultimaPos.lon, 0.10);
+      if (punts.length < 2) punts = filtrarSeed(ultimaPos.lat, ultimaPos.lon, 0.20);
+    }
+    if (punts.length >= 2) {
+      const res = calcularPK(ultimaPos.lat, ultimaPos.lon, punts);
+      if (res && res.dist <= llindar) {
+        mostrarResultatOK(res);
+        const mStr = String(res.m).padStart(3,'0');
+        showToast(`📴 Sin GPS — usando última posición · ${res.carretera} PK ${res.km}+${mStr}`, 'warn', 5000);
+        setGPSBar('locked', 'Posición aproximada (última conocida)', ultimaPos.acc);
+        return;
+      }
+    }
+  }
+
+  // ── Sin posición conocida → error normal ─────────────────────────
   const msgs = {
     1: ['🚫 Permiso GPS denegado. Ve a Ajustes → Apps → PK-GEOLOC → Permisos y activa Ubicación.', 'Permiso GPS denegado'],
     2: ['📡 Señal GPS no disponible. En tablets sin SIM, activa la ubicación en Ajustes y espera unos segundos al aire libre antes de reintentar.', 'GPS no disponible'],
@@ -4832,7 +4848,6 @@ function _mostrarModalConfirmPK(carretera, km, m) {
     document.getElementById('pkConfKm').value   = km ?? '';
     document.getElementById('pkConfM').value    = m  ?? '';
     _pkConfActualitzarPreview();
-    /* Restaurar estat del toggle */
     const actiu = localStorage.getItem('pkgeoloc_ts') === '1';
     const chk = document.getElementById('toggleTimestamp');
     if (chk) { chk.checked = actiu; _pkToggleTimestamp(actiu, true); }
@@ -4845,8 +4860,7 @@ function _pkToggleTimestamp(actiu, silent) {
   const track = document.getElementById('tsTrack');
   const thumb = document.getElementById('tsThumb');
   if (track) track.style.background = actiu ? 'var(--cyan)' : 'rgba(255,255,255,.12)';
-  if (thumb) thumb.style.transform  = actiu ? 'translateX(18px)' : 'translateX(0)';
-  if (thumb) thumb.style.background = actiu ? 'white' : 'var(--text-3)';
+  if (thumb) { thumb.style.transform = actiu ? 'translateX(18px)' : 'translateX(0)'; thumb.style.background = actiu ? 'white' : 'var(--text-3)'; }
 }
 
 function _pkConfActualitzarPreview() {
@@ -5002,7 +5016,6 @@ async function aplicarMarcaAigua(file, pkStr, sentitStr) {
       ctx.textAlign = 'left';
       ctx.fillText(pkStr, marginX, cy);
 
-      // Centre: data i hora si l'usuari ho ha activat
       if (localStorage.getItem('pkgeoloc_ts') === '1') {
         const ara = new Date();
         const d = ara.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -5013,7 +5026,6 @@ async function aplicarMarcaAigua(file, pkStr, sentitStr) {
         ctx.fillText(`${d}  ${h}`, w / 2, cy);
       }
 
-      // Dreta: nom de l'app en cian molt petit i semitransparent (branding discret)
       ctx.fillStyle = 'rgba(0,212,255,0.45)';
       ctx.font = `600 ${Math.round(fs * 0.72)}px 'Barlow Condensed', 'Arial Narrow', Arial`;
       ctx.textAlign = 'right';
@@ -5551,10 +5563,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-3';
+  const SW_VERSION = 'pkgeoloc-v2-sw-4';
   const swCode = `
 const CACHE = '${SW_VERSION}';
-const SHELL = ['./'];   // la propia pàgina
+const SHELL = ['./', './PK_SEED_para_app.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
