@@ -1763,7 +1763,6 @@ const licenciasPiloto = {
    'FCOJAVIER':        '2026-07-09',
    'JASENSIO':        '2026-07-05',
    'JAVIERTRU2':        '2026-07-09',
-   'JOMANU':               '2026-07-07',
    /* ── Afegeix aquí els codis compostos nous (BASE-DEVICEID): ──
      Exemple: 'SACYR-5319': '2026-12-31',                        */
    'ARNOPONTS7-4278': '2026-07-05',
@@ -5568,11 +5567,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-5';
+  const SW_VERSION = 'pkgeoloc-v2-sw-6';
   const swCode = `
 const CACHE = '${SW_VERSION}';
 const SHELL_CRITIC = ['./'];          // S'ha de cachear sí o sí
-const SHELL_EXTRA  = ['./PK_SEED_para_app.js']; // Gran — no bloqueja install
+const SHELL_EXTRA  = ['./PK_SEED_para_app.js', './sw-inline.js']; // Opcionals — si fallen no passa res
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -5626,20 +5625,51 @@ self.addEventListener('message', e => {
   if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 `;
-  const blob = new Blob([swCode], { type: 'application/javascript' });
-  const swURL = URL.createObjectURL(blob);
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register(swURL, { scope: './' })
-      .then(reg => {
-        console.log('[SW] registrat OK', reg.scope);
+  // Escriu el codi del SW com a fitxer real via Cache API
+  // Això permet que el SW sobrevisqui tancaments llargs sense connexió.
+  // Una blob URL és efímera (mor quan es tanca la pàgina) i fa que el SW
+  // no pugui registrar-se de nou en fred sense connexió → error de xarxa.
+  const SW_PATH = './sw-inline.js';
+
+  async function _registrarSW() {
+    // 1. Intentar registre directe (si ja existeix el fitxer a la caché del SW)
+    //    o si el servidor el serveix (primera càrrega amb connexió)
+    try {
+      // Escriure/actualitzar el fitxer sw-inline.js a la Cache API perquè
+      // el SW el pugui servir a si mateix en arrencades offline futures.
+      if ('caches' in window) {
+        const cache = await caches.open('pkgeoloc-v2-sw-6');
+        const swBlob = new Blob([swCode], { type: 'application/javascript' });
+        const swResponse = new Response(swBlob, {
+          headers: { 'Content-Type': 'application/javascript' }
+        });
+        await cache.put(SW_PATH, swResponse);
+        console.log('[SW] sw-inline.js escrit a Cache API');
+      }
+    } catch (e) {
+      console.warn('[SW] no s\'ha pogut escriure sw-inline.js a caché:', e);
+    }
+
+    // 2. Registrar el SW des de la URL estable (servida pel propi SW via caché)
+    try {
+      const reg = await navigator.serviceWorker.register(SW_PATH, { scope: './' });
+      console.log('[SW] registrat OK', reg.scope);
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } catch (err) {
+      // Fallback: blob URL (funciona si hi ha connexió o ja hi ha SW actiu)
+      try {
+        const blob = new Blob([swCode], { type: 'application/javascript' });
+        const blobURL = URL.createObjectURL(blob);
+        const reg = await navigator.serviceWorker.register(blobURL, { scope: './' });
+        console.log('[SW] registrat via blob (fallback)', reg.scope);
         if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      })
-      .catch(err => {
-        // Fallback: intentar el sw.js extern si existeix
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-        console.warn('[SW] blob fallit, intentant sw.js extern:', err);
-      });
-  });
+      } catch (err2) {
+        console.warn('[SW] registre fallat completament:', err2);
+      }
+    }
+  }
+
+  window.addEventListener('load', _registrarSW);
 }
 
   // Swipe down per tancar settings
