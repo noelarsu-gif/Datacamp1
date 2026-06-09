@@ -868,6 +868,7 @@ body::before{
   -webkit-appearance:none;min-width:0;
 }
 .pk-confirm-inp:focus{border-color:var(--border-acc);}
+#incFotoModal.open{display:flex;}
 .pk-confirm-inp::placeholder{color:var(--text-3);font-size:.72rem;}
 .pk-confirm-sep{color:var(--text-2);font-size:.9rem;flex-shrink:0;}
 .pk-confirm-btns{display:flex;flex-direction:column;gap:9px;}
@@ -1060,6 +1061,25 @@ body::before{
 .inc-action-btn.maps:hover{background:rgba(66,133,244,.28);}
 .inc-action-btn.whatsapp{background:rgba(37,211,102,.13);color:#25d366;border:1px solid rgba(37,211,102,.35);}
 .inc-action-btn.whatsapp:hover{background:rgba(37,211,102,.25);}
+.inc-action-btn.wa-foto{background:rgba(192,132,252,.13);color:var(--purple);border:1px solid rgba(192,132,252,.35);}
+.inc-action-btn.wa-foto:hover{background:rgba(192,132,252,.25);}
+
+/* Miniatura foto vinculada a la incidència */
+.inc-foto-thumb{
+  position:absolute;top:10px;right:10px;
+  width:64px;height:64px;border-radius:var(--radius-sm);
+  overflow:hidden;cursor:pointer;flex-shrink:0;
+  border:2px solid rgba(255,255,255,.12);
+  box-shadow:0 2px 8px rgba(0,0,0,.5);
+  transition:transform .15s;
+}
+.inc-foto-thumb:hover{transform:scale(1.06);}
+.inc-foto-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+.inc-foto-badge{
+  position:absolute;bottom:2px;right:3px;
+  font-size:.6rem;line-height:1;
+  text-shadow:0 1px 3px rgba(0,0,0,.8);
+}
 
 /* ── Botó Google Maps al visor de foto ── */
 .pv-maps-btn{
@@ -2097,6 +2117,41 @@ async function _forzarActualizacion() {
         Fuente: <span style="color:var(--accent)">ArcGIS — Generalitat de Catalunya</span><br>
         Motor: Haversine + Interpolación Lineal (WGS84)
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL FOTO INCIDÈNCIA ════ -->
+<div id="incFotoModal" style="
+  display:none;position:fixed;inset:0;z-index:900;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(6px);
+  align-items:flex-end;justify-content:center;
+">
+  <div style="
+    width:100%;max-width:480px;background:var(--bg-1);
+    border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    padding:20px 20px 32px;
+    border-top:1px solid var(--border);
+  ">
+    <div style="width:40px;height:4px;border-radius:2px;background:var(--bg-4);margin:0 auto 18px;"></div>
+    <div style="font-family:var(--font-cond);font-size:1rem;font-weight:900;letter-spacing:2px;color:var(--text-1);text-align:center;margin-bottom:6px;">📸 ¿AÑADIR FOTO?</div>
+    <div id="incFotoModalNom" style="font-size:.78rem;color:var(--text-2);text-align:center;margin-bottom:20px;"></div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button id="incFotoSi" style="
+        padding:14px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--tr);
+        border:1.5px solid rgba(168,85,247,.5);background:rgba(168,85,247,.12);
+        color:var(--purple);font-family:var(--font-cond);font-size:.88rem;font-weight:900;letter-spacing:2px;
+      ">📷 SÍ, HACER FOTO</button>
+      <button id="incFotoNo" style="
+        padding:14px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--tr);
+        border:1.5px solid rgba(0,212,255,.35);background:rgba(0,212,255,.08);
+        color:var(--accent);font-family:var(--font-cond);font-size:.88rem;font-weight:900;letter-spacing:2px;
+      ">✔ SOLO REGISTRAR (sin foto)</button>
+      <button id="incFotoCancel" style="
+        padding:11px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--tr);
+        border:1px solid var(--border);background:transparent;
+        color:var(--text-3);font-family:var(--font-cond);font-size:.78rem;font-weight:700;letter-spacing:1px;
+      ">✕ Cancelar</button>
     </div>
   </div>
 </div>
@@ -4673,18 +4728,60 @@ async function registrarIncidencia(tipus, nom) {
     sensePK      = decisio.sensePK;
   }
 
-  await _guardarIncidencia(tipus, nom, pos, resDefinitiu, sensePK);
+  // ── Preguntar si vol afegir foto ────────────────────────────────
+  const volFoto = await _mostrarModalFotoIncidencia(nom);
+  if (volFoto === null) {
+    showToast('❌ Registro cancelado', 'warn', 2500);
+    return;
+  }
+
+  if (volFoto) {
+    // Guardar incidència primer, recollir l'id, després obrir càmera
+    const incId = await _guardarIncidencia(tipus, nom, pos, resDefinitiu, sensePK);
+    _incFotoContext = { pos, res: resDefinitiu, sensePK, incId };
+    _esperantFotoIncidencia = true;
+    document.getElementById('inputCaptura').click();
+  } else {
+    await _guardarIncidencia(tipus, nom, pos, resDefinitiu, sensePK);
+  }
+}
+
+/* ── Variables per al flux de foto d'incidència ── */
+let _esperantFotoIncidencia = false;
+let _incFotoContext = null;
+
+/* ── Modal pregunta foto ── */
+function _mostrarModalFotoIncidencia(nom) {
+  return new Promise(resolve => {
+    const modal = document.getElementById('incFotoModal');
+    document.getElementById('incFotoModalNom').textContent = nom;
+    modal.classList.add('open');
+    const btnSi  = document.getElementById('incFotoSi');
+    const btnNo  = document.getElementById('incFotoNo');
+    const btnCan = document.getElementById('incFotoCancel');
+    function cleanup() {
+      modal.classList.remove('open');
+      btnSi.removeEventListener('click', onSi);
+      btnNo.removeEventListener('click', onNo);
+      btnCan.removeEventListener('click', onCancel);
+    }
+    function onSi()     { cleanup(); resolve(true);  }
+    function onNo()     { cleanup(); resolve(false); }
+    function onCancel() { cleanup(); resolve(null);  }
+    btnSi.addEventListener('click', onSi);
+    btnNo.addEventListener('click', onNo);
+    btnCan.addEventListener('click', onCancel);
+  });
 }
 
 async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
   const ara = new Date();
   const inc = {
     tipus, nom,
-    // Si sensePK=true, guardem null explícit per saber que no hi ha PK
     carretera: sensePK ? null : (res?.carretera || '—'),
     km:        sensePK ? null : (res?.km        ?? 0),
     m:         sensePK ? null : (res?.m         ?? 0),
-    sensePK,          // flag per al renderitzat i el WA
+    sensePK,
     lat:       pos?.lat ?? null,
     lon:       pos?.lon ?? null,
     acc:       pos?.acc ?? null,
@@ -4693,7 +4790,7 @@ async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
     ts_legible: formatarDataHora(ara),
   };
   try {
-    await idbAdd(CFG.STORE_INC, inc);
+    const newId = await idbAdd(CFG.STORE_INC, inc);
     const toastPK = sensePK
       ? `📍 ${nom} — sense PK (coords GPS)`
       : `✅ ${nom} — ${inc.carretera} PK ${inc.km}+${String(inc.m).padStart(3,'0')}`;
@@ -4702,8 +4799,10 @@ async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
     renderitzarIncidencies();
     if (pos && !ultimaPos) ultimaPos = pos;
     if (res && !ultimResultatObj) { ultimResultatObj = res; mostrarResultatOK(res); }
+    return newId;
   } catch(e) {
     showToast('❌ Error en desar la incidència: ' + e.message, 'err');
+    return null;
   }
 }
 
@@ -4711,54 +4810,72 @@ async function renderitzarIncidencies() {
   const lista = document.getElementById('incidentsList');
   const comptador = document.getElementById('incCount');
   try {
-    const incs = await idbGetAll(CFG.STORE_INC);
-    comptador.textContent = `${incs.length} REGISTRES`;
+    const incs   = await idbGetAll(CFG.STORE_INC);
+    const fotos  = await idbGetAll(CFG.STORE_PHOTOS);
+    comptador.textContent = `${incs.length} REGISTROS`;
     if (!incs.length) {
       lista.innerHTML = '<div class="inc-empty"><div class="inc-empty-icon">📋</div><div class="inc-empty-text">Sin incidencias registradas</div></div>';
       return;
     }
     const sorted = [...incs].sort((a,b) => b.ts.localeCompare(a.ts));
-    lista.innerHTML = sorted.map(inc => {
-      const sensePK    = !!inc.sensePK;
-      const mStr       = sensePK ? null : String(inc.m||0).padStart(3,'0');
+
+    // Construeix les targetes
+    const cards = await Promise.all(sorted.map(async inc => {
+      const sensePK     = !!inc.sensePK;
+      const mStr        = sensePK ? null : String(inc.m||0).padStart(3,'0');
       const sentitClass = inc.sentit === 'creciente' ? 'creciente' : inc.sentit === 'decreciente' ? 'decreciente' : 'indet';
       const sentitTxt   = inc.sentit === 'creciente' ? '↑ Creciente' : inc.sentit === 'decreciente' ? '↓ Decreciente' : '↔ Indeterminado';
       const coordsStr   = inc.lat ? `${inc.lat.toFixed(5)}, ${inc.lon.toFixed(5)}` : '';
 
-      // Línia PK — omitida si sensePK
       const pkLine = sensePK
         ? `<div class="inc-pk" style="color:var(--text-3);font-style:italic;">📍 Sin PK asignado</div>`
         : `<div class="inc-pk">${inc.carretera} · PK ${inc.km}+${mStr}</div>`;
 
-      // Botons d'acció
+      // ── Foto vinculada ──────────────────────────────────────────
+      const fotoVinc = fotos.find(f => f.incId === inc.id);
+      let fotoThumb  = '';
+      let btnWAFoto  = '';
+      if (fotoVinc) {
+        const blobUrl = URL.createObjectURL(fotoVinc.blob);
+        fotoThumb = `
+          <div class="inc-foto-thumb" onclick="_verFotoIncidencia(${fotoVinc.id})">
+            <img src="${blobUrl}" alt="Foto incidencia" loading="lazy">
+            <span class="inc-foto-badge">📷</span>
+          </div>`;
+
+        // Botó WA amb foto — usa la funció ja existent de compartir foto
+        const incIdEsc = inc.id;
+        btnWAFoto = `<button class="inc-action-btn wa-foto" onclick="_compartirIncidenciaFoto(${incIdEsc})">📸 WA con foto</button>`;
+      }
+
+      // ── Botons d'acció ──────────────────────────────────────────
       let accioBtns = '';
       if (inc.lat && inc.lon) {
-        const mapsUrl = `https://maps.google.com/?q=${inc.lat},${inc.lon}`;
+        const mapsUrl  = `https://maps.google.com/?q=${inc.lat},${inc.lon}`;
         const sentitWA = inc.sentit === 'creciente' ? '↑ Creciente'
           : inc.sentit === 'decreciente' ? '↓ Decreciente' : '↔ Indeterminado';
-
-        // Construeix missatge WA — la línia PK desapareix si sensePK
-        const pkLinia = sensePK
+        const pkLinia  = sensePK
           ? `*Ubicación:* Sin PK asignado (coordenadas GPS)\n`
           : `*Carretera:* ${inc.carretera}\n*PK:* ${inc.km}+${mStr}\n`;
-
-        const waText = encodeURIComponent(
+        const waText   = encodeURIComponent(
           `⚠️ *AVISO DE INCIDENCIA* ⚠️\n\n` +
-          `*Tipus:* ${inc.nom}\n` +
+          `*Tipo:* ${inc.nom}\n` +
           pkLinia +
           `*Sentido:* ${sentitWA}\n` +
-          `*Ubicació GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}`
+          `*Ubicación GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}`
         );
         const waUrl = `https://api.whatsapp.com/send?text=${waText}`;
         accioBtns = `
           <div class="inc-actions">
-            <a class="inc-action-btn maps" href="${mapsUrl}" target="_blank" rel="noopener">🗺️ Google Maps</a>
-            <a class="inc-action-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener">💬 WhatsApp</a>
+            <a class="inc-action-btn maps" href="${mapsUrl}" target="_blank" rel="noopener">🗺️ Maps</a>
+            <a class="inc-action-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener">💬 WA texto</a>
+            ${btnWAFoto}
           </div>`;
       }
 
       return `
       <div class="incident-card ${inc.tipus}">
+        ${fotoThumb}
         <div class="inc-icon">${tipusIcon(inc.tipus)}</div>
         <div class="inc-body">
           <div class="inc-title">${inc.nom}</div>
@@ -4770,8 +4887,68 @@ async function renderitzarIncidencies() {
           ${accioBtns}
         </div>
       </div>`;
-    }).join('');
+    }));
+
+    lista.innerHTML = cards.join('');
   } catch(e) { lista.innerHTML = '<div class="inc-empty"><div class="inc-empty-text">Error leyendo datos</div></div>'; }
+}
+
+/* Obre el visor de foto des d'una targeta d'incidència */
+async function _verFotoIncidencia(fotoId) {
+  try {
+    const fotos = await idbGetAll(CFG.STORE_PHOTOS);
+    const foto  = fotos.find(f => f.id === fotoId);
+    if (!foto) return;
+    const url = URL.createObjectURL(foto.blob);
+    obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
+  } catch(_) {}
+}
+
+/* Comparteix incidència + foto per WhatsApp (Web Share API o fallback) */
+async function _compartirIncidenciaFoto(incId) {
+  try {
+    const incs  = await idbGetAll(CFG.STORE_INC);
+    const fotos = await idbGetAll(CFG.STORE_PHOTOS);
+    const inc   = incs.find(i => i.id === incId);
+    const foto  = fotos.find(f => f.incId === incId);
+    if (!inc || !foto) { showToast('⚠️ No se encontró la foto vinculada', 'warn'); return; }
+
+    const mStr     = inc.sensePK ? '000' : String(inc.m||0).padStart(3,'0');
+    const sentitWA = inc.sentit === 'creciente' ? '↑ Creciente'
+      : inc.sentit === 'decreciente' ? '↓ Decreciente' : '↔ Indeterminado';
+    const pkLinia  = inc.sensePK
+      ? `*Ubicación:* Sin PK asignado (coordenadas GPS)\n`
+      : `*Carretera:* ${inc.carretera}\n*PK:* ${inc.km}+${mStr}\n`;
+    const textWA   =
+      `⚠️ *AVISO DE INCIDENCIA* ⚠️\n\n` +
+      `*Tipo:* ${inc.nom}\n` +
+      pkLinia +
+      `*Sentido:* ${sentitWA}\n` +
+      (inc.lat && inc.lon ? `*Ubicación GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}` : '');
+
+    const fitxer = new File([foto.blob], foto.nom, { type: 'image/jpeg' });
+
+    // Intent 1: Web Share API v2 (foto + text junts)
+    if (navigator.canShare && navigator.canShare({ files: [fitxer], text: textWA })) {
+      try {
+        await navigator.share({ files: [fitxer], text: textWA, title: 'PK-GEOLOC' });
+        return;
+      } catch(err) { if (err.name === 'AbortError') return; }
+    }
+
+    // Fallback: copia text + descàrrega foto + obre WA
+    let textCopiat = false;
+    try { await navigator.clipboard.writeText(textWA); textCopiat = true; } catch(_) {}
+    descarregarBlob(foto.blob, foto.nom);
+    showToast(textCopiat
+      ? '📋 Texto copiado. Adjunta la foto en WhatsApp.'
+      : '📲 Abre WhatsApp, pega el texto y adjunta la foto descargada.', 'ok', 5000);
+    setTimeout(() => {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`, '_blank');
+    }, 800);
+  } catch(e) {
+    showToast('❌ Error al compartir: ' + e.message, 'err');
+  }
 }
 
 function tipusIcon(tipus) {
@@ -4801,6 +4978,17 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
   const file = e.target.files?.[0];
   if (!file) return;
   this.value = '';
+
+  // ── Cas: foto d'incidència ──────────────────────────────────────
+  if (_esperantFotoIncidencia) {
+    _esperantFotoIncidencia = false;
+    const ctx = _incFotoContext;
+    _incFotoContext = null;
+    showToast('📡 Capturando GPS para la foto...', 'ok', 3000);
+    // Reutilitzar la posició ja capturada per la incidència
+    await processarFotoAmbContext(file, ctx.pos, ctx.res, ctx.sensePK, ctx.incId);
+    return;
+  }
 
   // ── Cas: foto addicional al visor (multi-foto) ──────────────────
   if (_esperantFotoAddicional) {
@@ -4886,6 +5074,61 @@ function _pkConfirmarOK() {
 function _pkConfirmarCancel() {
   document.getElementById('pkConfirmModal').classList.remove('open');
   if (_pkConfirmResolve) { _pkConfirmResolve(null); _pkConfirmResolve = null; }
+}
+
+/* Processa una foto d'incidència reutilitzant el PK ja capturat */
+async function processarFotoAmbContext(file, pos, res, sensePK, incId = null) {
+  const ara = new Date();
+  const carretera = sensePK ? null : (res?.carretera || '—');
+  const km        = sensePK ? null : (res?.km ?? 0);
+  const m         = sensePK ? null : (res?.m  ?? 0);
+  const lat       = pos?.lat ?? null;
+  const lon       = pos?.lon ?? null;
+
+  let pkStr, nomFitxer;
+  if (sensePK) {
+    pkStr     = (lat && lon ? `GPS ${lat.toFixed(5)}, ${lon.toFixed(5)}` : 'Sin PK');
+    nomFitxer = generarNomFitxer('GPS', 0, '000', ara);
+  } else {
+    const confirmat = await _mostrarModalConfirmPK(carretera, km, m);
+    if (confirmat === null) {
+      showToast('❌ Foto cancelada', 'warn', 2500);
+      return;
+    }
+    pkStr     = `${confirmat.carretera}, PK ${confirmat.km}+${String(confirmat.m).padStart(3,'0')}`;
+    nomFitxer = generarNomFitxer(confirmat.carretera, confirmat.km, String(confirmat.m).padStart(3,'0'), ara);
+  }
+
+  const sentitStr = `Sentido: ${sentit === 'creciente' ? 'Creciente ↑' : sentit === 'decreciente' ? 'Decreciente ↓' : 'Indeterminado ↔'}`;
+
+  showToast('⏳ Procesando foto...', 'ok', 2500);
+  try {
+    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr);
+    const _carrFinal = sensePK ? null : (document.getElementById('pkConfCarr').value.trim().toUpperCase() || carretera || '—');
+    const _kmFinal   = sensePK ? null : (parseInt(document.getElementById('pkConfKm').value) || km || 0);
+    const _mFinal    = sensePK ? null : Math.min(999, parseInt(document.getElementById('pkConfM').value) || m || 0);
+    const _mStrFinal = String(_mFinal ?? 0).padStart(3,'0');
+
+    await idbAdd(CFG.STORE_PHOTOS, {
+      nom: nomFitxer, blob: blobFinal,
+      carretera: _carrFinal, km: _kmFinal, m: _mFinal, sensePK,
+      lat, lon,
+      ts: ara.toISOString(),
+      ts_legible: sensePK
+        ? `GPS ${lat?.toFixed(5) ?? '—'}, ${lon?.toFixed(5) ?? '—'}`
+        : `${_carrFinal} PK ${_kmFinal}+${_mStrFinal}`,
+      sentit,
+      incId: incId ?? null,   // vincle amb la incidència
+    });
+
+    const url = URL.createObjectURL(blobFinal);
+    const fotoObj = { carretera: _carrFinal, km: _kmFinal, m: _mFinal, lat, lon, sensePK, nom: nomFitxer };
+    obrirFotoVisor(url, nomFitxer, null, blobFinal, fotoObj);
+    renderitzarFotos();
+    if (incId) renderitzarIncidencies(); // refresca la targeta per mostrar la miniatura
+  } catch(e) {
+    showToast('❌ Error procesando la foto: ' + e.message, 'err');
+  }
 }
 
 async function processarFoto(file, pos, resAuto) {
@@ -5568,10 +5811,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-6';
+  const SW_VERSION = 'pkgeoloc-v2-sw-7';
   const swCode = `
 const CACHE = '${SW_VERSION}';
-const SHELL_CRITIC = ['./'];          // S'ha de cachear sí o sí
+const SHELL_CRITIC = [
+  './',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+];          // S'ha de cachear sí o sí
 const SHELL_EXTRA  = ['./PK_SEED_para_app.js', './sw-inline.js']; // Opcionals — si fallen no passa res
 
 self.addEventListener('install', e => {
@@ -5600,7 +5847,7 @@ self.addEventListener('fetch', e => {
   // Deixar passar: ArcGIS, Overpass, Nominatim, tile servers, Leaflet CDN
   const passThrough = [
     'arcgis.com','openstreetmap.org','nominatim.openstreetmap',
-    'overpass-api.de','unpkg.com','cdnjs.cloudflare.com',
+    'overpass-api.de','cdnjs.cloudflare.com',
     'tile.openstreetmap','arcgisonline.com'
   ];
   if (passThrough.some(d => url.hostname.includes(d))) {
@@ -5639,7 +5886,7 @@ self.addEventListener('message', e => {
       // Escriure/actualitzar el fitxer sw-inline.js a la Cache API perquè
       // el SW el pugui servir a si mateix en arrencades offline futures.
       if ('caches' in window) {
-        const cache = await caches.open('pkgeoloc-v2-sw-6');
+        const cache = await caches.open('pkgeoloc-v2-sw-7');
         const swBlob = new Blob([swCode], { type: 'application/javascript' });
         const swResponse = new Response(swBlob, {
           headers: { 'Content-Type': 'application/javascript' }
