@@ -2989,6 +2989,9 @@ async function mapCalcPK(lat, lon, final) {
     let punts = filtrarCache(lat, lon, 0.06);
     if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.08);
     if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.15);
+    // Enriquir amb seed (carreteres no presents en punts actuals)
+    const _carrsMap = new Set(punts.map(p => p.carretera));
+    punts = [...punts, ...filtrarSeed(lat, lon, 0.10).filter(p => !_carrsMap.has(p.carretera))];
     const res = calcularPK(lat, lon, punts);
     if (res && res.dist <= llindar * 2) mapMostrarOK(lat, lon, res);
     else mapMostrarFora(res);
@@ -3619,6 +3622,9 @@ async function mapCalcPKAmid(idx, lat, lon) {
     let punts = filtrarCache(lat, lon, 0.06);
     if (punts.length<2) punts = await consultarArcGIS(lat, lon, 0.08);
     if (punts.length<2) punts = await consultarArcGIS(lat, lon, 0.15);
+    // Enriquir amb seed (carreteres no presents en punts actuals)
+    const _carrsAmid = new Set(punts.map(p => p.carretera));
+    punts = [...punts, ...filtrarSeed(lat, lon, 0.10).filter(p => !_carrsAmid.has(p.carretera))];
     const res = calcularPK(lat, lon, punts);
     if (res && res.dist <= llindar*2) {
       const mStr = String(res.m).padStart(3,'0');
@@ -4498,6 +4504,20 @@ async function processarPosicio(pos) {
       fontDades = 'arcgis';
       if (punts.length < 2) punts = await consultarArcGIS(lat, lon, 0.12);
     }
+
+    // ── Enriquir amb seed: afegir carreteres que la caché no té ──────
+    // S'executa sempre, fins i tot si ja tenim punts de caché/ArcGIS.
+    // Evita "fora de carretera" quan el seed té una via que ArcGIS no retorna.
+    // No duplica: filtra per carreteres JA presents en punts.
+    const carrsJaTingudes = new Set(punts.map(p => p.carretera));
+    const puntsSeedExtra = filtrarSeed(lat, lon, 0.10)
+      .filter(p => !carrsJaTingudes.has(p.carretera));
+    if (puntsSeedExtra.length) {
+      punts = [...punts, ...puntsSeedExtra];
+      if (fontDades === 'cache') fontDades = 'cache+seed';
+    }
+    // ─────────────────────────────────────────────────────────────────
+
     const res = calcularPK(lat, lon, punts);
 
     if (!res) {
