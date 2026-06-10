@@ -1555,7 +1555,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media(max-height:640px){.result-card{min-height:130px;padding:18px 16px}.result-pk{font-size:2.2rem}.btn-main{padding:16px}}
 </style>
-<script src="PK_SEED_para_app.js"></script>
+<script src="PK_SEED_para_app.js" defer></script>
 </head>
 <body>
 
@@ -1688,7 +1688,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
     </button>
 
     <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
-      🔒 Acceso restringido a participantes de la prueba piloto.
+      🔒 Acceso restringido a participantes de la prueba piloto.<br>
+      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-9 · 10/06/2026</span>
     </div>
     <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
       📴 Sin conexión — la validación funciona igualmente
@@ -4190,7 +4191,13 @@ function initDB() {
   });
 }
 
-function idbGet(store, key) {
+async function _idbReady() {
+  // Si la connexió no està oberta (init fallit/avortat), reintenta UNA vegada.
+  if (!db) { try { await initDB(); } catch (e) { throw new Error('IndexedDB no disponible: ' + (e?.message || e)); } }
+  return db;
+}
+async function idbGet(store, key) {
+  await _idbReady();
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).get(key);
@@ -4198,7 +4205,8 @@ function idbGet(store, key) {
     req.onerror   = () => rej(req.error);
   });
 }
-function idbPut(store, obj) {
+async function idbPut(store, obj) {
+  await _idbReady();
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).put(obj);
@@ -4206,7 +4214,8 @@ function idbPut(store, obj) {
     req.onerror   = () => rej(req.error);
   });
 }
-function idbAdd(store, obj) {
+async function idbAdd(store, obj) {
+  await _idbReady();
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).add(obj);
@@ -4214,7 +4223,8 @@ function idbAdd(store, obj) {
     req.onerror   = () => rej(req.error);
   });
 }
-function idbGetAll(store) {
+async function idbGetAll(store) {
+  await _idbReady();
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readonly');
     const req = tx.objectStore(store).getAll();
@@ -4222,7 +4232,8 @@ function idbGetAll(store) {
     req.onerror   = () => rej(req.error);
   });
 }
-function idbClear(store) {
+async function idbClear(store) {
+  await _idbReady();
   return new Promise((res, rej) => {
     const tx = db.transaction(store, 'readwrite');
     const req = tx.objectStore(store).clear();
@@ -4483,6 +4494,7 @@ async function clearCache() {
    ARCGIS — consulta en temps real (per clics al mapa)
 ═══════════════════════════════════════════════════════════════════ */
 async function consultarArcGIS(lat, lon, bufGraus = 0.06) {
+  if (!navigator.onLine) throw new Error('OFFLINE_SENSE_DADES');
   const params = new URLSearchParams({
     where:'1=1',
     geometry:`${lon-bufGraus},${lat-bufGraus},${lon+bufGraus},${lat+bufGraus}`,
@@ -4679,6 +4691,9 @@ async function processarPosicio(pos) {
       const res = calcularPK(lat, lon, puntsFallback);
       if (res && res.dist <= llindar) { mostrarResultatOK(res); showToast(`📴 Modo offline — ${fontFallback}`,'warn'); }
       else { mostrarResultatFora(res?.carretera, res?.dist); showToast(`📴 Offline: sin datos precisos para la zona (${fontFallback})`,'warn'); }
+    } else if (!navigator.onLine || e.message === 'OFFLINE_SENSE_DADES') {
+      mostrarResultatError('Sin conexión y sin PKs locales en esta zona. Abre la app una vez con cobertura (el dataset se guarda solo) o pulsa SINCRONIZAR en Ajustes.');
+      showToast('📴 Sin datos offline para esta zona', 'warn', 5000);
     } else {
       mostrarResultatError(`Error ArcGIS: ${e.message}`);
       showToast(`❌ ${e.message}`, 'err');
@@ -5509,6 +5524,9 @@ async function compartirSeleccio() {
 /* ── VISOR PANTALLA COMPLETA ─────────────────────────────────────── */
 let viewerBlobUrl = null;
 let viewerNomFitxer = null;
+let viewerFotoId = null;   // FIX 10/06: faltava la declaració → ReferenceError als botons del visor
+let viewerBlob = null;     // FIX 10/06: faltava la declaració → ReferenceError a "Reparar ahora" / compartir
+let _esperantManualPeFoto = false; // FIX 10/06: s'assignava sense declarar
 let viewerLat = null;
 let viewerLon = null;
 let viewerCarretera = null;
@@ -5845,11 +5863,13 @@ function showToast(msg, type='', duration=3000) {
    INICIALITZACIÓ
 ═══════════════════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
-  await initDB();
-  await carregarCache();
-  inicialitzarUILlistaNegra(); // Inicialitza el textarea de la llista negra amb els valors per defecte
-  mapLnRenderTags();           // Sincronitza el sidebar del mapa amb la llista negra inicial
-  _initDayMode();              // Restaura el modo día si estava activat
+  // INIT BLINDAT: cada pas dins del seu try/catch.
+  // Un fallo a IndexedDB / caché NO pot matar la resta de la inicialització.
+  try { await initDB(); }      catch (e) { console.warn('[INIT] initDB:', e); }
+  try { await carregarCache(); } catch (e) { console.warn('[INIT] carregarCache:', e); }
+  try { inicialitzarUILlistaNegra(); } catch (e) { console.warn('[INIT] llistaNegra:', e); }
+  try { mapLnRenderTags(); }   catch (e) { console.warn('[INIT] mapLnTags:', e); }
+  try { _initDayMode(); }      catch (e) { console.warn('[INIT] dayMode:', e); }
 
   // ── Leaflet s'inicialitzarà LAZY quan l'usuari obri la pestanya Mapa ──
   // NO s'inicia aquí per no bloquejar l'arrancada offline.
@@ -5859,7 +5879,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-6';
+  const SW_VERSION = 'pkgeoloc-v2-sw-9'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
+  console.log('[PK-GEOLOC] BUILD sw-9 · 10/06/2026');
   const swCode = `
 const CACHE = '${SW_VERSION}';
 // Recursos locals crítics — tot el necessari per a la detecció PK offline
@@ -5913,7 +5934,26 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // ── CACHE-FIRST: recursos locals de la nostra app ──
+  // ── HTML / navegació: STALE-WHILE-REVALIDATE ──
+  // Serveix la caché a l'instant (offline OK) i refresca en segon pla:
+  // així les actualitzacions SEMPRE arriben a la propera obertura.
+  if (e.request.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html')) {
+    e.respondWith(
+      caches.match('./').then(cached => {
+        const fresh = fetch(e.request).then(resp => {
+          if (resp && resp.status === 200) {
+            const clone = resp.clone();
+            caches.open(CACHE).then(c => c.put('./', clone));
+          }
+          return resp;
+        }).catch(() => cached);
+        return cached || fresh;
+      })
+    );
+    return;
+  }
+
+  // ── Resta de recursos locals (seed inclòs): CACHE-FIRST ──
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -5952,16 +5992,37 @@ self.addEventListener('message', e => {
   });
 }
 
-  // Swipe down per tancar settings
+// ── Garantia: el seed PK (9 MB) queda cachejat per a offline total ──
+if ('caches' in window) {
+  window.addEventListener('load', () => {
+    if (!navigator.onLine) return;
+    setTimeout(async () => {
+      try {
+        const c = await caches.open('pkgeoloc-v2-sw-9');
+        const hit = await c.match('./PK_SEED_para_app.js');
+        if (!hit) {
+          const r = await fetch('./PK_SEED_para_app.js', { cache: 'no-cache' });
+          if (r.ok) { await c.put('./PK_SEED_para_app.js', r); console.log('[SEED] cachejat per a offline'); }
+        }
+      } catch (_) { /* sense xarxa o quota — es reintenta a la propera */ }
+    }, 4000);
+  });
+}
+
+  // Swipe down per tancar settings (amb guards de nul)
   let startY = 0;
   const sp = document.getElementById('settingsPanel');
-  sp.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; },{ passive:true });
-  sp.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 80) closeSettings(); },{ passive:true });
+  if (sp) {
+    sp.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; },{ passive:true });
+    sp.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 80) closeSettings(); },{ passive:true });
+  }
 
   // Swipe down per tancar panell incidències
   const ip = document.getElementById('incPanel');
-  ip.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; },{ passive:true });
-  ip.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 60) tancarIncPanel(); },{ passive:true });
+  if (ip) {
+    ip.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; },{ passive:true });
+    ip.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 60) tancarIncPanel(); },{ passive:true });
+  }
 
   window.addEventListener('popstate', ()=>{ closeSettings(); tancarIncPanel(); });
 
