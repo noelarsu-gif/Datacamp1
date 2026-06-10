@@ -2140,7 +2140,7 @@ async function _forzarActualizacion() {
   <div class="panel-handle"></div>
   <div class="inc-panel-title">⚡ Marcar Incidencia Rápida</div>
   <div class="inc-buttons">
-    <button class="inc-btn animal" onclick="registrarIncidencia('animal','🐗 Animal a la Calçada')">
+    <button class="inc-btn animal" onclick="registrarIncidencia('animal','🐗 Animal en la Calzada')">
       <span class="inc-btn-icon">🐗</span>Animal / Atropellamiento
     </button>
     <button class="inc-btn senyalitzacio" onclick="registrarIncidencia('senyalitzacio','🛑 Señalización Dañada')">
@@ -2167,7 +2167,7 @@ async function _forzarActualizacion() {
   <div class="photo-viewer-topbar">
     <button class="pv-back-btn" onclick="closePhotoViewer()">← Cerrar</button>
     <span class="photo-viewer-title" id="photoViewerTitle">Foto</span>
-    <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Guardar al mòbil">📥 Guardar</button>
+    <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Guardar en el móvil">📥 Guardar</button>
     <button class="pv-del-btn" onclick="eliminarFotoVisor()" title="Eliminar">🗑️</button>
   </div>
   <!-- Imatge principal -->
@@ -3737,7 +3737,7 @@ async function mapCalcPKAmid(idx, lat, lon) {
       const mStr = String(res.m).padStart(3,'0');
       mapAmidPunts[idx].pk = { ...res, str: `${res.carretera} ${res.km}+${mStr}` };
       pkEl.className = 'map-amid-pt-pk'; pkEl.textContent = mapAmidPunts[idx].pk.str;
-    } else { pkEl.className='map-amid-pt-pk loading'; pkEl.textContent='fora carr.'; }
+    } else { pkEl.className='map-amid-pt-pk loading'; pkEl.textContent='fuera carr.'; }
   } catch { pkEl.className='map-amid-pt-pk loading'; pkEl.textContent='error'; }
   if (mapAmidPunts[0] && mapAmidPunts[1]) mapActualitzarAmidament();
 }
@@ -4759,7 +4759,7 @@ async function copiarResultat() {
     btn.classList.add('copied'); btn.textContent = '✅ Copiat!';
     setTimeout(()=>{ btn.className='copy-btn visible'; btn.innerHTML='📋 Copiar'; }, 2000);
     showToast('📋 Copiado: ' + ultimResultat, 'ok');
-  } catch { showToast('❌ No s\'ha pogut copiar.','err'); }
+  } catch { showToast('❌ No se ha podido copiar.','err'); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -5336,7 +5336,7 @@ async function aplicarMarcaAigua(file, pkStr, sentitStr) {
         else rej(new Error('Canvas toBlob fallida'));
       }, 'image/jpeg', 0.90);
     };
-    img.onerror = () => rej(new Error('No s\'ha pogut carregar la imatge'));
+    img.onerror = () => rej(new Error('No se ha podido cargar la imagen'));
     img.src = URL.createObjectURL(file);
   });
 }
@@ -5443,7 +5443,7 @@ function actualitzarBarraSeleccio() {
 
 async function eliminarSeleccio() {
   if (!fotosSeleccionades.size) return;
-  if (!confirm(`Eliminar ${fotosSeleccionades.size} foto(s)?`)) return;
+  if (!confirm(`¿Eliminar ${fotosSeleccionades.size} foto(s)?`)) return;
   const ids = [...fotosSeleccionades];
   for (const id of ids) {
     await new Promise((res,rej)=>{
@@ -5493,10 +5493,10 @@ async function compartirSeleccio() {
 
   // ── Cas C: Descàrrega en lot (fallback per a escriptori o navegadors sense Share API) ──
   const msg = navigator.share
-    ? `El navegador no permet compartir ${fotos.length} fitxers alhora.\nEs descarregaran directament.`
-    : `El navegador no suporta la funció de compartir.\nEs descarregaran ${fotos.length} foto(s) directament.`;
+    ? `El navegador no permite compartir ${fotos.length} archivos a la vez.\nSe descargarán directamente.`
+    : `El navegador no soporta la función de compartir.\nSe descargarán ${fotos.length} foto(s) directamente.`;
 
-  showToast(`⬇️ Descarregant ${fotos.length} foto(s)...`, 'ok', 3500);
+  showToast(`⬇️ Descargando ${fotos.length} foto(s)...`, 'ok', 3500);
 
   // Petita pausa entre descàrregues per evitar bloqueigs del navegador
   for (let i = 0; i < fotos.length; i++) {
