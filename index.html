@@ -17,10 +17,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@300;400;500;600;700;900&family=Barlow+Condensed:wght@500;700;900&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
 
-<!-- ════ Leaflet CSS — carregat al head per garantir estils abans del paint ════ -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-<!-- ════ Leaflet JS — carregat al head per garantir L disponible abans de qualsevol script ════ -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!-- ════ Leaflet — lazy load NOMÉS quan s'obre la pestanya Mapa ════
+     NO es carrega al head per no bloquejar l'arrancada sense connexió.
+     S'injecta dinàmicament des de iniciarMapa() quan cal.           -->
 
 <style>
 /* ═══════════════════════════════════════════════════════════
@@ -1812,6 +1811,8 @@ const licenciasPiloto = {
    'JOSEPGRAELL-3362':     '2026-07-07',
    'JOMANU-9935':          '2026-07-07',
    'FCOJAVIER-2884':       '2026-07-07',
+   'CARLOS4-6893':         '2026-07-09',
+   'JAVIERMARTIN-1509':    '2026-07-09',
     };
 
 /* ── Claus localStorage ── */
@@ -2757,62 +2758,156 @@ let mapSearchTimeout = null;
 let mapCarreteres = [];   // cache de noms indexats
 
 /* ═══════════════════════════════════════════════════════════════════
-   INIT MAPA — s'executa a DOMContentLoaded (visibility trick)
+   INIT MAPA — lazy load: NOMÉS quan s'obre la pestanya Mapa.
+   Mai s'executa durant l'arrancada de la app.
+   Si Leaflet no carrega (offline): mostra missatge, no llança excepcions.
 ═══════════════════════════════════════════════════════════════════ */
-function iniciarMapa() {
+
+/** Retorna true si Leaflet (L) ja és disponible */
+function _leafletDisponible() {
+  return typeof L !== 'undefined' && typeof L.map === 'function';
+}
+
+/** Mostra el missatge "Mapa no disponible sense connexió" */
+function _mostrarMapaNoDisponible() {
+  const mapMain = document.getElementById('mapMain');
+  if (!mapMain) return;
+  const leafletDiv = document.getElementById('leafletMap');
+  if (leafletDiv) {
+    leafletDiv.innerHTML = `
+      <div style="
+        position:absolute;inset:0;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:14px;
+        background:#0a0f1e;color:var(--text-2);text-align:center;padding:24px;
+      ">
+        <div style="font-size:2.5rem;opacity:.4;">🗺️</div>
+        <div style="font-family:var(--font-cond);font-size:1rem;font-weight:700;
+                    letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);">
+          Mapa no disponible sin conexión
+        </div>
+        <div style="font-size:.78rem;color:var(--text-3);line-height:1.6;max-width:280px;">
+          La detección de PK funciona igualmente.<br>
+          Activa la conexión para usar el mapa.
+        </div>
+      </div>`;
+  }
+}
+
+/**
+ * Carga Leaflet dinámicamente y devuelve una Promise que se resuelve
+ * cuando L está disponible, o se rechaza si hay error de red.
+ */
+function _carregarLeaflet() {
+  return new Promise((resolve, reject) => {
+    if (_leafletDisponible()) { resolve(); return; }
+
+    // CSS
+    const css = document.createElement('link');
+    css.rel  = 'stylesheet';
+    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    css.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+    css.crossOrigin = '';
+    document.head.appendChild(css);
+
+    // JS
+    const script = document.createElement('script');
+    script.src  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+    script.crossOrigin = '';
+    script.onload  = () => resolve();
+    script.onerror = () => reject(new Error('Leaflet no disponible (sin conexión)'));
+    document.head.appendChild(script);
+  });
+}
+
+async function iniciarMapa() {
   if (mapInicialitzat) return;
-  mapInicialitzat = true;
 
-  const centre = ultimaPos ? [ultimaPos.lat, ultimaPos.lon] : [41.65, 1.62];
-  map = L.map('leafletMap', { zoomControl: true, attributionControl: true })
-         .setView(centre, 13);
-
-  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { attribution: 'ESRI World Imagery', maxZoom: 20 }).addTo(map);
-  L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 20, opacity: .8 }).addTo(map);
-
-  // Pin arrossegable taronja
-  const pinIcon = L.divIcon({
-    html: `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44">
-      <filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity=".4"/></filter>
-      <g filter="url(#ds)">
-        <path d="M17 0C10.4 0 5 5.4 5 12c0 9.5 12 30 12 30s12-20.5 12-30C29 5.4 23.6 0 17 0z" fill="#ff6d00"/>
-        <circle cx="17" cy="12" r="6" fill="#fff" opacity=".9"/>
-        <circle cx="17" cy="12" r="3" fill="#ff6d00"/>
-      </g></svg>`,
-    className: '', iconSize: [34, 44], iconAnchor: [17, 44], popupAnchor: [0, -46],
-  });
-
-  mapDragPin = L.marker(centre, { icon: pinIcon, draggable: true, zIndexOffset: 1000, title: 'Arrastra para calcular PK' }).addTo(map);
-
-  mapDragPin.on('drag', _debounce(() => {
-    const ll = mapDragPin.getLatLng();
-    mapCalcPK(ll.lat, ll.lng, false);
-  }, 350));
-  mapDragPin.on('dragend', async () => {
-    const ll = mapDragPin.getLatLng();
-    await mapCalcPK(ll.lat, ll.lng, true);
-  });
-
-  // Clic al mapa
-  map.on('click', async e => {
-    const { lat, lng: lon } = e.latlng;
-    if (mapAreaActiu) { mapAfegirPuntArea(lat, lon); return; }
-    if (mapAmidamentActiu) { await mapRegistrarClicAmid(lat, lon); return; }
-    mapDragPin.setLatLng(e.latlng);
-    await mapCalcPK(lat, lon, true);
-  });
-
-  // Marcador posició GPS de l'usuari
-  if (ultimaPos) {
-    mapUserMarker = L.marker([ultimaPos.lat, ultimaPos.lon], { icon: _iconaUsuari() }).addTo(map);
+  // Guard: si no hay conexión y Leaflet no está cargado, mostrar aviso
+  if (!_leafletDisponible() && !navigator.onLine) {
+    mapInicialitzat = true; // evitar reintentos en bucle
+    console.warn('[Mapa] Sin conexión — Leaflet no disponible. Mapa desactivado.');
+    _mostrarMapaNoDisponible();
+    return;
   }
 
-  map.invalidateSize();
+  // Intentar cargar Leaflet si no está disponible
+  if (!_leafletDisponible()) {
+    try {
+      await _carregarLeaflet();
+    } catch (err) {
+      mapInicialitzat = true;
+      console.warn('[Mapa]', err.message);
+      _mostrarMapaNoDisponible();
+      return;
+    }
+  }
+
+  // Doble guard: Leaflet cargado pero L.map no disponible
+  if (typeof L === 'undefined') {
+    console.warn('[Mapa] Leaflet no disponible — skipping map init');
+    _mostrarMapaNoDisponible();
+    return;
+  }
+
+  mapInicialitzat = true;
+
+  try {
+    const centre = ultimaPos ? [ultimaPos.lat, ultimaPos.lon] : [41.65, 1.62];
+    map = L.map('leafletMap', { zoomControl: true, attributionControl: true })
+           .setView(centre, 13);
+
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      { attribution: 'ESRI World Imagery', maxZoom: 20 }).addTo(map);
+    L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+      { maxZoom: 20, opacity: .8 }).addTo(map);
+
+    // Pin arrossegable taronja
+    const pinIcon = L.divIcon({
+      html: `<svg xmlns="http://www.w3.org/2000/svg" width="34" height="44" viewBox="0 0 34 44">
+        <filter id="ds"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity=".4"/></filter>
+        <g filter="url(#ds)">
+          <path d="M17 0C10.4 0 5 5.4 5 12c0 9.5 12 30 12 30s12-20.5 12-30C29 5.4 23.6 0 17 0z" fill="#ff6d00"/>
+          <circle cx="17" cy="12" r="6" fill="#fff" opacity=".9"/>
+          <circle cx="17" cy="12" r="3" fill="#ff6d00"/>
+        </g></svg>`,
+      className: '', iconSize: [34, 44], iconAnchor: [17, 44], popupAnchor: [0, -46],
+    });
+
+    mapDragPin = L.marker(centre, { icon: pinIcon, draggable: true, zIndexOffset: 1000, title: 'Arrastra para calcular PK' }).addTo(map);
+
+    mapDragPin.on('drag', _debounce(() => {
+      const ll = mapDragPin.getLatLng();
+      mapCalcPK(ll.lat, ll.lng, false);
+    }, 350));
+    mapDragPin.on('dragend', async () => {
+      const ll = mapDragPin.getLatLng();
+      await mapCalcPK(ll.lat, ll.lng, true);
+    });
+
+    // Clic al mapa
+    map.on('click', async e => {
+      const { lat, lng: lon } = e.latlng;
+      if (mapAreaActiu) { mapAfegirPuntArea(lat, lon); return; }
+      if (mapAmidamentActiu) { await mapRegistrarClicAmid(lat, lon); return; }
+      mapDragPin.setLatLng(e.latlng);
+      await mapCalcPK(lat, lon, true);
+    });
+
+    // Marcador posició GPS de l'usuari
+    if (ultimaPos) {
+      mapUserMarker = L.marker([ultimaPos.lat, ultimaPos.lon], { icon: _iconaUsuari() }).addTo(map);
+    }
+
+    map.invalidateSize();
+  } catch (err) {
+    console.error('[Mapa] Error inicialitzant Leaflet:', err);
+    _mostrarMapaNoDisponible();
+  }
 }
 
 function _iconaUsuari() {
+  if (typeof L === 'undefined') return null;
   return L.divIcon({
     html: `<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="#00d4ff" opacity=".25"/><circle cx="13" cy="13" r="6.5" fill="#00d4ff"/><circle cx="13" cy="13" r="3" fill="#fff"/></svg>`,
     className: '', iconSize: [26, 26], iconAnchor: [13, 13],
@@ -2821,15 +2916,22 @@ function _iconaUsuari() {
 
 /* Actualitza el marcador GPS quan l'usuari es localitza */
 function actualitzarMarkerMapa(lat, lon, res) {
+  if (typeof L === 'undefined') return;
   if (!map) return;
-  if (mapUserMarker) mapUserMarker.setLatLng([lat, lon]);
-  else mapUserMarker = L.marker([lat, lon], { icon: _iconaUsuari() }).addTo(map);
-  // Mou el pin al nou GPS
-  mapDragPin.setLatLng([lat, lon]);
+  try {
+    if (mapUserMarker) mapUserMarker.setLatLng([lat, lon]);
+    else mapUserMarker = L.marker([lat, lon], { icon: _iconaUsuari() }).addTo(map);
+    // Mou el pin al nou GPS
+    if (mapDragPin) mapDragPin.setLatLng([lat, lon]);
+  } catch (err) {
+    console.warn('[Mapa] actualitzarMarkerMapa error:', err);
+  }
 }
 
 function centrarMapa() {
-  if (!map) return;
+  if (typeof L === 'undefined' || !map) {
+    showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
+  }
 
   // Si ja tenim posició → centra directament
   if (ultimaPos) {
@@ -2876,6 +2978,7 @@ function centrarMapa() {
    CÀLCUL PK — reutilitza consultarArcGIS i calcularPK del motor principal
 ═══════════════════════════════════════════════════════════════════ */
 async function mapCalcPK(lat, lon, final) {
+  if (typeof L === 'undefined' || !map) return;
   if (final) mapMostrarLoading(true);
   try {
     // Reutilitza la cache i el motor del pk-geoloc principal
@@ -2984,6 +3087,9 @@ async function mapBuscarPosPK(carr, km, m) {
    ANAR A PK / COORDS
 ═══════════════════════════════════════════════════════════════════ */
 async function mapAnarAPK() {
+  if (typeof L === 'undefined' || !map) {
+    showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
+  }
   const carr = document.getElementById('mapLkCarr').value.trim().toUpperCase();
   const km = parseInt(document.getElementById('mapLkKm').value)||0;
   const m = Math.min(999, parseInt(document.getElementById('mapLkM').value)||0);
@@ -3002,6 +3108,9 @@ async function mapAnarAPK() {
 }
 
 async function mapAnarACoords() {
+  if (typeof L === 'undefined' || !map) {
+    showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
+  }
   let lat = parseFloat(document.getElementById('mapCoordLat').value);
   let lon = parseFloat(document.getElementById('mapCoordLon').value);
   // Suport enganxar "41.xxx, 1.xxx"
@@ -3128,7 +3237,9 @@ function muniAnarA(lat, lon, nomComplet) {
   drop.classList.remove('open');
   // Mostra nom curt a l'input
   inp.value = nomComplet.split(',')[0].trim();
-  if (!map) return;
+  if (typeof L === 'undefined' || !map) {
+    showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
+  }
   map.flyTo([lat, lon], 14, { animate: true, duration: 1.4 });
   showToast(`📍 ${nomComplet.split(',')[0].trim()}`, 'ok', 2500);
 }
@@ -3418,7 +3529,9 @@ document.addEventListener('click', e => { if (!e.target.closest('.map-search-wra
    AMIDAMENT INTEGRAT
 ═══════════════════════════════════════════════════════════════════ */
 function mapToggleAmidament() {
-  // Desactiva l'eina d'àrea si estava activa
+  if (typeof L === 'undefined' || !map) {
+    showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
+  }
   if (mapAreaActiu) mapToggleArea();
   mapAmidamentActiu = !mapAmidamentActiu;
   const btn = document.getElementById('mapAmidToggleBtn');
@@ -3755,6 +3868,9 @@ function _fmtArea(m2) {
 }
 
 function mapToggleArea() {
+  if (typeof L === 'undefined' || !map) {
+    showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
+  }
   // Desactiva l'eina de distància si estava activa
   if (mapAmidamentActiu) mapToggleAmidament();
   mapAreaActiu = !mapAreaActiu;
@@ -5514,17 +5630,17 @@ function canviarTab(btn, screenId) {
   // Solució: iniciem el mapa (si cal) i llavors delegem a _forcarMesuraMap()
   // que usa requestAnimationFrame×2 + setTimeout per garantir el repaint.
   if (screenId === 'screenMap') {
-    // Inicialitza el mapa si cal (visibility trick: sempre té dimensions)
-    iniciarMapa();
+    // Inicialitza el mapa lazy (carrega Leaflet si cal)
+    iniciarMapa(); // és async però no bloqueja: el mapa apareix quan carrega
     // Doble invalidateSize: 100ms (DOM pintat) + 300ms (seguretat dispositius lents)
     setTimeout(() => {
-      if (typeof map !== 'undefined' && map) {
-        map.invalidateSize();
+      if (typeof L !== 'undefined' && map) {
+        try { map.invalidateSize(); } catch (_) {}
       }
     }, 100);
     setTimeout(() => {
-      if (typeof map !== 'undefined' && map) {
-        map.invalidateSize();
+      if (typeof L !== 'undefined' && map) {
+        try { map.invalidateSize(); } catch (_) {}
       }
     }, 300);
   }
@@ -5558,20 +5674,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   inicialitzarUILlistaNegra(); // Inicialitza el textarea de la llista negra amb els valors per defecte
   mapLnRenderTags();           // Sincronitza el sidebar del mapa amb la llista negra inicial
 
-  // ── Inicialitzar Leaflet ARA: #screenMap és display:flex des d'inici
-  //    (visibility:hidden), així el contenidor té dimensions reals i Leaflet
-  //    pot mesurar-lo correctament sense cap hack de timing.
-  iniciarMapa();
+  // ── Leaflet s'inicialitzarà LAZY quan l'usuari obri la pestanya Mapa ──
+  // NO s'inicia aquí per no bloquejar l'arrancada offline.
 
 // ═══════════════════════════════════════════════════════════════════
 // SERVICE WORKER INLINE — cacheja el propi HTML per funcionar 100% offline
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-5';
+  const SW_VERSION = 'pkgeoloc-v2-sw-6';
   const swCode = `
 const CACHE = '${SW_VERSION}';
-const SHELL_CRITIC = ['./'];          // S'ha de cachear sí o sí
+// Recursos locals crítics — tot el necessari per a la detecció PK offline
+const SHELL_CRITIC = ['./'];
 const SHELL_EXTRA  = ['./PK_SEED_para_app.js']; // Gran — no bloqueja install
 
 self.addEventListener('install', e => {
@@ -5579,7 +5694,7 @@ self.addEventListener('install', e => {
     caches.open(CACHE).then(async c => {
       // 1. Cachear HTML — crític, si falla el SW no s'instal·la
       await c.addAll(SHELL_CRITIC);
-      // 2. Cachear seed — opcional, si falla no passa res (s'intentarà després)
+      // 2. Cachear seed — opcional, si falla no passa res
       for (const url of SHELL_EXTRA) {
         try { await c.add(url); } catch(_) { /* seed no disponible ara, ok */ }
       }
@@ -5597,27 +5712,45 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Deixar passar: ArcGIS, Overpass, Nominatim, tile servers, Leaflet CDN
+
+  // ── PASS-THROUGH: tots els recursos externs — MAI cachear-los ──
+  // Teseles, APIs, CDNs, Leaflet, ArcGIS, OSM, Nominatim, Overpass
   const passThrough = [
-    'arcgis.com','openstreetmap.org','nominatim.openstreetmap',
-    'overpass-api.de','unpkg.com','cdnjs.cloudflare.com',
-    'tile.openstreetmap','arcgisonline.com'
+    'arcgis.com', 'arcgisonline.com',
+    'openstreetmap.org', 'nominatim.openstreetmap',
+    'overpass-api.de',
+    'unpkg.com', 'cdnjs.cloudflare.com',
+    'tile.openstreetmap', 'tiles.stadiamaps.com',
+    'fonts.googleapis.com', 'fonts.gstatic.com',
+    'maps.google.com', 'maps.googleapis.com',
+    'api.whatsapp.com', 'wa.me'
   ];
   if (passThrough.some(d => url.hostname.includes(d))) {
-    e.respondWith(fetch(e.request).catch(() => new Response('', { status: 503 })));
+    // Intenta xarxa; si falla retorna 503 sense explotar
+    e.respondWith(
+      fetch(e.request).catch(() => new Response('', {
+        status: 503,
+        statusText: 'Servicio no disponible sin conexión'
+      }))
+    );
     return;
   }
-  // Estratègia shell: cache-first per a la nostra app
+
+  // ── CACHE-FIRST: recursos locals de la nostra app ──
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(resp => {
+        // Cachear NOMÉS respostes locals vàlides (no opaque)
         if (resp && resp.status === 200 && resp.type !== 'opaque') {
           const clone = resp.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return resp;
-      }).catch(() => caches.match('./') );
+      }).catch(() => {
+        // Fallback: torna el shell HTML per a navegació offline
+        return caches.match('./');
+      });
     })
   );
 });
