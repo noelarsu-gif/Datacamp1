@@ -1813,11 +1813,10 @@ const licenciasPiloto = {
    'FCOJAVIER-2884':       '2026-07-07',
    'CARLOS4-6893':         '2026-07-09',
    'JAVIERMARTIN-1509':    '2026-07-09',
-   'ALBERTSARRI-2062':     '2026-07-07',
-     'JOSE-4816':          '2026-07-07',
-     'SANDRA-8131':        '2026-07-07',
-     'PEDRO4-7428':         '2026-07-07',
-
+   'ALBERTSARRI-2062':    '2026-07-07',
+   'JOSE-4816':            '2026-07-07',
+   'SANDRA-8131':          '2026-07-07',
+   'PEDRO4-7428':          '2026-07-07',
     };
 
 /* ── Claus localStorage ── */
@@ -4149,6 +4148,29 @@ function interpolarPK(uLat, uLon, pkA, pkB) {
  * Si TOTES les carreteres estan a la llista negra retorna null i el
  * caller ha d'activar el mode manual.
  */
+/* ── Inèrcia de carretera: evita canvis falsos en creuaments ──────────
+   Si els últims PKG_INERTIA_MIN lectures confirmen la mateixa carretera,
+   la candidata rival ha de ser PKG_INERTIA_FACTOR vegades més propera
+   per desplaçar-la. Corregeix el bug "en enllaços falseja dades". ── */
+const PKG_INERTIA_MIN    = 3;    // confirmacions mínimes per activar inèrcia
+const PKG_INERTIA_FACTOR = 1.4;  // rival ha de ser 40% més propera
+const _histCarretera = [];
+const _HIST_MAX = 6;
+
+function _registrarCarretera(nom) {
+  if (!nom) return;
+  _histCarretera.push(nom);
+  if (_histCarretera.length > _HIST_MAX) _histCarretera.shift();
+}
+
+function _carreteraInercial() {
+  if (_histCarretera.length < PKG_INERTIA_MIN) return null;
+  const count = {};
+  _histCarretera.forEach(c => { count[c] = (count[c] || 0) + 1; });
+  const [top] = Object.entries(count).sort((a, b) => b[1] - a[1]);
+  return top[1] >= PKG_INERTIA_MIN ? top[0] : null;
+}
+
 function calcularPK(uLat, uLon, punts) {
   if (!punts?.length) return null;
 
@@ -4156,31 +4178,51 @@ function calcularPK(uLat, uLon, punts) {
   const grups = {};
   punts.forEach(p => {
     if (!p.carretera) return;
-    // Compara ignorant majúscules/minúscules i espais laterals
     const nomNet = p.carretera.trim().toUpperCase();
-    const bloquejat = llistaNegra.some(
-      b => b.trim().toUpperCase() === nomNet
-    );
-    if (bloquejat) return; // salta aquesta carretera
+    const bloquejat = llistaNegra.some(b => b.trim().toUpperCase() === nomNet);
+    if (bloquejat) return;
     if (!grups[p.carretera]) grups[p.carretera] = [];
     grups[p.carretera].push(p);
   });
 
-  if (!Object.keys(grups).length) return null; // totes bloquejades
+  if (!Object.keys(grups).length) return null;
 
-  let millor = null;
-  for (const pks of Object.values(grups)) {
+  // Calcula el millor candidat per cada carretera
+  const candidates = [];
+  for (const [nom, pks] of Object.entries(grups)) {
     pks.sort((a, b) => a.pk - b.pk);
+    let best = null;
     for (let i = 0; i < pks.length - 1; i++) {
       const r = interpolarPK(uLat, uLon, pks[i], pks[i+1]);
-      if (r && (!millor || r.dist < millor.dist)) millor = r;
+      if (r && (!best || r.dist < best.dist)) best = r;
     }
-    if (pks.length === 1) {
+    if (!best && pks.length === 1) {
       const d = haversineM(uLat, uLon, pks[0].lat, pks[0].lon);
-      if (!millor || d < millor.dist)
-        millor = { km: Math.floor(pks[0].pk), m: Math.round((pks[0].pk % 1)*1000), carretera: pks[0].carretera, dist: d, pkDec: pks[0].pk };
+      best = { km: Math.floor(pks[0].pk), m: Math.round((pks[0].pk % 1)*1000),
+               carretera: nom, dist: d, pkDec: pks[0].pk };
+    }
+    if (best) candidates.push(best);
+  }
+
+  if (!candidates.length) return null;
+
+  candidates.sort((a, b) => a.dist - b.dist);
+  const millor = candidates[0];
+
+  // Inèrcia: si hi ha carretera dominant, exigir ventaja suficient per canviar
+  const inercial = _carreteraInercial();
+  if (inercial && millor.carretera !== inercial) {
+    const altInercial = candidates.find(c => c.carretera === inercial);
+    if (altInercial) {
+      // La rival guanya sols si és FACTOR vegades més propera
+      if (millor.dist > altInercial.dist / PKG_INERTIA_FACTOR) {
+        _registrarCarretera(altInercial.carretera);
+        return altInercial;
+      }
     }
   }
+
+  _registrarCarretera(millor.carretera);
   return millor;
 }
 
