@@ -76,7 +76,36 @@
   --shadow-lg:0 20px 60px rgba(0,0,0,.75);
   --shadow-acc:0 0 40px rgba(0,212,255,.22);
   --tr:all .2s cubic-bezier(.4,0,.2,1);
+
+/* ── Modo día ─────────────────────────────────────── */
+body.day-mode {
+  --bg-0:#F0F2F5;
+  --bg-1:#E4E7EC;
+  --bg-2:#D8DCE4;
+  --bg-3:#C8CDD8;
+  --bg-4:#B8BEC9;
+  --bg-card:#FFFFFF;
+  --accent:#0099BB;
+  --accent-dim:rgba(0,153,187,.13);
+  --accent-glow:rgba(0,153,187,.35);
+  --green:#1AAD60;
+  --green-dim:rgba(26,173,96,.12);
+  --amber:#C97F00;
+  --amber-dim:rgba(201,127,0,.12);
+  --red:#D93050;
+  --red-dim:rgba(217,48,80,.12);
+  --purple:#9B4DCA;
+  --purple-dim:rgba(155,77,202,.12);
+  --text-1:#111214;
+  --text-2:#3A3F4A;
+  --text-3:#6B7280;
+  --border:rgba(0,0,0,.12);
+  --border-acc:rgba(0,153,187,.38);
+  --shadow:0 8px 32px rgba(0,0,0,.12);
+  --shadow-lg:0 20px 60px rgba(0,0,0,.18);
+  --shadow-acc:0 0 40px rgba(0,153,187,.18);
 }
+body.day-mode::before { display:none; }}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{height:100%;touch-action:manipulation}
 body{
@@ -2090,7 +2119,7 @@ async function _forzarActualizacion() {
       <textarea id="llistaNegraInput" rows="3"
         style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-1);font-family:var(--font-mono);font-size:.78rem;padding:8px;resize:vertical;box-sizing:border-box;outline:none;"
         placeholder="A-2, AP-7, C-25 (una por línea o separadas por comas)"
-        oninput="actualitzarLlistaNegra(this.value); _sincronitzarConfTaMapLn();"
+        oninput="actualitzarLlistaNegra(this.value); _sincronitzarConfTaMapLn(); sincronitzarLlistaNegra(this.value);"
       ></textarea>
       <button onclick="resetLlistaNegra()" style="margin-top:6px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-size:.7rem;cursor:pointer;font-family:var(--font-cond);">↺ Restaurar por defecto</button>
     </div>
@@ -2166,11 +2195,11 @@ async function _forzarActualizacion() {
     </div>
     <div class="pv-wa-pair">
       <button class="pv-wa-big amb-avis"
-        onclick="compartirWhatsAppFotoVisor('AMB AVÍS')">
+        onclick="compartirWhatsAppFotoVisor('CON AVISO')">
         🟢 Con aviso
       </button>
       <button class="pv-wa-big sense-avis"
-        onclick="compartirWhatsAppFotoVisor('SENSE AVÍS')">
+        onclick="compartirWhatsAppFotoVisor('SIN AVISO')">
         🔵 Sin aviso
       </button>
       <button class="pv-wa-big reparar"
@@ -2205,8 +2234,8 @@ async function _forzarActualizacion() {
   </div>
   <div class="vf-botbar">
     <div class="vf-wa-pair">
-      <button class="vf-wa-btn amb-avis" onclick="enviarFinalitzatWA('AMB AVÍS')">🟢 Con aviso</button>
-      <button class="vf-wa-btn sense-avis" onclick="enviarFinalitzatWA('SENSE AVÍS')">🔵 Sin aviso</button>
+      <button class="vf-wa-btn amb-avis" onclick="enviarFinalitzatWA('CON AVISO')">🟢 Con aviso</button>
+      <button class="vf-wa-btn sense-avis" onclick="enviarFinalitzatWA('SIN AVISO')">🔵 Sin aviso</button>
     </div>
     <div class="vf-legend">
       💡 Envía el resumen de la reparación por WhatsApp
@@ -2328,6 +2357,7 @@ async function _forzarActualizacion() {
       <span class="logo-badge">v2</span>
     </div>
     <div class="header-right">
+      <button class="icon-btn" id="btnDayMode" onclick="toggleDayMode()" title="Modo día/noche">☀️</button>
       <button class="icon-btn" onclick="openSettings()">⚙️</button>
     </div>
   </div>
@@ -2388,6 +2418,31 @@ async function _forzarActualizacion() {
           <button class="btn-edit-toggle" id="btnEditToggle" onclick="toggleManual()">✏️ Editar Manual</button>
         </div>
         <button class="btn-apply-manual" id="btnApplyManual" onclick="aplicarManual()">✔ APLICAR DATOS MANUALES</button>
+      </div>
+    </div>
+
+    <!-- ── Lista Negra — desplegable en pantalla principal ── -->
+    <div class="manual-panel" id="llistaNegraHome" style="margin-top:6px;">
+      <div class="manual-panel-head" onclick="toggleLlistaNegraHome()">
+        <span class="manual-panel-label">🚫 Lista Negra de Carreteras</span>
+        <span class="manual-panel-arrow" id="llistaNegraHomeArrow">▼</span>
+      </div>
+      <div class="manual-panel-body" id="llistaNegraHomeBody" style="display:none;">
+        <div style="font-size:.72rem;color:var(--text-3);margin-bottom:6px;line-height:1.5;">
+          Carreteras a ignorar en la detección (una por línea, ej: <em>N-340</em>).
+        </div>
+        <textarea id="llistaNegraInputHome" rows="3"
+          style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);
+                 color:var(--text-1);font-family:var(--font-mono);font-size:.78rem;padding:8px;resize:vertical;"
+          placeholder="N-340&#10;A-7&#10;C-32"
+          oninput="sincronitzarLlistaNegra(this.value)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button onclick="netejarLlistaNegra()"
+            style="flex:1;padding:7px;border-radius:var(--radius-sm);border:1px solid var(--border);
+                   background:var(--bg-4);color:var(--text-2);font-size:.72rem;cursor:pointer;">
+            🗑️ Limpiar
+          </button>
+        </div>
       </div>
     </div>
 
@@ -3369,7 +3424,7 @@ async function enviarFinalitzatWA(avis) {
   }
 
   const mStr     = String(_reparacioDades.m ?? 0).padStart(3, '0');
-  const ccLine   = avis === 'AMB AVÍS' ? '\n📞 [CON AVISO CCC]' : '';
+  const ccLine   = avis === 'CON AVISO' ? '\n📞 [CON AVISO CCC]' : '';
   const coordLine= (_reparacioDades.lat && _reparacioDades.lon)
     ? `\n🌐 Ubicación: http://maps.google.com/maps?q=${_reparacioDades.lat},${_reparacioDades.lon}`
     : '';
@@ -3438,6 +3493,56 @@ function toggleManualPanel() {
 ══════════════════════════════════════════════════════════════════ */
 const _LLISTA_NEGRA_DEFAULT = [];
 const LS_LLISTA_NEGRA = 'pkgeoloc_llista_negra_v1';
+const LS_DAY_MODE    = 'pkgeoloc_day_mode_v1';
+
+/* ── Modo día ───────────────────────────────────────────────────── */
+function toggleDayMode() {
+  const isDay = document.body.classList.toggle('day-mode');
+  document.getElementById('btnDayMode').textContent = isDay ? '🌙' : '☀️';
+  try { localStorage.setItem(LS_DAY_MODE, isDay ? '1' : '0'); } catch(_) {}
+}
+function _initDayMode() {
+  try {
+    if (localStorage.getItem(LS_DAY_MODE) === '1') {
+      document.body.classList.add('day-mode');
+      const btn = document.getElementById('btnDayMode');
+      if (btn) btn.textContent = '🌙';
+    }
+  } catch(_) {}
+}
+
+/* ── Lista negra Home — accordion pantalla principal ────────────── */
+function toggleLlistaNegraHome() {
+  const body  = document.getElementById('llistaNegraHomeBody');
+  const arrow = document.getElementById('llistaNegraHomeArrow');
+  const open  = body.style.display === 'none' || body.style.display === '';
+  body.style.display  = open ? 'flex' : 'none';
+  body.style.flexDirection = 'column';
+  body.style.gap = '4px';
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+  // Sincronitza el textarea amb el valor actual
+  if (open) {
+    const inp = document.getElementById('llistaNegraInputHome');
+    if (inp) inp.value = llistaNegra.join('\n');
+  }
+}
+
+/* Sincronitza els dos inputs de llista negra (settings + home) */
+function sincronitzarLlistaNegra(valor) {
+  const lines = valor.split('\n').map(s => s.trim().toUpperCase()).filter(Boolean);
+  llistaNegra = lines;
+  try { localStorage.setItem(LS_LLISTA_NEGRA, JSON.stringify(lines)); } catch(_) {}
+  // Sincronitza l'altre input
+  const inp1 = document.getElementById('llistaNegraInput');
+  const inp2 = document.getElementById('llistaNegraInputHome');
+  if (inp1 && inp1.value !== valor) inp1.value = lines.join('\n');
+  if (inp2 && inp2.value !== valor) inp2.value = lines.join('\n');
+  mapLnRenderTags();
+}
+
+function netejarLlistaNegra() {
+  sincronitzarLlistaNegra('');
+}
 
 /** Desa la llista negra actual a localStorage */
 function _guardarLlistaNegra() {
@@ -3472,7 +3577,9 @@ function inicialitzarUILlistaNegra() {
     }
   } catch(_) {}
   const ta = document.getElementById('llistaNegraInput');
-  if (ta) ta.value = llistaNegra.join(', ');
+  if (ta) ta.value = llistaNegra.join('\n');
+  const taHome = document.getElementById('llistaNegraInputHome');
+  if (taHome) taHome.value = llistaNegra.join('\n');
 }
 document.addEventListener('DOMContentLoaded', () => {
   const latEl = document.getElementById('mapCoordLat');
@@ -4050,7 +4157,9 @@ function mapLnReset() {
 /** Sincronitza el textarea de Configuració (settings) amb l'estat actual de llistaNegra */
 function _sincronitzarLlistaNegraTaConf() {
   const ta = document.getElementById('llistaNegraInput');
-  if (ta) ta.value = llistaNegra.join(', ');
+  if (ta) ta.value = llistaNegra.join('\n');
+  const taHome = document.getElementById('llistaNegraInputHome');
+  if (taHome) taHome.value = llistaNegra.join('\n');
 }
 
 /** Hook per sincronitzar el sidebar quan es modifica el textarea de Configuració */
@@ -4927,10 +5036,10 @@ async function renderitzarIncidencies() {
 
         const waText = encodeURIComponent(
           `⚠️ *AVISO DE INCIDENCIA* ⚠️\n\n` +
-          `*Tipus:* ${inc.nom}\n` +
+          `*Tipo:* ${inc.nom}\n` +
           pkLinia +
           `*Sentido:* ${sentitWA}\n` +
-          `*Ubicació GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}`
+          `*Ubicación GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}`
         );
         const waUrl = `https://api.whatsapp.com/send?text=${waText}`;
         accioBtns = `
@@ -5530,7 +5639,7 @@ function obrirMapsFotoVisor() {
  * Format net, sense "Incidència Carretera" ni triangles d'advertència.
  */
 function _construirTextWA(carr, km, mStr, lat, lon, avis) {
-  const ccLine = avis === 'AMB AVÍS' ? '\n📞 [CON AVISO CCC]' : '';
+  const ccLine = (avis === 'CON AVISO' || avis === 'CON AVISO') ? '\n📞 [CON AVISO CCC]' : '';
   const coordLine = (lat && lon)
     ? `\n🌐 Ubicación: http://maps.google.com/maps?q=${lat},${lon}`
     : '';
@@ -5740,6 +5849,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await carregarCache();
   inicialitzarUILlistaNegra(); // Inicialitza el textarea de la llista negra amb els valors per defecte
   mapLnRenderTags();           // Sincronitza el sidebar del mapa amb la llista negra inicial
+  _initDayMode();              // Restaura el modo día si estava activat
 
   // ── Leaflet s'inicialitzarà LAZY quan l'usuari obri la pestanya Mapa ──
   // NO s'inicia aquí per no bloquejar l'arrancada offline.
