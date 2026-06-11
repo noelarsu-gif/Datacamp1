@@ -254,6 +254,25 @@ body::before{
   font-size:.74rem;color:var(--text-2);  /* puja de text-3 a text-2: 2.9→8.3:1 */
   font-weight:500;letter-spacing:.4px;
 }
+/* ── Selector de carretera en cruces (substitueix la llista negra manual) ── */
+.carr-sel{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);}
+.carr-sel-label{
+  font-family:var(--font-cond);font-size:.62rem;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:7px;
+}
+.carr-sel-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+.carr-chip{
+  display:inline-flex;align-items:center;gap:6px;padding:7px 12px;
+  border-radius:999px;border:1px solid var(--border);background:var(--bg-3);
+  color:var(--text-2);font-family:var(--font-cond);font-size:.8rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:transform .12s,border-color .15s,background .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.carr-chip small{font-family:var(--font-mono);font-size:.6rem;font-weight:400;color:var(--text-3);letter-spacing:0;}
+.carr-chip:active{transform:scale(.95);}
+.carr-chip.active{border-color:rgba(34,217,122,.55);background:rgba(34,217,122,.09);color:var(--green);}
+.carr-chip.active small{color:var(--green);opacity:.7;}
+.carr-chip.auto{border-style:dashed;color:var(--text-3);font-weight:600;}
 .result-warn-icon{font-size:1.8rem;margin-bottom:6px;}
 .result-warn-title{
   font-family:var(--font-cond);font-size:1rem;font-weight:900;
@@ -845,6 +864,55 @@ body::before{
 }
 .pk-db.cancel-dec:hover{background:var(--bg-4);color:var(--text-2);}
 
+/* ── Chips de candidatas dentro del modal de decisión PK ── */
+.pk-dm-candidates{
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
+  margin-bottom:16px;padding:12px;
+  background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);
+}
+.pk-dm-candidates-label{
+  width:100%;text-align:center;
+  font-family:var(--font-cond);font-size:.58rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;
+}
+.pk-dm-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:8px 13px;
+  border-radius:999px;border:1.5px solid var(--border);background:var(--bg-4);
+  color:var(--text-2);font-family:var(--font-cond);font-size:.82rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:transform .12s,border-color .15s,background .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.pk-dm-chip small{font-family:var(--font-mono);font-size:.58rem;font-weight:400;color:var(--text-3);}
+.pk-dm-chip:active{transform:scale(.94);}
+.pk-dm-chip.active{
+  border-color:rgba(34,217,122,.6);background:rgba(34,217,122,.1);color:var(--green);
+}
+.pk-dm-chip.active small{color:var(--green);opacity:.7;}
+/* ── Chips en el modal de confirmació de foto ── */
+.pk-conf-candidates{
+  display:flex;flex-wrap:wrap;gap:6px;justify-content:center;
+  padding:10px 12px;margin-bottom:12px;
+  background:rgba(255,255,255,.03);border:1px dashed var(--border);border-radius:var(--radius);
+}
+.pk-conf-candidates-label{
+  width:100%;text-align:center;
+  font-family:var(--font-cond);font-size:.58rem;font-weight:700;
+  letter-spacing:1.4px;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;
+}
+.pk-conf-chip{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 12px;
+  border-radius:999px;border:1px solid var(--border);background:var(--bg-3);
+  color:var(--text-2);font-family:var(--font-cond);font-size:.78rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:transform .12s,border-color .15s,background .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.pk-conf-chip small{font-family:var(--font-mono);font-size:.58rem;font-weight:400;color:var(--text-3);}
+.pk-conf-chip:active{transform:scale(.94);}
+.pk-conf-chip.active{
+  border-color:rgba(0,212,255,.55);background:rgba(0,212,255,.08);color:var(--accent);
+}
+.pk-conf-chip.active small{color:var(--accent);opacity:.7;}
+
 /* ── Modal confirmació PK abans d'incrustar a la foto ── */
 .pk-confirm-modal{
   position:fixed;inset:0;z-index:920;
@@ -1088,6 +1156,68 @@ body::before{
 .inc-action-btn.maps:hover{background:rgba(66,133,244,.28);}
 .inc-action-btn.whatsapp{background:rgba(37,211,102,.13);color:#25d366;border:1px solid rgba(37,211,102,.35);}
 .inc-action-btn.whatsapp:hover{background:rgba(37,211,102,.25);}
+.inc-action-btn.whatsapp.con-foto{background:rgba(37,211,102,.22);border-color:rgba(37,211,102,.6);font-weight:800;}
+.inc-action-btn.add-foto{background:rgba(168,85,247,.14);color:#c084fc;border:1px solid rgba(168,85,247,.4);}
+.inc-action-btn.add-foto:hover{background:rgba(168,85,247,.26);}
+
+/* ── Miniatura de foto dentro de la tarjeta de incidencia ── */
+.inc-thumb{
+  width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0;
+  border:1.5px solid var(--border-acc);cursor:pointer;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);transition:transform .15s;
+}
+.inc-thumb:active{transform:scale(.94);}
+.inc-datetime{
+  font-family:var(--font-mono);font-size:.62rem;color:var(--text-3);
+  margin-top:3px;letter-spacing:.2px;
+}
+
+/* ── Hoja post-incidencia (añadir foto en el momento) ── */
+.inc-post-sheet{
+  position:fixed;inset:0;z-index:930;
+  background:rgba(0,0,0,.74);backdrop-filter:blur(7px);
+  display:none;align-items:flex-end;justify-content:center;
+}
+.inc-post-sheet.open{display:flex;animation:incPostFade .2s ease;}
+@keyframes incPostFade{from{opacity:0}to{opacity:1}}
+.inc-post-box{
+  background:var(--bg-2);border:1px solid var(--border-acc);
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  padding:20px 20px calc(26px + env(safe-area-inset-bottom,0px));
+  width:100%;max-width:480px;box-shadow:var(--shadow-lg);
+  animation:incPostSlide .32s cubic-bezier(.32,.72,0,1);
+}
+@keyframes incPostSlide{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.inc-post-handle{width:40px;height:4px;border-radius:2px;background:var(--border);margin:0 auto 18px;}
+.inc-post-head{display:flex;align-items:center;gap:14px;margin-bottom:18px;}
+.inc-post-check{
+  width:46px;height:46px;border-radius:50%;flex-shrink:0;
+  background:var(--green-dim);color:var(--green);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;font-weight:900;border:2px solid rgba(34,217,122,.4);
+}
+.inc-post-title{
+  font-family:var(--font-cond);font-size:1rem;font-weight:900;
+  letter-spacing:1.4px;color:var(--text-1);
+}
+.inc-post-sub{font-size:.76rem;color:var(--accent);font-family:var(--font-mono);margin-top:3px;}
+.inc-post-thumb-wrap{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:10px;
+  background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);
+}
+.inc-post-thumb{width:64px;height:64px;border-radius:8px;object-fit:cover;border:1.5px solid var(--border-acc);}
+.inc-post-thumb-badge{font-family:var(--font-cond);font-size:.74rem;font-weight:700;letter-spacing:1px;color:var(--green);}
+.inc-post-btns{display:flex;flex-direction:column;gap:10px;}
+.inc-post-btn{
+  width:100%;padding:15px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.92rem;font-weight:800;letter-spacing:1.2px;
+  cursor:pointer;transition:var(--tr);border:none;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.inc-post-btn.foto{background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff;box-shadow:0 4px 16px rgba(168,85,247,.4);}
+.inc-post-btn.foto:active{transform:scale(.97);}
+.inc-post-btn.done{background:var(--bg-3);color:var(--text-2);border:1px solid var(--border);}
+.inc-post-btn.done:active{background:var(--bg-4);}
 
 /* ── Botó Google Maps al visor de foto ── */
 .pv-maps-btn{
@@ -1689,7 +1819,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 
     <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
       🔒 Acceso restringido a participantes de la prueba piloto.<br>
-      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-9 · 10/06/2026</span>
+      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-12 · 11/06/2026</span>
     </div>
     <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
       📴 Sin conexión — la validación funciona igualmente
@@ -2064,6 +2194,29 @@ async function _forzarActualizacion() {
 <!-- ════ CANVAS OCULT (watermark) ════ -->
 <canvas id="canvasWatermark"></canvas>
 <input type="file" id="inputCaptura" accept="image/*" capture="environment">
+<input type="file" id="inputIncFoto" accept="image/*" capture="environment" style="display:none;">
+
+<!-- ════ HOJA POST-INCIDENCIA — añadir foto en 1 toque ════ -->
+<div class="inc-post-sheet" id="incPostSheet">
+  <div class="inc-post-box">
+    <div class="inc-post-handle"></div>
+    <div class="inc-post-head">
+      <div class="inc-post-check" id="incPostCheck">✓</div>
+      <div>
+        <div class="inc-post-title" id="incPostTitle">INCIDENCIA GUARDADA</div>
+        <div class="inc-post-sub" id="incPostSub">—</div>
+      </div>
+    </div>
+    <div class="inc-post-thumb-wrap" id="incPostThumbWrap" style="display:none;">
+      <img class="inc-post-thumb" id="incPostThumb" alt="foto">
+      <span class="inc-post-thumb-badge">📷 Foto adjunta</span>
+    </div>
+    <div class="inc-post-btns">
+      <button class="inc-post-btn foto" id="incPostFotoBtn" onclick="afegirFotoIncidencia()">📷 Añadir foto</button>
+      <button class="inc-post-btn done" onclick="tancarSheetPostInc()">✓ Listo</button>
+    </div>
+  </div>
+</div>
 
 <!-- ════ OVERLAY + SETTINGS ════ -->
 <div class="overlay" id="overlay" onclick="closeSettings()"></div>
@@ -2260,12 +2413,14 @@ async function _forzarActualizacion() {
 <div class="pk-decision-modal" id="pkDecisionModal">
   <div class="pk-decision-box">
     <div class="pk-decision-handle"></div>
-    <div class="pk-decision-icon">⚠️</div>
+    <div class="pk-decision-icon" id="pkDecisionIcon">⚠️</div>
     <div class="pk-decision-title" id="pkDecisionTitle">PUNTO FUERA DE CARRETERA</div>
     <div class="pk-decision-sub" id="pkDecisionSub">
       La posición GPS no ha podido asignar un PK válido.<br>
       <strong>¿Cómo deseas registrarlo?</strong>
     </div>
+    <!-- Candidatas detectadas — aparece dinámicamente si hay varias carreteras cerca -->
+    <div class="pk-dm-candidates" id="pkDmCandidates" style="display:none;"></div>
     <!-- Camps PK manual — visibles només si es tria l'opció A -->
     <div class="pk-decision-manual-fields" id="pkDmFields">
       <div class="pk-dm-row">
@@ -2302,6 +2457,8 @@ async function _forzarActualizacion() {
     <div class="pk-confirm-title">✏️ CONFIRMAR DATOS DE LA FOTO</div>
     <div class="pk-confirm-sub">Revisa o corrige la carretera y el PK<br>antes de incrustar en la imagen.</div>
     <div class="pk-confirm-preview" id="pkConfirmPreview">C-16, PK 42+500</div>
+    <!-- Chips de candidatas — solo aparecen si hay varias carreteras detectadas -->
+    <div class="pk-conf-candidates" id="pkConfCandidates" style="display:none;"></div>
     <div class="pk-confirm-fields">
       <div class="pk-confirm-row">
         <span class="pk-confirm-label">Carretera</span>
@@ -2418,31 +2575,6 @@ async function _forzarActualizacion() {
           <button class="btn-edit-toggle" id="btnEditToggle" onclick="toggleManual()">✏️ Editar Manual</button>
         </div>
         <button class="btn-apply-manual" id="btnApplyManual" onclick="aplicarManual()">✔ APLICAR DATOS MANUALES</button>
-      </div>
-    </div>
-
-    <!-- ── Lista Negra — desplegable en pantalla principal ── -->
-    <div class="manual-panel" id="llistaNegraHome" style="margin-top:6px;">
-      <div class="manual-panel-head" onclick="toggleLlistaNegraHome()">
-        <span class="manual-panel-label">🚫 Lista Negra de Carreteras</span>
-        <span class="manual-panel-arrow" id="llistaNegraHomeArrow">▼</span>
-      </div>
-      <div class="manual-panel-body" id="llistaNegraHomeBody" style="display:none;">
-        <div style="font-size:.72rem;color:var(--text-3);margin-bottom:6px;line-height:1.5;">
-          Carreteras a ignorar en la detección (una por línea, ej: <em>N-340</em>).
-        </div>
-        <textarea id="llistaNegraInputHome" rows="3"
-          style="width:100%;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);
-                 color:var(--text-1);font-family:var(--font-mono);font-size:.78rem;padding:8px;resize:vertical;"
-          placeholder="N-340&#10;A-7&#10;C-32"
-          oninput="sincronitzarLlistaNegra(this.value)"></textarea>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button onclick="netejarLlistaNegra()"
-            style="flex:1;padding:7px;border-radius:var(--radius-sm);border:1px solid var(--border);
-                   background:var(--bg-4);color:var(--text-2);font-size:.72rem;cursor:pointer;">
-            🗑️ Limpiar
-          </button>
-        </div>
       </div>
     </div>
 
@@ -4279,6 +4411,17 @@ function interpolarPK(uLat, uLon, pkA, pkB) {
    per desplaçar-la. Corregeix el bug "en enllaços falseja dades". ── */
 const PKG_INERTIA_MIN    = 3;    // confirmacions mínimes per activar inèrcia
 const PKG_INERTIA_FACTOR = 1.4;  // rival ha de ser 40% més propera
+
+/* ── Selector de carretera (creuaments) ─────────────────────────────
+   Substitueix el workflow manual de la llista negra: quan hi ha més
+   d'una carretera propera, l'usuari pot triar amb un tap quina és la
+   seva. La tria queda "fixada" fins que s'allunya d'ella o prem AUTO. */
+let _ultimsCandidats = [];        // candidats de l'últim càlcul (ordenats per dist)
+let carreteraFixada  = null;      // carretera triada per l'usuari al selector
+let _pinMisses       = 0;         // lectures seguides amb la fixada fora d'abast
+const PIN_MAX_DIST   = 300;       // m — màxim per mantenir la carretera fixada
+const PIN_MAX_MISSES = 3;         // lectures fallides abans d'alliberar el pin
+const SEL_SHOW_DIST  = 250;       // m — rivals més propers que això surten al selector
 const _histCarretera = [];
 const _HIST_MAX = 6;
 
@@ -4297,7 +4440,7 @@ function _carreteraInercial() {
 }
 
 function calcularPK(uLat, uLon, punts) {
-  if (!punts?.length) return null;
+  if (!punts?.length) { _ultimsCandidats = []; return null; }
 
   // Agrupa per carretera EXCLOENT les de la llista negra
   const grups = {};
@@ -4310,7 +4453,7 @@ function calcularPK(uLat, uLon, punts) {
     grups[p.carretera].push(p);
   });
 
-  if (!Object.keys(grups).length) return null;
+  if (!Object.keys(grups).length) { _ultimsCandidats = []; return null; }
 
   // Calcula el millor candidat per cada carretera
   const candidates = [];
@@ -4329,9 +4472,28 @@ function calcularPK(uLat, uLon, punts) {
     if (best) candidates.push(best);
   }
 
-  if (!candidates.length) return null;
+  if (!candidates.length) { _ultimsCandidats = []; return null; }
 
   candidates.sort((a, b) => a.dist - b.dist);
+  _ultimsCandidats = candidates.slice(0, 6);
+
+  // ── Carretera fixada per l'usuari (selector de creuaments) ────────
+  // Té prioritat absoluta sobre la inèrcia: si l'usuari ha dit "estic
+  // a la N-340", retornem la N-340 mentre segueixi raonablement a prop.
+  if (carreteraFixada) {
+    const fix = candidates.find(c => c.carretera === carreteraFixada);
+    if (fix && fix.dist <= PIN_MAX_DIST) {
+      _pinMisses = 0;
+      _registrarCarretera(fix.carretera);
+      return fix;
+    }
+    // La fixada ja no és a prop: tolerància de N lectures i alliberem
+    if (++_pinMisses >= PIN_MAX_MISSES) {
+      carreteraFixada = null; _pinMisses = 0;
+      try { showToast('📍 Selección liberada: has salido de la carretera fijada', 'ok', 3000); } catch(_) {}
+    }
+  }
+
   const millor = candidates[0];
 
   // Inèrcia: si hi ha carretera dominant, exigir ventaja suficient per canviar
@@ -4534,20 +4696,101 @@ function mostrarResultatOK(res) {
   document.getElementById('resultContent').innerHTML = `
     <div class="result-road">${res.carretera}</div>
     <div class="result-pk">PK ${res.km}<span class="sep">+</span>${mStr}</div>
-    <div class="result-dist">±${Math.round(res.dist)} m de la calzada</div>`;
+    <div class="result-dist">±${Math.round(res.dist)} m de la calzada</div>`
+    + renderSelectorCarreteres(res.carretera);
   document.getElementById('copyBtn').className = 'copy-btn visible';
   document.getElementById('fCarretera').value = res.carretera;
   document.getElementById('fPK').value = res.km;
   document.getElementById('fM').value = mStr;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   SELECTOR DE CARRETERA EN CREUAMENTS
+   Quan el GPS detecta més d'una carretera propera (enllaços, viaductes,
+   paral·leles), es mostren xips sota el resultat perquè l'usuari triï
+   amb un tap on és realment. La tria queda fixada (📌) fins que
+   s'allunya de la via o prem AUTO. Substitueix l'ús quotidià de la
+   llista negra (que es manté a Ajustes per a casos persistents).
+═══════════════════════════════════════════════════════════════════ */
+function _escapaHTML(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/**
+ * Genera l'HTML dels xips. `actual` és la carretera mostrada al resultat.
+ * Només es renderitza si hi ha com a mínim un rival a < SEL_SHOW_DIST m
+ * (o si hi ha una carretera fixada, per poder alliberar-la amb AUTO).
+ */
+function renderSelectorCarreteres(actual) {
+  if (!_ultimsCandidats.length) return '';
+  const rivals = _ultimsCandidats.filter(c => c.carretera !== actual && c.dist <= SEL_SHOW_DIST);
+  if (!rivals.length && !carreteraFixada) return '';
+
+  const cands = _ultimsCandidats.filter(c => c.carretera === actual || c.dist <= SEL_SHOW_DIST);
+  const chips = cands.map(c => {
+    const nom = _escapaHTML(c.carretera);
+    const act = c.carretera === actual;
+    const pin = carreteraFixada === c.carretera ? '📌 ' : '';
+    return `<button class="carr-chip${act ? ' active' : ''}" data-c="${nom}"
+              onclick="seleccionarCarretera(this.dataset.c)">${pin}${nom}<small>${Math.round(c.dist)} m</small></button>`;
+  }).join('');
+
+  const autoChip = carreteraFixada
+    ? `<button class="carr-chip auto" onclick="alliberarCarreteraFixada()">↺ AUTO</button>` : '';
+
+  return `<div class="carr-sel">
+    <div class="carr-sel-label">${carreteraFixada ? 'Carretera fijada' : '¿Varias carreteras cerca? Elige la tuya'}</div>
+    <div class="carr-sel-chips">${chips}${autoChip}</div>
+  </div>`;
+}
+
+/** L'usuari tria una carretera al selector: es fixa i es mostra el seu PK */
+function seleccionarCarretera(nom) {
+  const cand = _ultimsCandidats.find(c => c.carretera === nom);
+  if (!cand) return;
+  carreteraFixada = nom;
+  _pinMisses = 0;
+  _registrarCarretera(nom);            // alinea la inèrcia amb la tria
+  // Manté el sentit automàtic coherent amb la nova via
+  if (typeof ultimaPos !== 'undefined' && ultimaPos) {
+    historialPos.push({ pkDec: cand.pkDec, lat: ultimaPos.lat, lon: ultimaPos.lon, ts: Date.now() });
+    if (historialPos.length > 5) historialPos.shift();
+    try { actualitzarMarkerMapa(ultimaPos.lat, ultimaPos.lon, cand); } catch(_) {}
+  }
+  mostrarResultatOK(cand);
+  const mStr = String(cand.m).padStart(3,'0');
+  showToast(`📌 Fijada ${nom} · PK ${cand.km}+${mStr}. Se mantendrá mientras sigas en ella.`, 'ok', 3500);
+}
+
+/** Torna al mode automàtic (carretera més propera) */
+function alliberarCarreteraFixada() {
+  carreteraFixada = null;
+  _pinMisses = 0;
+  _histCarretera.length = 0;           // reinicia la inèrcia per no arrossegar la tria
+  const millor = _ultimsCandidats[0];
+  if (millor) mostrarResultatOK(millor);
+  showToast('↺ Modo automático: carretera más cercana', 'ok', 2500);
+}
+
 function mostrarResultatFora(carretera, dist) {
   ultimResultat = null; ultimResultatObj = null;
+  // Selector: si hi ha candidates a < 400 m, permet a l'usuari afirmar on és
+  const candsProp = _ultimsCandidats.filter(c => c.dist <= 400);
+  const selector = candsProp.length ? `<div class="carr-sel">
+      <div class="carr-sel-label">¿Estás en alguna de estas?</div>
+      <div class="carr-sel-chips">${candsProp.map(c => {
+        const nom = _escapaHTML(c.carretera);
+        return `<button class="carr-chip" data-c="${nom}"
+                  onclick="seleccionarCarretera(this.dataset.c)">${nom}<small>${Math.round(c.dist)} m</small></button>`;
+      }).join('')}</div>
+    </div>` : '';
   document.getElementById('resultCard').className = 'result-card state-warn fade-in';
   document.getElementById('resultContent').innerHTML = `
     <div class="result-warn-icon">⚠️</div>
     <div class="result-warn-title">FUERA DEL ÁREA DE CARRETERA</div>
-    <div class="result-warn-sub">${carretera ? `Carretera más cercana: ${carretera} (${Math.round(dist)} m)` : 'Sin carretera detectada cerca'}</div>`;
+    <div class="result-warn-sub">${carretera ? `Carretera más cercana: ${carretera} (${Math.round(dist)} m)` : 'Sin carretera detectada cerca'}</div>`
+    + selector;
   document.getElementById('copyBtn').className = 'copy-btn';
 }
 
@@ -4880,27 +5123,63 @@ let _pkDecisioPos     = null;   // pos GPS disponible
 let _pkDecisioManualExpanded = false; // si els camps manuals estan expandits
 
 /**
- * Comprova si cal mostrar el modal de decisió PK.
- * Retorna true si res és null/invàlid O si la distància supera el llindar.
+ * Devuelve true si hay ≥1 candidata rival dentro de SEL_SHOW_DIST
+ * (indica un cruce o carreteras paralelas donde conviene confirmar).
  */
-function _calDecisioManualPK(res) {
-  if (!res) return true;
-  if (res.dist == null || res.dist > llindar) return true;
-  return false;
+function _hayMultiplesCandidatas() {
+  if (_ultimsCandidats.length < 2) return false;
+  return _ultimsCandidats.slice(1).some(c => c.dist <= SEL_SHOW_DIST);
+}
+
+/**
+ * Genera HTML de chips para el modal de decisión PK.
+ * `currentCarr` marca cuál está actualmente seleccionada.
+ */
+function _renderChipsDmModal(currentCarr) {
+  const cands = _ultimsCandidats.filter(c => c.dist <= Math.max(SEL_SHOW_DIST, 400));
+  if (!cands.length) return '';
+  const chips = cands.map(c => {
+    const nom = _escapaHTML(c.carretera);
+    const act = c.carretera === currentCarr;
+    return `<button class="pk-dm-chip${act ? ' active' : ''}" data-c="${nom}"
+              onclick="pkDecisioElegirCarretera(this.dataset.c)">${nom}<small>${Math.round(c.dist)} m</small></button>`;
+  }).join('');
+  return `<div class="pk-dm-candidates-label">Carreteras detectadas — elige la tuya</div>${chips}`;
+}
+
+/**
+ * El usuario toca un chip dentro del modal de decisión PK:
+ * resuelve la Promise con esa carretera y su PK interpolado.
+ */
+function pkDecisioElegirCarretera(nom) {
+  const cand = _ultimsCandidats.find(c => c.carretera === nom);
+  if (!cand) return;
+  // Fixa la carretera al selector de pantalla principal
+  carreteraFixada = nom;
+  _pinMisses = 0;
+  _registrarCarretera(nom);
+  document.getElementById('pkDecisionModal').classList.remove('open');
+  if (_pkDecisioResolve) {
+    _pkDecisioResolve({ res: cand, sensePK: false });
+    _pkDecisioResolve = null;
+  }
 }
 
 /**
  * Obre el modal de decisió PK i retorna una Promise que es resol amb:
- *   { res, sensePK: false }  → l'usuari ha introduït PK manual
+ *   { res, sensePK: false }  → l'usuari ha introduït PK manual o triat chip
  *   { res: null, sensePK: true } → l'usuari vol continuar sense PK
  *   null → l'usuari ha cancelado
+ *
+ * mode: 'error'    → GPS fallat / fora de trassa (comportament original)
+ *       'selector' → detecció vàlida però hi ha rivals: sol·licita confirmació
  */
-function _mostrarModalDecisioPK(pos, resAuto, context) {
+function _mostrarModalDecisioPK(pos, resAuto, context, mode = 'error') {
   _pkDecisioContext = context;
   _pkDecisioPos     = pos;
   _pkDecisioManualExpanded = false;
 
-  // Netejar camps
+  // Netejar camps manuals
   ['pkDmCarr','pkDmKm','pkDmM'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -4908,19 +5187,54 @@ function _mostrarModalDecisioPK(pos, resAuto, context) {
   document.getElementById('pkDmFields').classList.remove('visible');
   document.getElementById('pkDbManualBtn').textContent = '✏️ INTRODUCIR PK MANUAL';
 
-  // Missatge contextual
-  const distMsg = resAuto?.dist
-    ? `Distancia a la carretera más cercana: <strong>${Math.round(resAuto.dist)} m</strong> (llindar: ${llindar} m).`
-    : 'No s\'ha trobat cap carretera propera o el GPS no té senyal.';
-  document.getElementById('pkDecisionSub').innerHTML =
-    `${distMsg}<br><br><strong>¿Cómo deseas registrarlo?</strong>`;
+  // ── Chips de candidatas ─────────────────────────────────────────
+  const candidatesEl = document.getElementById('pkDmCandidates');
+  const chipsHTML = _renderChipsDmModal(resAuto?.carretera || null);
+  if (chipsHTML && _ultimsCandidats.length > 1) {
+    candidatesEl.innerHTML = chipsHTML;
+    candidatesEl.style.display = 'flex';
+    candidatesEl.style.flexWrap = 'wrap';
+  } else {
+    candidatesEl.style.display = 'none';
+    candidatesEl.innerHTML = '';
+  }
 
-  const tit = context === 'foto' ? 'FOTO FUERA DE TRAZA' : 'INCIDENCIA FUERA DE TRAZA';
-  document.getElementById('pkDecisionTitle').textContent = tit;
+  // ── Missatge i icona contextuals ───────────────────────────────
+  const iconEl  = document.getElementById('pkDecisionIcon');
+  const titleEl = document.getElementById('pkDecisionTitle');
+  const subEl   = document.getElementById('pkDecisionSub');
+
+  if (mode === 'selector') {
+    // Detecció vàlida però hi ha rivals — demanar confirmació
+    if (iconEl)  iconEl.textContent = '🔀';
+    const tit = context === 'foto' ? 'CONFIRMAR CARRETERA (FOTO)' : 'CONFIRMAR CARRETERA (INCIDENCIA)';
+    if (titleEl) { titleEl.textContent = tit; titleEl.style.color = 'var(--accent)'; }
+    const mStr = resAuto ? String(resAuto.m).padStart(3,'0') : '';
+    const det  = resAuto ? `Detectada automáticamente: <strong>${resAuto.carretera} · PK ${resAuto.km}+${mStr}</strong> (${Math.round(resAuto.dist)} m).` : '';
+    if (subEl)  subEl.innerHTML = `${det}<br><br>¿Es correcta o estás en otra carretera?`;
+  } else {
+    // Mode error original
+    if (iconEl)  iconEl.textContent = '⚠️';
+    const tit = context === 'foto' ? 'FOTO FUERA DE TRAZA' : 'INCIDENCIA FUERA DE TRAZA';
+    if (titleEl) { titleEl.textContent = tit; titleEl.style.color = 'var(--amber)'; }
+    const distMsg = resAuto?.dist
+      ? `Distancia a la carretera más cercana: <strong>${Math.round(resAuto.dist)} m</strong> (llindar: ${llindar} m).`
+      : 'No s\'ha trobat cap carretera propera o el GPS no té senyal.';
+    if (subEl) subEl.innerHTML = `${distMsg}<br><br><strong>¿Cómo deseas registrarlo?</strong>`;
+  }
 
   document.getElementById('pkDecisionModal').classList.add('open');
-
   return new Promise(resolve => { _pkDecisioResolve = resolve; });
+}
+
+/**
+ * Comprova si cal mostrar el modal de decisió PK.
+ * Retorna true si res és null/invàlid O si la distància supera el llindar.
+ */
+function _calDecisioManualPK(res) {
+  if (!res) return true;
+  if (res.dist == null || res.dist > llindar) return true;
+  return false;
 }
 
 function pkDecisioManual() {
@@ -4965,17 +5279,27 @@ async function registrarIncidencia(tipus, nom) {
 
   const { pos, res: resAuto, error } = await obtenirPosicioFrescaAmbPK();
 
-  // ── Detecta si cal decisió manual ──────────────────────────────
+  // ── Detecta si cal decisió manual o selector de carretera ──────
   let resDefinitiu = resAuto;
   let sensePK = false;
 
   if (error || _calDecisioManualPK(resAuto)) {
-    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'incidencia');
+    // GPS fallat o fora de trassa → modal estàndard d'error
+    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'incidencia', 'error');
     if (decisio === null) {
       showToast('❌ Registro cancelado', 'warn', 2500);
       return;
     }
     resDefinitiu = decisio.res;
+    sensePK      = decisio.sensePK;
+  } else if (_hayMultiplesCandidatas()) {
+    // Detecció vàlida però hi ha rivals a prop → confirmar carretera
+    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'incidencia', 'selector');
+    if (decisio === null) {
+      showToast('❌ Registro cancelado', 'warn', 2500);
+      return;
+    }
+    resDefinitiu = decisio.res ?? resAuto;  // si cancel·la chips, manté la detecció auto
     sensePK      = decisio.sensePK;
   }
 
@@ -4997,19 +5321,202 @@ async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
     sentit,
     ts:         ara.toISOString(),
     ts_legible: formatarDataHora(ara),
+    fotoId:     null,   // s'omple si l'usuari afegeix foto
+    thumb:      null,   // miniatura base64 per a la targeta
   };
   try {
-    await idbAdd(CFG.STORE_INC, inc);
+    const newId = await idbAdd(CFG.STORE_INC, inc);
     const toastPK = sensePK
-      ? `📍 ${nom} — sense PK (coords GPS)`
+      ? `📍 ${nom} — sin PK (coords GPS)`
       : `✅ ${nom} — ${inc.carretera} PK ${inc.km}+${String(inc.m).padStart(3,'0')}`;
-    showToast(toastPK, 'ok', 3500);
+    showToast(toastPK, 'ok', 2500);
     tancarIncPanel();
     renderitzarIncidencies();
     if (pos && !ultimaPos) ultimaPos = pos;
     if (res && !ultimResultatObj) { ultimResultatObj = res; mostrarResultatOK(res); }
+    // ── Hoja post-guardado: opción de añadir foto en el momento ──────
+    _mostrarSheetPostInc(newId, { ...inc, id: newId });
   } catch(e) {
-    showToast('❌ Error en desar la incidència: ' + e.message, 'err');
+    showToast('❌ Error al guardar la incidencia: ' + e.message, 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HOJA POST-INCIDENCIA — añadir foto en el momento (flujo rápido)
+═══════════════════════════════════════════════════════════════════ */
+let _incFotoPendentId   = null;   // id de la incidència que rebrà la foto
+let _incPostData        = null;   // dades de la incidència mostrada a la hoja
+let _incPostAutoTimer   = null;   // auto-tancament
+
+function _mostrarSheetPostInc(id, inc) {
+  _incPostData = inc;
+  const sub = inc.sensePK
+    ? `📍 Sin PK · ${inc.ts_legible}`
+    : `${inc.carretera} · PK ${inc.km}+${String(inc.m).padStart(3,'0')} · ${inc.ts_legible}`;
+  document.getElementById('incPostTitle').textContent = 'INCIDENCIA GUARDADA';
+  document.getElementById('incPostSub').textContent = sub;
+  document.getElementById('incPostThumbWrap').style.display = 'none';
+  const fotoBtn = document.getElementById('incPostFotoBtn');
+  fotoBtn.textContent = '📷 Añadir foto';
+  fotoBtn.style.display = 'flex';
+  document.getElementById('incPostSheet').classList.add('open');
+  // Auto-tancament suau als 9s si no s'interactua (no obliga a tocar res)
+  clearTimeout(_incPostAutoTimer);
+  _incPostAutoTimer = setTimeout(() => tancarSheetPostInc(), 9000);
+}
+
+function tancarSheetPostInc() {
+  clearTimeout(_incPostAutoTimer);
+  document.getElementById('incPostSheet').classList.remove('open');
+  _incPostData = null;
+}
+
+/** Obre la càmera per a la incidència actual (o una concreta des de la targeta) */
+function afegirFotoIncidencia(id) {
+  clearTimeout(_incPostAutoTimer);
+  _incFotoPendentId = id ?? _incPostData?.id ?? null;
+  if (_incFotoPendentId == null) { showToast('⚠️ No hay incidencia asociada', 'warn'); return; }
+  document.getElementById('inputIncFoto').click();
+}
+
+/* ── Captura de foto per a una incidència (camí ràpid, sense re-GPS) ── */
+document.getElementById('inputIncFoto').addEventListener('change', async function(e) {
+  const file = e.target.files?.[0];
+  this.value = '';
+  if (!file || _incFotoPendentId == null) return;
+  const id = _incFotoPendentId;
+
+  showToast('⏳ Procesando foto…', 'ok', 2500);
+  try {
+    // Recuperem la incidència per usar el seu PK i coordenades ja conegudes
+    const inc = await idbGet(CFG.STORE_INC, id);
+    if (!inc) { showToast('⚠️ Incidencia no encontrada', 'warn'); return; }
+
+    const mStr  = inc.sensePK ? '000' : String(inc.m ?? 0).padStart(3,'0');
+    const pkStr = inc.sensePK
+      ? (inc.lat && inc.lon ? `GPS ${inc.lat.toFixed(5)}, ${inc.lon.toFixed(5)}` : 'Sin PK')
+      : `${inc.carretera}, PK ${inc.km}+${mStr}`;
+    const sentitStr = `Sentido: ${inc.sentit === 'creciente' ? 'Creciente ↑' : inc.sentit === 'decreciente' ? 'Decreciente ↓' : 'Indeterminado ↔'}`;
+    const ara = inc.ts ? new Date(inc.ts) : new Date();
+    const nomFitxer = generarNomFitxer(inc.sensePK ? 'GPS' : (inc.carretera || '—'), inc.km ?? 0, mStr, ara);
+
+    // Marca d'aigua amb data/hora SEMPRE (l'usuari ho ha demanat per a incidències)
+    const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr, { forceTimestamp: true, dataHora: ara });
+
+    // Desa la foto vinculada a la incidència (incId)
+    const fotoId = await idbAdd(CFG.STORE_PHOTOS, {
+      nom: nomFitxer, blob: blobFinal,
+      carretera: inc.carretera, km: inc.km, m: inc.m, sensePK: inc.sensePK,
+      lat: inc.lat, lon: inc.lon,
+      ts: ara.toISOString(),
+      ts_legible: inc.sensePK ? pkStr : `${inc.carretera} PK ${inc.km}+${mStr}`,
+      sentit: inc.sentit,
+      incId: id,
+    });
+
+    // Miniatura per a la targeta + actualitza la incidència
+    const thumb = await _ferThumbnail(blobFinal, 96);
+    inc.fotoId = fotoId;
+    inc.thumb  = thumb;
+    await idbPut(CFG.STORE_INC, inc);
+
+    renderitzarFotos();
+    renderitzarIncidencies();
+    showToast('📸 Foto añadida a la incidencia', 'ok', 2500);
+
+    // Actualitza la hoja si encara és oberta
+    if (_incPostData && _incPostData.id === id) {
+      _incPostData.fotoId = fotoId;
+      _incPostData.thumb  = thumb;
+      document.getElementById('incPostThumb').src = thumb;
+      document.getElementById('incPostThumbWrap').style.display = 'flex';
+      document.getElementById('incPostFotoBtn').textContent = '📷 Añadir otra foto';
+      clearTimeout(_incPostAutoTimer);
+      _incPostAutoTimer = setTimeout(() => tancarSheetPostInc(), 9000);
+    }
+  } catch(err) {
+    showToast('❌ Error al procesar la foto: ' + err.message, 'err');
+  }
+});
+
+/** Genera una miniatura quadrada (dataURL JPEG) per a la targeta d'incidència */
+function _ferThumbnail(blob, size = 96) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = size; c.height = size;
+      const ctx = c.getContext('2d');
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2, sy = (img.height - min) / 2;
+      ctx.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+      resolve(c.toDataURL('image/jpeg', 0.72));
+    };
+    img.onerror = () => resolve(null);
+    img.src = URL.createObjectURL(blob);
+  });
+}
+
+/**
+ * Comparteix una incidència amb la seva foto adjunta en un sol pas (Web Share v2).
+ * Si no hi ha suport, copia el text i obre WhatsApp perquè l'usuari adjunti.
+ */
+async function compartirIncidenciaWA(id) {
+  try {
+    const inc = await idbGet(CFG.STORE_INC, id);
+    if (!inc) { showToast('⚠️ Incidencia no encontrada', 'warn'); return; }
+    const sensePK = !!inc.sensePK;
+    const mStr    = sensePK ? null : String(inc.m||0).padStart(3,'0');
+    const sentitWA = inc.sentit === 'creciente' ? '↑ Creciente'
+      : inc.sentit === 'decreciente' ? '↓ Decreciente' : '↔ Indeterminado';
+    const pkLinia = sensePK
+      ? `*Ubicación:* Sin PK asignado (coordenadas GPS)\n`
+      : `*Carretera:* ${inc.carretera}\n*PK:* ${inc.km}+${mStr}\n`;
+    const coordLine = (inc.lat && inc.lon)
+      ? `*Ubicación GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}` : '';
+    const textWA =
+      `⚠️ *AVISO DE INCIDENCIA* ⚠️\n\n` +
+      `*Tipo:* ${inc.nom}\n` +
+      pkLinia +
+      `*Sentido:* ${sentitWA}\n` +
+      `*Fecha/hora:* ${inc.ts_legible}\n` +
+      coordLine;
+
+    // Recupera la foto vinculada
+    let file = null;
+    if (inc.fotoId != null) {
+      const foto = await idbGet(CFG.STORE_PHOTOS, inc.fotoId);
+      if (foto?.blob) file = new File([foto.blob], foto.nom || 'incidencia.jpg', { type: 'image/jpeg' });
+    }
+
+    // ── INTENT 1: Web Share v2 amb foto + text en un sol pas ──────────
+    if (file && navigator.canShare && navigator.canShare({ files: [file], text: textWA })) {
+      try { await navigator.share({ files: [file], text: textWA, title: 'PK-GEOLOC' }); return; }
+      catch (err) { if (err.name === 'AbortError') return; }
+    }
+
+    // ── FALLBACK: copia text + obre WhatsApp ─────────────────────────
+    let copiat = false;
+    try { await navigator.clipboard.writeText(textWA); copiat = true; } catch(_) {}
+    showToast(copiat ? '📋 Texto copiado. Adjunta la foto en WhatsApp.' : '📲 Abre WhatsApp y pega el texto.', 'ok', 5000);
+    setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`, '_blank'), 400);
+  } catch(e) {
+    showToast('❌ Error al compartir: ' + e.message, 'err');
+  }
+}
+
+/** Obre el visor de fotos amb la foto vinculada a una incidència */
+async function obrirFotoIncidencia(fotoId) {
+  try {
+    const foto = await idbGet(CFG.STORE_PHOTOS, fotoId);
+    if (!foto?.blob) { showToast('⚠️ Foto no disponible', 'warn'); return; }
+    // Assegura que estem a la pantalla de fotos perquè el visor tingui context
+    const tabFotos = document.querySelector('.tab-btn[data-tab="screenPhotos"]');
+    if (tabFotos && typeof canviarTab === 'function') { try { canviarTab(tabFotos, 'screenPhotos'); } catch(_) {} }
+    const url = URL.createObjectURL(foto.blob);
+    obrirFotoVisor(url, foto.nom || 'foto.jpg', fotoId, foto.blob, foto);
+  } catch(e) {
+    showToast('❌ No se pudo abrir la foto', 'err');
   }
 }
 
@@ -5030,11 +5537,17 @@ async function renderitzarIncidencies() {
       const sentitClass = inc.sentit === 'creciente' ? 'creciente' : inc.sentit === 'decreciente' ? 'decreciente' : 'indet';
       const sentitTxt   = inc.sentit === 'creciente' ? '↑ Creciente' : inc.sentit === 'decreciente' ? '↓ Decreciente' : '↔ Indeterminado';
       const coordsStr   = inc.lat ? `${inc.lat.toFixed(5)}, ${inc.lon.toFixed(5)}` : '';
+      const teFoto      = inc.fotoId != null;
 
       // Línia PK — omitida si sensePK
       const pkLine = sensePK
         ? `<div class="inc-pk" style="color:var(--text-3);font-style:italic;">📍 Sin PK asignado</div>`
         : `<div class="inc-pk">${inc.carretera} · PK ${inc.km}+${mStr}</div>`;
+
+      // Miniatura (si té foto) — obre el visor de fotos en tocar-la
+      const thumbHTML = (teFoto && inc.thumb)
+        ? `<img class="inc-thumb" src="${inc.thumb}" alt="foto" onclick="obrirFotoIncidencia(${inc.fotoId})">`
+        : '';
 
       // Botons d'acció
       let accioBtns = '';
@@ -5053,22 +5566,42 @@ async function renderitzarIncidencies() {
           `*Tipo:* ${inc.nom}\n` +
           pkLinia +
           `*Sentido:* ${sentitWA}\n` +
+          `*Fecha/hora:* ${inc.ts_legible}\n` +
           `*Ubicación GPS:* https://maps.google.com/?q=${inc.lat},${inc.lon}`
         );
         const waUrl = `https://api.whatsapp.com/send?text=${waText}`;
+
+        // Si té foto → botó WhatsApp que adjunta la imatge (Web Share v2)
+        // Si no → botó WhatsApp text + botó per afegir foto
+        const waBtn = teFoto
+          ? `<button class="inc-action-btn whatsapp con-foto" onclick="compartirIncidenciaWA(${inc.id})">💬 WhatsApp + foto</button>`
+          : `<a class="inc-action-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener">💬 WhatsApp</a>`;
+        const fotoBtn = teFoto
+          ? ''
+          : `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">📷 Añadir foto</button>`;
+
         accioBtns = `
           <div class="inc-actions">
             <a class="inc-action-btn maps" href="${mapsUrl}" target="_blank" rel="noopener">🗺️ Google Maps</a>
-            <a class="inc-action-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener">💬 WhatsApp</a>
+            ${waBtn}
+            ${fotoBtn}
           </div>`;
+      } else {
+        // Sense coordenades però encara permetem afegir foto
+        const fotoBtn = teFoto
+          ? ''
+          : `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">📷 Añadir foto</button>`;
+        if (fotoBtn) accioBtns = `<div class="inc-actions">${fotoBtn}</div>`;
       }
 
       return `
       <div class="incident-card ${inc.tipus}">
         <div class="inc-icon">${tipusIcon(inc.tipus)}</div>
+        ${thumbHTML}
         <div class="inc-body">
           <div class="inc-title">${inc.nom}</div>
           ${pkLine}
+          <div class="inc-datetime">🕐 ${inc.ts_legible}</div>
           <div class="inc-meta">
             <span class="inc-meta-row">${coordsStr || (sensePK ? 'Sin coordenadas' : `${inc.carretera} PK ${inc.km}+${mStr}`)}</span>
           </div>
@@ -5162,7 +5695,44 @@ function _mostrarModalConfirmPK(carretera, km, m) {
     const actiu = localStorage.getItem('pkgeoloc_ts') === '1';
     const chk = document.getElementById('toggleTimestamp');
     if (chk) { chk.checked = actiu; _pkToggleTimestamp(actiu, true); }
+
+    // ── Chips de candidatas ─────────────────────────────────────
+    const confCandEl = document.getElementById('pkConfCandidates');
+    const cands = _ultimsCandidats.filter(c => c.dist <= Math.max(SEL_SHOW_DIST, 400));
+    if (cands.length > 1) {
+      const chips = cands.map(c => {
+        const nom = _escapaHTML(c.carretera);
+        const act = c.carretera === carretera;
+        return `<button class="pk-conf-chip${act ? ' active' : ''}" data-c="${nom}"
+                  onclick="pkConfElegirCarretera(this.dataset.c)">${nom}<small>${Math.round(c.dist)} m</small></button>`;
+      }).join('');
+      confCandEl.innerHTML = `<div class="pk-conf-candidates-label">Toca para cambiar carretera</div>${chips}`;
+      confCandEl.style.display = 'flex';
+      confCandEl.style.flexWrap = 'wrap';
+    } else {
+      confCandEl.style.display = 'none';
+      confCandEl.innerHTML = '';
+    }
+
     document.getElementById('pkConfirmModal').classList.add('open');
+  });
+}
+
+/**
+ * Chip de candidata tocado en el modal de confirmación de foto:
+ * actualiza el campo carretera y el preview (el PK también se rellena
+ * con el valor interpolado para esa candidata).
+ */
+function pkConfElegirCarretera(nom) {
+  const cand = _ultimsCandidats.find(c => c.carretera === nom);
+  if (!cand) return;
+  document.getElementById('pkConfCarr').value = nom;
+  document.getElementById('pkConfKm').value   = cand.km;
+  document.getElementById('pkConfM').value    = cand.m;
+  _pkConfActualitzarPreview();
+  // Refrescar estado activo de los chips
+  document.querySelectorAll('#pkConfCandidates .pk-conf-chip').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.c === nom);
   });
 }
 
@@ -5195,18 +5765,28 @@ function _pkConfirmarCancel() {
 }
 
 async function processarFoto(file, pos, resAuto) {
-  // ── Detecta si cal decisió manual (fora de trassa o res invàlid) ──
+  // ── Detecta si cal decisió manual o confirmar carretera ────────
   let res = resAuto;
   let sensePK = false;
 
   if (_calDecisioManualPK(resAuto)) {
-    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'foto');
+    // GPS fallat o fora de trassa → modal estàndard d'error
+    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'foto', 'error');
     if (decisio === null) {
       showToast('❌ Foto cancelada', 'warn', 2500);
       return;
     }
-    res      = decisio.res;
-    sensePK  = decisio.sensePK;
+    res     = decisio.res;
+    sensePK = decisio.sensePK;
+  } else if (_hayMultiplesCandidatas()) {
+    // Detecció vàlida però hi ha rivals → confirmar carretera
+    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'foto', 'selector');
+    if (decisio === null) {
+      showToast('❌ Foto cancelada', 'warn', 2500);
+      return;
+    }
+    res     = decisio.res ?? resAuto;
+    sensePK = decisio.sensePK;
   }
 
   const ara = new Date();
@@ -5281,7 +5861,7 @@ async function processarFoto(file, pos, resAuto) {
   }
 }
 
-async function aplicarMarcaAigua(file, pkStr, sentitStr) {
+async function aplicarMarcaAigua(file, pkStr, sentitStr, opts = {}) {
   return new Promise((res, rej) => {
     const img = new Image();
     img.onload = () => {
@@ -5327,8 +5907,8 @@ async function aplicarMarcaAigua(file, pkStr, sentitStr) {
       ctx.textAlign = 'left';
       ctx.fillText(pkStr, marginX, cy);
 
-      if (localStorage.getItem('pkgeoloc_ts') === '1') {
-        const ara = new Date();
+      if (opts.forceTimestamp || localStorage.getItem('pkgeoloc_ts') === '1') {
+        const ara = opts.dataHora instanceof Date ? opts.dataHora : new Date();
         const d = ara.toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
         const h = ara.toLocaleTimeString('es-ES', { hour:'2-digit', minute:'2-digit' });
         ctx.fillStyle = 'rgba(255,255,255,0.80)';
@@ -5878,8 +6458,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-9'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
-  console.log('[PK-GEOLOC] BUILD sw-9 · 10/06/2026');
+  const SW_VERSION = 'pkgeoloc-v2-sw-12'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
+  console.log('[PK-GEOLOC] BUILD sw-12 · 11/06/2026');
   const swCode = `
 const CACHE = '${SW_VERSION}';
 // Recursos locals crítics — tot el necessari per a la detecció PK offline
@@ -5997,7 +6577,7 @@ if ('caches' in window) {
     if (!navigator.onLine) return;
     setTimeout(async () => {
       try {
-        const c = await caches.open('pkgeoloc-v2-sw-9');
+        const c = await caches.open('pkgeoloc-v2-sw-12');
         const hit = await c.match('./PK_SEED_para_app.js');
         if (!hit) {
           const r = await fetch('./PK_SEED_para_app.js', { cache: 'no-cache' });
