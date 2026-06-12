@@ -520,8 +520,9 @@ body::before{
   box-shadow:0 14px 44px rgba(0,0,0,.75);
   display:none;flex-direction:column;
   max-height:220px;overflow-y:auto;
+  visibility:hidden;
 }
-#mapTopDrop.open{display:flex;}
+#mapTopDrop.open{display:flex;visibility:visible;}
 #mapTopDrop .muni-drop-item{padding:13px 18px;font-size:.92rem;}
 
 /* ── Botons flotants (FAB) ── */
@@ -730,6 +731,7 @@ body::before{
 }
 .muni-drop-item:last-child{border-bottom:none;}
 .muni-drop-item:hover{background:rgba(0,212,255,.08);color:var(--accent);}
+.muni-drop-item.selected{background:rgba(0,212,255,.18);color:var(--accent);border-left:3px solid var(--accent);}
 .muni-drop-item.empty{color:var(--text-3);cursor:default;font-style:italic;}
 .muni-drop-item.empty:hover{background:none;color:var(--text-3);}
 .mcoord-accordion{
@@ -1263,6 +1265,7 @@ body::before{
 .leaflet-popup-close-button{color:var(--text-3)!important;font-size:1.1rem!important;top:6px!important;right:8px!important;}
 .leaflet-popup-tip{background:var(--bg-2);}
 .leaflet-popup-content{font-family:var(--font-cond);font-weight:700;font-size:.85rem;color:var(--accent);letter-spacing:1px;}
+.leaflet-control-zoom{display:none!important;}
 .leaflet-control-zoom a{background:var(--bg-2)!important;color:var(--text-1)!important;border-color:var(--border)!important;}
 .leaflet-control-attribution{background:rgba(6,10,20,.8)!important;color:var(--text-3)!important;font-size:.5rem!important;}
 
@@ -2413,6 +2416,8 @@ const licenciasPiloto = {
    'CARLOSJUNTAAND2':      '2026-07-07',
    'CARLOSJUNTAAND2-8246': '2026-07-07',
    'HUGOMATINSA':          '2026-07-09',
+   'HUGOMATINSA-3028':     '2026-07-09',
+   'EMILIOSIERRA':         '2026-07-09',
     };
 
 /* ── Claus localStorage ── */
@@ -2444,6 +2449,7 @@ function validarAcceso() {
   }
 
   const deviceId = _getOrCreateDeviceId();
+
 
   /* ── CASO A: código sin guión → código BASE, mostrar aviso ── */
   if (!codigo.includes('-')) {
@@ -3238,8 +3244,8 @@ async function _forzarActualizacion() {
           onkeydown="if(event.key==='Enter'){event.preventDefault();muniCercar();}">
         <button id="mapSearchBtn2" onclick="muniCercar()" aria-label="Buscar">⌕</button>
       </div>
+      <div id="mapTopDrop"></div>
     </div>
-    <div id="mapTopDrop"></div>
   </div>
 
   <!-- ── MAPA (pantalla completa) ── -->
@@ -3699,7 +3705,7 @@ async function iniciarMapa() {
 
   try {
     const centre = ultimaPos ? [ultimaPos.lat, ultimaPos.lon] : [41.65, 1.62];
-    map = L.map('leafletMap', { zoomControl: true, attributionControl: true })
+    map = L.map('leafletMap', { zoomControl: false, attributionControl: true })
            .setView(centre, 13);
 
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -4021,24 +4027,29 @@ function _detectarCoords(val) {
 
 function muniOnInput(val) {
   clearTimeout(_muniDebounceT);
+  // Si l'usuari torna a escriure, cancel·la la selecció anterior
+  if (_muniSelected) {
+    _muniSelected = null;
+    const btn = document.getElementById('mapSearchBtn2');
+    if (btn) { btn.textContent = '⌕'; btn.title = 'Buscar'; }
+  }
   const drop = document.getElementById('mapTopDrop');
   if (!val.trim()) { drop.innerHTML=''; drop.classList.remove('open'); return; }
 
-  // 1) Patró carretera+PK → suggeriment ràpid (no omple el camp, l'usuari segueix escrivint)
+  // 1) Patró carretera+PK → suggeriment ràpid instantani
   const pk = _detectarPatroPK(val);
   if (pk) {
     drop.innerHTML = `<div class="muni-drop-item" style="font-size:.92rem;padding:13px 18px;" onclick="_muniIrAPK()">🛣️ Ir a <b>${pk.carr}</b> PK ${pk.km}+${String(pk.m).padStart(3,'0')}</div>`;
     drop.classList.add('open'); return;
   }
-  // 2) Coordenades
+  // 2) Coordenades → suggeriment ràpid instantani
   const co = _detectarCoords(val);
   if (co) {
     drop.innerHTML = `<div class="muni-drop-item" style="font-size:.92rem;padding:13px 18px;" onclick="_muniIrACoords()">📍 Ir a ${co.lat.toFixed(4)}, ${co.lon.toFixed(4)}</div>`;
     drop.classList.add('open'); return;
   }
-  // 3) Municipi (Nominatim) — debounce 400ms, mínim 3 caràcters
+  // 3) Municipi: NO cerca automàticament — l'usuari ha de prémer ⌕ o Enter
   drop.innerHTML=''; drop.classList.remove('open');
-  if (val.trim().length >= 3) _muniDebounceT = setTimeout(() => muniCercar(true), 400);
 }
 
 function _muniIrAPK() {
@@ -4076,6 +4087,12 @@ async function muniCercar(silencious = false) {
   const q    = inp.value.trim();
   if (!q) return;
 
+  // Si ja hi ha una selecció confirmada → vola directament
+  if (_muniSelected) {
+    muniAnarA(_muniSelected.lat, _muniSelected.lon, _muniSelected.nom);
+    return;
+  }
+
   // Cancel·la fetch anterior si encara està en vol
   if (_muniController) _muniController.abort();
   _muniController = new AbortController();
@@ -4086,10 +4103,10 @@ async function muniCercar(silencious = false) {
   drop.classList.remove('open');
 
   try {
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&countrycodes=es&q=${encodeURIComponent(q + ', Catalunya')}&accept-language=ca`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=8&countrycodes=es&q=${encodeURIComponent(q)}&accept-language=es`;
     const res = await fetch(url, {
       signal: _muniController.signal,
-      headers: { 'Accept-Language': 'ca,es;q=0.8' }
+      headers: { 'Accept-Language': 'es,ca;q=0.8' }
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -4103,13 +4120,8 @@ async function muniCercar(silencious = false) {
       return;
     }
 
-    if (data.length === 1) {
-      // Resultat únic — vola directament
-      muniAnarA(parseFloat(data[0].lat), parseFloat(data[0].lon), data[0].display_name);
-    } else {
-      // Múltiples resultats — mostra desplegable
-      _muniMostrarDrop(data);
-    }
+    // Sempre mostra desplegable — l'usuari tria (evita vols no desitjats)
+    _muniMostrarDrop(data);
   } catch (err) {
     btn.textContent = '⌕';
     btn.classList.remove('loading');
@@ -4135,22 +4147,42 @@ function _muniMostrarDrop(items) {
   drop.classList.add('open');
 }
 
+let _muniSelected = null; // { lat, lon, nom }
+
 function _muniSeleccionar(idx) {
   const drop = document.getElementById('mapTopDrop');
-  const item = drop.querySelectorAll('.muni-drop-item')[idx];
+  const items = drop.querySelectorAll('.muni-drop-item');
+  const item = items[idx];
   if (!item || item.classList.contains('empty')) return;
-  const lat = parseFloat(item.dataset.lat);
-  const lon = parseFloat(item.dataset.lon);
-  const nom = item.dataset.nom;
-  muniAnarA(lat, lon, nom);
+
+  // Marca visualment l'element seleccionat
+  items.forEach(el => el.classList.remove('selected'));
+  item.classList.add('selected');
+
+  // Guarda la selecció i escriu el nom a l'input
+  _muniSelected = {
+    lat: parseFloat(item.dataset.lat),
+    lon: parseFloat(item.dataset.lon),
+    nom: item.dataset.nom
+  };
+  const inp = document.getElementById('mapSearchInp2');
+  inp.value = _muniSelected.nom.split(',')[0].trim();
+
+  // Canvia el botó a "→ IR"
+  const btn = document.getElementById('mapSearchBtn2');
+  btn.textContent = '→';
+  btn.title = 'Ir a este lugar';
 }
 
 function muniAnarA(lat, lon, nomComplet) {
   const drop = document.getElementById('mapTopDrop');
   const inp  = document.getElementById('mapSearchInp2');
-  drop.classList.remove('open');
-  // Mostra nom curt a l'input
+  const btn  = document.getElementById('mapSearchBtn2');
+  drop.innerHTML = ''; drop.classList.remove('open');
+  _muniSelected = null;
   inp.value = nomComplet.split(',')[0].trim();
+  // Restaura el botó
+  btn.textContent = '⌕'; btn.title = 'Buscar';
   if (typeof L === 'undefined' || !map) {
     showToast('⚠️ Mapa no disponible sin conexión', 'warn'); return;
   }
