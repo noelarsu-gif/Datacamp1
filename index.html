@@ -421,7 +421,7 @@ body::before{
   will-change:transform;
 }
 #mapSidebar.open{transform:translateY(0);}
-#mapSidebar.hidden{transform:translateY(calc(100% - 64px));}
+#mapSidebar.hidden{transform:translateY(calc(100% - var(--map-peek)));}
 #mapSidebar.dragging{transition:none;}
 
 /* Zona sempre visible: agafador + resultat */
@@ -7883,8 +7883,9 @@ document.addEventListener('DOMContentLoaded', _odoInitLCDs);
      real es propaga a --map-peek perquè els FAB hi surin a sobre
    · Tocar el mapa replega la hoja automàticament
 ═══════════════════════════════════════════════════════════════════ */
-/* 3 posicions: 0=obert, 1=peek (defecte), 2=ocult (només mànec) */
-let _mapSheetPos = 1; // 0 obert, 1 peek, 2 ocult
+/* 2 posicions reals: 0=obert (full), 1=peek (defecte, sempre visible)
+   _ocultarMapSheet() és alias de tancarMapSheet() — mai amaguem del tot.  */
+let _mapSheetPos = 1;
 
 function obrirMapSheet(){
   const sh = document.getElementById('mapSidebar');
@@ -7897,21 +7898,14 @@ function tancarMapSheet(){
   if (!sh) return;
   sh.classList.remove('open'); sh.classList.remove('hidden');
   _mapSheetPos = 1;
-  _mapSheetOpen = false;
 }
-function _ocultarMapSheet(){
-  const sh = document.getElementById('mapSidebar');
-  if (!sh) return;
-  sh.classList.remove('open'); sh.classList.add('hidden');
-  _mapSheetPos = 2;
-}
-/* Compat: algunes crides existents fan servir _mapSheetOpen */
+/* Compatibilitat: _ocultarMapSheet fa peek, mai oculta del tot */
+function _ocultarMapSheet(){ tancarMapSheet(); }
 let _mapSheetOpen = false;
 Object.defineProperty(window,'_mapSheetOpen',{get:()=>_mapSheetPos===0,set:v=>{ if(v) obrirMapSheet(); else tancarMapSheet(); }});
 function toggleMapSheet(){
   if (_mapSheetPos === 0) tancarMapSheet();
-  else if (_mapSheetPos === 1) obrirMapSheet();
-  else tancarMapSheet(); // 2→1
+  else obrirMapSheet();
 }
 
 (function initMapSheet(){
@@ -7920,7 +7914,6 @@ function toggleMapSheet(){
   const scr  = document.getElementById('screenMap');
   if (!sh || !peek || !scr) return;
 
-  /* Alçada real del peek → variable CSS (FABs i posició replegada) */
   const syncPeek = () => {
     const hPx = Math.min(peek.offsetHeight + 8, Math.round(window.innerHeight * 0.55));
     scr.style.setProperty('--map-peek', hPx + 'px');
@@ -7929,16 +7922,12 @@ function toggleMapSheet(){
   window.addEventListener('resize', syncPeek);
   setTimeout(syncPeek, 300);
 
-  /* Arrossegament tàctil: snap a 3 posicions (obert / peek / ocult) */
+  /* snap a 2 posicions: obert / peek
+     clamp estricte — mai per sota de posY(1) = peek mínim garantit      */
   let startY = 0, startPos = 1, curDelta = 0, dragging = false;
   const sheetH = () => sh.offsetHeight;
   const peekH  = () => parseFloat(getComputedStyle(scr).getPropertyValue('--map-peek')) || 172;
-  const HANDLE_H = 64; // px SIEMPRE visibles en estat ocult (agafador + pastilla)
-  const posY = (pos) => {
-    if (pos === 0) return 0;                        // obert — a la vista
-    if (pos === 1) return sheetH() - peekH();       // peek — resultat visible
-    return Math.max(sheetH() - HANDLE_H, 0);        // ocult — només agafador
-  };
+  const posY = (pos) => pos === 0 ? 0 : Math.max(sheetH() - peekH(), 0);
 
   function onStart(e){
     if (window.innerWidth >= 900) return;
@@ -7952,7 +7941,8 @@ function toggleMapSheet(){
     if (!dragging) return;
     const y = (e.touches ? e.touches[0].clientY : e.clientY);
     curDelta = y - startY;
-    const ty = Math.min(Math.max(posY(startPos) + curDelta, 0), posY(2));
+    /* clamp: mai per sota del peek */
+    const ty = Math.min(Math.max(posY(startPos) + curDelta, 0), posY(1));
     sh.style.transform = 'translateY(' + ty + 'px)';
     if (e.cancelable) e.preventDefault();
   }
@@ -7961,33 +7951,20 @@ function toggleMapSheet(){
     dragging = false;
     sh.classList.remove('dragging');
     sh.style.transform = '';
-    const SNAP = 80; // px de llindar per canviar d'estat
-    if (curDelta < -SNAP) {
-      // amunt: 2→1 o 1→0
-      if (startPos === 2) tancarMapSheet();
-      else obrirMapSheet();
-    } else if (curDelta > SNAP) {
-      // avall: 0→1 o 1→2
-      if (startPos === 0) tancarMapSheet();
-      else _ocultarMapSheet();
-    } else {
-      // torna a la mateixa posició
-      if (startPos === 0) obrirMapSheet();
-      else if (startPos === 1) tancarMapSheet();
-      else _ocultarMapSheet();
-    }
+    const SNAP = 72;
+    if      (curDelta < -SNAP) obrirMapSheet();
+    else if (curDelta >  SNAP) tancarMapSheet();
+    else { if (startPos === 0) obrirMapSheet(); else tancarMapSheet(); }
   }
   peek.addEventListener('touchstart', onStart, { passive: true });
   peek.addEventListener('touchmove',  onMove,  { passive: false });
   peek.addEventListener('touchend',   onEnd);
 
-  /* Tocar el mapa: si obert→peek, si peek→ocult; si ja ocult no fa res */
+  /* Tocar el mapa: si obert → peek; si ja és peek NO fa res */
   const lm = document.getElementById('leafletMap');
   if (lm) lm.addEventListener('pointerdown', () => {
     if (window.innerWidth >= 900) return;
     if (_mapSheetPos === 0) tancarMapSheet();
-    else if (_mapSheetPos === 1) _ocultarMapSheet();
-    // pos 2 (ocult): no fa res, l'usuari ha de poder arrossegar cap amunt
   }, { passive: true });
 })();
 </script>
