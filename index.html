@@ -421,7 +421,7 @@ body::before{
   will-change:transform;
 }
 #mapSidebar.open{transform:translateY(0);}
-#mapSidebar.hidden{transform:translateY(calc(100% - 64px));}
+#mapSidebar.hidden{transform:translateY(calc(100% - var(--map-peek)));}
 #mapSidebar.dragging{transition:none;}
 
 /* Zona sempre visible: agafador + resultat */
@@ -7839,8 +7839,11 @@ document.addEventListener('DOMContentLoaded', _odoInitLCDs);
      real es propaga a --map-peek perquè els FAB hi surin a sobre
    · Tocar el mapa replega la hoja automàticament
 ═══════════════════════════════════════════════════════════════════ */
-/* 3 posicions: 0=obert, 1=peek (defecte), 2=ocult (només mànec) */
-let _mapSheetPos = 1; // 0 obert, 1 peek, 2 ocult
+/* 2 posicions reals: 0=obert (full), 1=peek (defecte, sempre visible)
+   Nota: s'elimina l'estat "2=ocult" perquè causava que el sheet quedés
+   atrapat en translateY(100%-64px) i l'usuari no pogués recuperar-lo.
+   Qualsevol crida a _ocultarMapSheet() ara fa peek per seguretat.        */
+let _mapSheetPos = 1; // 0 obert, 1 peek
 
 function obrirMapSheet(){
   const sh = document.getElementById('mapSidebar');
@@ -7853,21 +7856,18 @@ function tancarMapSheet(){
   if (!sh) return;
   sh.classList.remove('open'); sh.classList.remove('hidden');
   _mapSheetPos = 1;
-  _mapSheetOpen = false;
 }
+/* _ocultarMapSheet: compatibilitat amb crides existents — ara fa peek
+   en lloc d'amagar del tot per evitar el bug d'inaccessibilitat          */
 function _ocultarMapSheet(){
-  const sh = document.getElementById('mapSidebar');
-  if (!sh) return;
-  sh.classList.remove('open'); sh.classList.add('hidden');
-  _mapSheetPos = 2;
+  tancarMapSheet(); // peek és el mínim segur
 }
 /* Compat: algunes crides existents fan servir _mapSheetOpen */
 let _mapSheetOpen = false;
 Object.defineProperty(window,'_mapSheetOpen',{get:()=>_mapSheetPos===0,set:v=>{ if(v) obrirMapSheet(); else tancarMapSheet(); }});
 function toggleMapSheet(){
   if (_mapSheetPos === 0) tancarMapSheet();
-  else if (_mapSheetPos === 1) obrirMapSheet();
-  else tancarMapSheet(); // 2→1
+  else obrirMapSheet();
 }
 
 (function initMapSheet(){
@@ -7876,7 +7876,8 @@ function toggleMapSheet(){
   const scr  = document.getElementById('screenMap');
   if (!sh || !peek || !scr) return;
 
-  /* Alçada real del peek → variable CSS (FABs i posició replegada) */
+  /* Alçada real del peek → variable CSS (FABs i posició replegada).
+     Es llegeix sempre des del DOM per garantir coherència en resize.      */
   const syncPeek = () => {
     const hPx = Math.min(peek.offsetHeight + 8, Math.round(window.innerHeight * 0.55));
     scr.style.setProperty('--map-peek', hPx + 'px');
@@ -7885,16 +7886,20 @@ function toggleMapSheet(){
   window.addEventListener('resize', syncPeek);
   setTimeout(syncPeek, 300);
 
-  /* Arrossegament tàctil: snap a 3 posicions (obert / peek / ocult) */
-  let startY = 0, startPos = 1, curDelta = 0, dragging = false;
+  /* posY: translateY en píxels per a cada posició.
+     pos 0 = obert (translateY 0)
+     pos 1 = peek  (translateY = alçada total − peekH)
+     El clamp de onMove usa [0, posY(1)] perquè mai es pugui anar més avall
+     del peek — garantia que la barra sempre és visible i arrossegable.    */
   const sheetH = () => sh.offsetHeight;
   const peekH  = () => parseFloat(getComputedStyle(scr).getPropertyValue('--map-peek')) || 172;
-  const HANDLE_H = 64; // px SIEMPRE visibles en estat ocult (agafador + pastilla)
   const posY = (pos) => {
-    if (pos === 0) return 0;                        // obert — a la vista
-    if (pos === 1) return sheetH() - peekH();       // peek — resultat visible
-    return Math.max(sheetH() - HANDLE_H, 0);        // ocult — només agafador
+    if (pos === 0) return 0;                  // obert — full screen
+    return Math.max(sheetH() - peekH(), 0);   // peek  — resultat sempre visible
   };
+
+  /* Arrossegament tàctil: snap a 2 posicions (obert / peek) */
+  let startY = 0, startPos = 1, curDelta = 0, dragging = false;
 
   function onStart(e){
     if (window.innerWidth >= 900) return;
@@ -7908,7 +7913,10 @@ function toggleMapSheet(){
     if (!dragging) return;
     const y = (e.touches ? e.touches[0].clientY : e.clientY);
     curDelta = y - startY;
-    const ty = Math.min(Math.max(posY(startPos) + curDelta, 0), posY(2));
+    /* Clamp estricte: mai per sota de posY(1) = peek mínim garantit */
+    const minY = posY(0); // 0px — màxim obert
+    const maxY = posY(1); // sheetH − peekH — mínim visible (peek)
+    const ty = Math.min(Math.max(posY(startPos) + curDelta, minY), maxY);
     sh.style.transform = 'translateY(' + ty + 'px)';
     if (e.cancelable) e.preventDefault();
   }
@@ -7916,34 +7924,31 @@ function toggleMapSheet(){
     if (!dragging) return;
     dragging = false;
     sh.classList.remove('dragging');
-    sh.style.transform = '';
-    const SNAP = 80; // px de llindar per canviar d'estat
+    sh.style.transform = ''; // deixa que el CSS prengui el control
+    const SNAP = 72; // px de llindar per canviar d'estat
     if (curDelta < -SNAP) {
-      // amunt: 2→1 o 1→0
-      if (startPos === 2) tancarMapSheet();
-      else obrirMapSheet();
+      // arrossegament cap amunt → obre
+      obrirMapSheet();
     } else if (curDelta > SNAP) {
-      // avall: 0→1 o 1→2
-      if (startPos === 0) tancarMapSheet();
-      else _ocultarMapSheet();
+      // arrossegament cap avall → peek (mai oculta del tot)
+      tancarMapSheet();
     } else {
-      // torna a la mateixa posició
+      // moviment petit: torna a la posició d'origen
       if (startPos === 0) obrirMapSheet();
-      else if (startPos === 1) tancarMapSheet();
-      else _ocultarMapSheet();
+      else tancarMapSheet();
     }
   }
   peek.addEventListener('touchstart', onStart, { passive: true });
   peek.addEventListener('touchmove',  onMove,  { passive: false });
   peek.addEventListener('touchend',   onEnd);
 
-  /* Tocar el mapa: si obert→peek, si peek→ocult; si ja ocult no fa res */
+  /* Tocar el mapa: si obert → torna a peek; si ja és peek no fa res
+     (ja no amaguem del tot per evitar el bug d'inaccessibilitat)          */
   const lm = document.getElementById('leafletMap');
   if (lm) lm.addEventListener('pointerdown', () => {
     if (window.innerWidth >= 900) return;
-    if (_mapSheetPos === 0) tancarMapSheet();
-    else if (_mapSheetPos === 1) _ocultarMapSheet();
-    // pos 2 (ocult): no fa res, l'usuari ha de poder arrossegar cap amunt
+    if (_mapSheetPos === 0) tancarMapSheet(); // obert → peek
+    // peek (1): no fa res — l'usuari ha de poder veure el resultat
   }, { passive: true });
 })();
 </script>
