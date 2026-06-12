@@ -421,7 +421,7 @@ body::before{
   will-change:transform;
 }
 #mapSidebar.open{transform:translateY(0);}
-#mapSidebar.hidden{transform:translateY(calc(100% - 40px));}
+#mapSidebar.hidden{transform:translateY(calc(100% - 56px));}
 #mapSidebar.dragging{transition:none;}
 
 /* Zona sempre visible: agafador + resultat */
@@ -463,7 +463,11 @@ body::before{
   z-index:30;
 }
 #mapTopBar .muni-search-wrap{position:relative;}
-#mapTopBar .muni-search-row{position:relative;display:flex;align-items:center;}
+#mapTopBar .muni-search-row{
+  position:relative;display:flex;align-items:center;
+  background:none !important;border:none !important;
+  border-radius:0 !important;overflow:visible !important;
+}
 #mapTopBar .muni-search-inp{
   width:100%;padding:15px 52px 15px 20px;
   background:rgba(10,14,28,.93);
@@ -893,9 +897,14 @@ body::before{
 
 .map-ra-btn.sv{
   background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.5);
-  color:var(--accent);display:flex;align-items:center;gap:5px;
+  color:var(--accent);display:flex;align-items:center;gap:4px;
 }
 .map-ra-btn.sv svg{flex-shrink:0;}
+.map-ra-btn.gmaps{
+  background:rgba(234,67,53,.08);border-color:rgba(234,67,53,.4);
+  color:#ff6b6b;display:flex;align-items:center;gap:4px;
+}
+.map-ra-btn.gmaps:hover{background:rgba(234,67,53,.15);border-color:rgba(234,67,53,.7);}
 #btnCentrarMapa:hover,#btnCentrarMapa:active{
   background:var(--accent);
   color:var(--bg-0);
@@ -2173,7 +2182,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 
     <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
       🔒 Acceso restringido a participantes de la prueba piloto.<br>
-      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-17 · 12/06/2026</span>
+      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-18 · 12/06/2026</span>
     </div>
     <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
       📴 Sin conexión — la validación funciona igualmente
@@ -3033,8 +3042,12 @@ async function _forzarActualizacion() {
         </div>
         <div class="map-res-actions" id="mapResActions" style="display:none;">
           <button class="map-ra-btn sv" onclick="mapObrirStreetView()" title="Street View">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9zm0 16c-3.86 0-7-3.14-7-7s3.14-7 7-7 7 3.14 7 7-3.14 7-7 7zm-1-11v6l5-3-5-3z"/></svg>
+            <svg viewBox="0 0 24 36" width="13" height="18" fill="currentColor"><circle cx="12" cy="4" r="3" fill="var(--accent)"/><rect x="9.5" y="7.5" width="5" height="8" rx="2"/><rect x="4.5" y="8" width="4" height="2" rx="1"/><rect x="15.5" y="8" width="4" height="2" rx="1"/><rect x="9.5" y="15" width="2.2" height="8.5" rx="1.1" transform="rotate(4 9.5 15)"/><rect x="12.3" y="15" width="2.2" height="8.5" rx="1.1" transform="rotate(-4 14 15)"/></svg>
             Street
+          </button>
+          <button class="map-ra-btn gmaps" onclick="mapObrirMaps()" title="Google Maps">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/></svg>
+            Maps
           </button>
           <button class="map-ra-btn" onclick="mapCompartirWA()">💬 WA</button>
           <button class="map-ra-btn" onclick="mapCopiar()">📋</button>
@@ -3202,19 +3215,29 @@ async function _forzarActualizacion() {
     </div>
     <!-- Botó flotant centrar en posició -->
     <button id="btnCentrarMapa" onclick="centrarMapa()" title="Centrar en mi posición" aria-label="Centrar mapa">
-
-    <!-- Botó Street View flotant (baix-esquerra) -->
-    <button id="btnStreetView" onclick="mapObrirStreetView()" title="Abrir en Street View">
-      <svg viewBox="0 0 48 48" width="28" height="28" fill="currentColor">
-        <circle cx="24" cy="13" r="7" opacity=".9"/>
-        <path d="M24 22c-7 0-14 4-14 10v2h28v-2c0-6-7-10-14-10z" opacity=".9"/>
-        <path d="M36 32l8-4-8-4v8z" fill="var(--accent)"/>
-      </svg>
-      <span>Street</span>
-    </button>
       <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
         <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
       </svg>
+    </button>
+
+    <!-- Botó Street View flotant (baix-esquerra) — muñeco de peu -->
+    <button id="btnStreetView" onclick="mapObrirStreetView()" title="Abrir en Street View">
+      <svg viewBox="0 0 24 36" width="26" height="38" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <!-- cap -->
+        <circle cx="12" cy="3.8" r="3" fill="var(--accent)"/>
+        <!-- cos -->
+        <rect x="9" y="7.5" width="6" height="9" rx="2.5" fill="currentColor"/>
+        <!-- braços -->
+        <rect x="4" y="8" width="4.5" height="2" rx="1" fill="currentColor"/>
+        <rect x="15.5" y="8" width="4.5" height="2" rx="1" fill="currentColor"/>
+        <!-- cames -->
+        <rect x="9" y="16" width="2.5" height="10" rx="1.2" fill="currentColor" transform="rotate(5 9 16)"/>
+        <rect x="12.5" y="16" width="2.5" height="10" rx="1.2" fill="currentColor" transform="rotate(-5 14 16)"/>
+        <!-- peus -->
+        <rect x="7.5" y="25" width="4" height="2" rx="1" fill="var(--accent)"/>
+        <rect x="12" y="25" width="4" height="2" rx="1" fill="var(--accent)"/>
+      </svg>
+      <span>Street</span>
     </button>
   </div>
 
@@ -3956,31 +3979,34 @@ function _detectarCoords(val) {
 function muniOnInput(val) {
   clearTimeout(_muniDebounceT);
   const drop = document.getElementById('muniDrop');
-  if (!val.trim()) { drop.classList.remove('open'); return; }
+  if (!val.trim()) { drop.innerHTML=''; drop.classList.remove('open'); return; }
 
-  // 1) Patró carretera+PK → suggeriment ràpid sense xarxa
+  // 1) Patró carretera+PK → suggeriment ràpid (no omple el camp, l'usuari segueix escrivint)
   const pk = _detectarPatroPK(val);
   if (pk) {
-    drop.innerHTML = `<div class="muni-drop-item" onclick="_muniIrAPK()">🛣️ Ir a <b>${pk.carr}</b> PK ${pk.km}+${String(pk.m).padStart(3,'0')}</div>`;
+    drop.innerHTML = `<div class="muni-drop-item" style="font-size:.92rem;padding:13px 18px;" onclick="_muniIrAPK()">🛣️ Ir a <b>${pk.carr}</b> PK ${pk.km}+${String(pk.m).padStart(3,'0')}</div>`;
     drop.classList.add('open'); return;
   }
   // 2) Coordenades
   const co = _detectarCoords(val);
   if (co) {
-    drop.innerHTML = `<div class="muni-drop-item" onclick="_muniIrACoords()">📍 Ir a coordenadas ${co.lat.toFixed(4)}, ${co.lon.toFixed(4)}</div>`;
+    drop.innerHTML = `<div class="muni-drop-item" style="font-size:.92rem;padding:13px 18px;" onclick="_muniIrACoords()">📍 Ir a ${co.lat.toFixed(4)}, ${co.lon.toFixed(4)}</div>`;
     drop.classList.add('open'); return;
   }
-  // 3) Municipi (Nominatim) — debounce 400ms
-  _muniDebounceT = setTimeout(() => muniCercar(true), 400);
+  // 3) Municipi (Nominatim) — debounce 400ms, mínim 3 caràcters
+  drop.innerHTML=''; drop.classList.remove('open');
+  if (val.trim().length >= 3) _muniDebounceT = setTimeout(() => muniCercar(true), 400);
 }
 
 function _muniIrAPK() {
   const drop = document.getElementById('muniDrop');
   const inp  = document.getElementById('muniSearchInp');
-  drop.classList.remove('open');
-  const pk = _detectarPatroPK(inp.value);
+  const val  = inp.value;
+  drop.innerHTML=''; drop.classList.remove('open');
+  const pk = _detectarPatroPK(val);
   if (!pk || typeof L === 'undefined' || !map) return;
   inp.value = '';
+  inp.blur();
   document.getElementById('mapLkCarr').value = pk.carr;
   document.getElementById('mapLkKm').value   = pk.km;
   document.getElementById('mapLkM').value    = pk.m;
@@ -3989,10 +4015,12 @@ function _muniIrAPK() {
 function _muniIrACoords() {
   const drop = document.getElementById('muniDrop');
   const inp  = document.getElementById('muniSearchInp');
-  drop.classList.remove('open');
-  const co = _detectarCoords(inp.value);
+  const val  = inp.value;
+  drop.innerHTML=''; drop.classList.remove('open');
+  const co = _detectarCoords(val);
   if (!co || typeof L === 'undefined' || !map) return;
   inp.value = '';
+  inp.blur();
   document.getElementById('mapCoordLat').value = co.lat;
   document.getElementById('mapCoordLon').value = co.lon;
   mapAnarACoords();
@@ -7304,8 +7332,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-17'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
-  console.log('[PK-GEOLOC] BUILD sw-17 · 12/06/2026');
+  const SW_VERSION = 'pkgeoloc-v2-sw-18'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
+  console.log('[PK-GEOLOC] BUILD sw-18 · 12/06/2026');
   const swCode = `
 const CACHE = '${SW_VERSION}';
 // Recursos locals crítics — tot el necessari per a la detecció PK offline
@@ -7423,7 +7451,7 @@ if ('caches' in window) {
     if (!navigator.onLine) return;
     setTimeout(async () => {
       try {
-        const c = await caches.open('pkgeoloc-v2-sw-17');
+        const c = await caches.open('pkgeoloc-v2-sw-18');
         const hit = await c.match('./PK_SEED_para_app.js');
         if (!hit) {
           const r = await fetch('./PK_SEED_para_app.js', { cache: 'no-cache' });
@@ -7844,7 +7872,7 @@ function toggleMapSheet(){
   let startY = 0, startPos = 1, curDelta = 0, dragging = false;
   const sheetH = () => sh.offsetHeight;
   const peekH  = () => parseFloat(getComputedStyle(scr).getPropertyValue('--map-peek')) || 172;
-  const HANDLE_H = 40; // px del sol mànec visible quan ocult
+  const HANDLE_H = 56; // px visibles en estat ocult (agarrador + marge)
   const posY = (pos) => pos===0 ? 0 : pos===1 ? sheetH()-peekH() : sheetH()-HANDLE_H;
 
   function onStart(e){
