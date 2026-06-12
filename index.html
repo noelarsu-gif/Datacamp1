@@ -421,14 +421,15 @@ body::before{
   will-change:transform;
 }
 #mapSidebar.open{transform:translateY(0);}
-#mapSidebar.hidden{transform:translateY(calc(100% - 56px));}
+#mapSidebar.hidden{transform:translateY(calc(100% - 64px));}
 #mapSidebar.dragging{transition:none;}
 
 /* Zona sempre visible: agafador + resultat */
 .map-sheet-peek{flex-shrink:0;padding:0 14px 10px;}
 .map-sheet-grab{
-  padding:8px 2px 6px;cursor:pointer;user-select:none;
+  padding:10px 2px 8px;cursor:pointer;user-select:none;
   -webkit-tap-highlight-color:transparent;
+  min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;
 }
 .map-sheet-handle{
   width:42px;height:4.5px;border-radius:3px;
@@ -457,54 +458,54 @@ body::before{
 #mapSidebarBody::-webkit-scrollbar{width:3px;}
 #mapSidebarBody::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 
-/* ── Cercador flotant POLIVALENT (municipi, C-14 129, coords) ── */
+/* ── Cercador flotant POLIVALENT — IDs propis, sense herència ── */
 #mapTopBar{
   position:absolute;top:10px;left:10px;right:10px;
   z-index:30;
 }
-#mapTopBar .muni-search-wrap{position:relative;}
-#mapTopBar .muni-search-row{
+#mapTopBarInner{
   position:relative;display:flex;align-items:center;
-  background:none !important;border:none !important;
-  border-radius:0 !important;overflow:visible !important;
 }
-#mapTopBar .muni-search-inp{
-  width:100%;padding:15px 52px 15px 20px;
+#mapSearchInp2{
+  width:100%;padding:15px 54px 15px 20px;
   background:rgba(10,14,28,.93);
   backdrop-filter:blur(20px) saturate(1.4);
   -webkit-backdrop-filter:blur(20px) saturate(1.4);
   border:1px solid rgba(0,212,255,.28);border-radius:999px;
   color:var(--text-1);font-size:1rem;font-family:var(--sans);
-  box-shadow:0 8px 30px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.04);
+  box-shadow:0 8px 30px rgba(0,0,0,.6);
   transition:border-color .25s,box-shadow .25s;
-  -webkit-appearance:none;appearance:none;
+  -webkit-appearance:none;appearance:none;outline:none;
 }
-#mapTopBar .muni-search-inp::placeholder{color:rgba(196,201,212,.4);}
-#mapTopBar .muni-search-inp:focus{
+#mapSearchInp2::placeholder{color:rgba(196,201,212,.38);}
+#mapSearchInp2:focus{
   border-color:var(--accent);
   box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 3px rgba(0,212,255,.14);
-  outline:none;
 }
-#mapTopBar .muni-search-btn{
+#mapSearchBtn2{
   position:absolute;right:7px;top:50%;transform:translateY(-50%);
-  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  width:38px;height:38px;border-radius:50%;
   background:rgba(0,212,255,.18);border:1px solid rgba(0,212,255,.5);
-  color:var(--accent);font-size:1.1rem;cursor:pointer;
+  color:var(--accent);font-size:1.15rem;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  transition:var(--tr);
+  transition:var(--tr);flex-shrink:0;
 }
-#mapTopBar .muni-search-btn:active{transform:translateY(-50%) scale(.9);}
-#mapTopBar .muni-drop{
+#mapSearchBtn2:active{transform:translateY(-50%) scale(.9);}
+#mapTopDrop{
   position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:600;
   border-radius:18px;overflow:hidden;
-  background:rgba(10,14,28,.96);
+  background:rgba(10,14,28,.97);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border:1px solid rgba(0,212,255,.22);
-  box-shadow:0 14px 44px rgba(0,0,0,.7);
+  box-shadow:0 14px 44px rgba(0,0,0,.75);
   display:none;flex-direction:column;
   max-height:220px;overflow-y:auto;
 }
-#mapTopBar .muni-drop.open{display:flex;}
+#mapTopDrop.open{display:flex;}
+#mapTopDrop .muni-drop-item{padding:13px 18px;font-size:.92rem;}
+@media(min-width:900px){
+  #mapTopBar{left:390px;right:10px;}
+}
 
 /* ── Botons flotants (FAB) ── */
 .map-fab{
@@ -2182,7 +2183,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 
     <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
       🔒 Acceso restringido a participantes de la prueba piloto.<br>
-      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-18 · 12/06/2026</span>
+      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-19 · 12/06/2026</span>
     </div>
     <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
       📴 Sin conexión — la validación funciona igualmente
@@ -3193,20 +3194,17 @@ async function _forzarActualizacion() {
   <div id="mapMain">
     <div id="leafletMap"></div>
 
-    <!-- Cercador de municipi flotant -->
+    <!-- Cercador flotant polivalent — estructura mínima sense divs heretats -->
     <div id="mapTopBar">
-      <div class="muni-search-wrap">
-        <div class="muni-search-row">
-          <input class="muni-search-inp" id="muniSearchInp" type="text"
-            placeholder="Municipio, C-14 129, 41.68, 1.27..."
-            autocomplete="off" autocorrect="off" spellcheck="false"
-            oninput="muniOnInput(this.value)"
-            onkeydown="if(event.key==='Enter'){event.preventDefault();muniCercar();}">
-          <button class="muni-search-btn" id="muniSearchBtn"
-            onclick="muniCercar()" title="Cercar">⌕</button>
-        </div>
-        <div class="muni-drop" id="muniDrop"></div>
+      <div id="mapTopBarInner">
+        <input id="mapSearchInp2" type="text"
+          placeholder="Municipio, C-14 129, 41.68, 1.27..."
+          autocomplete="off" autocorrect="off" spellcheck="false"
+          oninput="muniOnInput(this.value)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();muniCercar();}">
+        <button id="mapSearchBtn2" onclick="muniCercar()" aria-label="Buscar">⌕</button>
       </div>
+      <div id="mapTopDrop"></div>
     </div>
 
     <div id="mapLoading">
@@ -3978,7 +3976,7 @@ function _detectarCoords(val) {
 
 function muniOnInput(val) {
   clearTimeout(_muniDebounceT);
-  const drop = document.getElementById('muniDrop');
+  const drop = document.getElementById('mapTopDrop');
   if (!val.trim()) { drop.innerHTML=''; drop.classList.remove('open'); return; }
 
   // 1) Patró carretera+PK → suggeriment ràpid (no omple el camp, l'usuari segueix escrivint)
@@ -3999,8 +3997,8 @@ function muniOnInput(val) {
 }
 
 function _muniIrAPK() {
-  const drop = document.getElementById('muniDrop');
-  const inp  = document.getElementById('muniSearchInp');
+  const drop = document.getElementById('mapTopDrop');
+  const inp  = document.getElementById('mapSearchInp2');
   const val  = inp.value;
   drop.innerHTML=''; drop.classList.remove('open');
   const pk = _detectarPatroPK(val);
@@ -4013,8 +4011,8 @@ function _muniIrAPK() {
   mapAnarAPK();
 }
 function _muniIrACoords() {
-  const drop = document.getElementById('muniDrop');
-  const inp  = document.getElementById('muniSearchInp');
+  const drop = document.getElementById('mapTopDrop');
+  const inp  = document.getElementById('mapSearchInp2');
   const val  = inp.value;
   drop.innerHTML=''; drop.classList.remove('open');
   const co = _detectarCoords(val);
@@ -4027,9 +4025,9 @@ function _muniIrACoords() {
 }
 
 async function muniCercar(silencious = false) {
-  const inp  = document.getElementById('muniSearchInp');
-  const btn  = document.getElementById('muniSearchBtn');
-  const drop = document.getElementById('muniDrop');
+  const inp  = document.getElementById('mapSearchInp2');
+  const btn  = document.getElementById('mapSearchBtn2');
+  const drop = document.getElementById('mapTopDrop');
   const q    = inp.value.trim();
   if (!q) return;
 
@@ -4079,7 +4077,7 @@ async function muniCercar(silencious = false) {
 }
 
 function _muniMostrarDrop(items) {
-  const drop = document.getElementById('muniDrop');
+  const drop = document.getElementById('mapTopDrop');
   drop.innerHTML = items.map((item, i) => {
     if (item._buit) return `<div class="muni-drop-item empty">${item.display_name}</div>`;
     // Nom curt: primera part abans de la primera coma
@@ -4093,7 +4091,7 @@ function _muniMostrarDrop(items) {
 }
 
 function _muniSeleccionar(idx) {
-  const drop = document.getElementById('muniDrop');
+  const drop = document.getElementById('mapTopDrop');
   const item = drop.querySelectorAll('.muni-drop-item')[idx];
   if (!item || item.classList.contains('empty')) return;
   const lat = parseFloat(item.dataset.lat);
@@ -4103,8 +4101,8 @@ function _muniSeleccionar(idx) {
 }
 
 function muniAnarA(lat, lon, nomComplet) {
-  const drop = document.getElementById('muniDrop');
-  const inp  = document.getElementById('muniSearchInp');
+  const drop = document.getElementById('mapTopDrop');
+  const inp  = document.getElementById('mapSearchInp2');
   drop.classList.remove('open');
   // Mostra nom curt a l'input
   inp.value = nomComplet.split(',')[0].trim();
@@ -4117,8 +4115,8 @@ function muniAnarA(lat, lon, nomComplet) {
 
 // Tanca el desplegable en clicar fora
 document.addEventListener('click', e => {
-  if (!e.target.closest('.muni-search-wrap')) {
-    document.getElementById('muniDrop')?.classList.remove('open');
+  if (!e.target.closest('#mapTopBar')) {
+    const d=document.getElementById('mapTopDrop'); if(d){d.innerHTML='';d.classList.remove('open');}
   }
 });
 
@@ -7332,8 +7330,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-18'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
-  console.log('[PK-GEOLOC] BUILD sw-18 · 12/06/2026');
+  const SW_VERSION = 'pkgeoloc-v2-sw-19'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
+  console.log('[PK-GEOLOC] BUILD sw-19 · 12/06/2026');
   const swCode = `
 const CACHE = '${SW_VERSION}';
 // Recursos locals crítics — tot el necessari per a la detecció PK offline
@@ -7451,7 +7449,7 @@ if ('caches' in window) {
     if (!navigator.onLine) return;
     setTimeout(async () => {
       try {
-        const c = await caches.open('pkgeoloc-v2-sw-18');
+        const c = await caches.open('pkgeoloc-v2-sw-19');
         const hit = await c.match('./PK_SEED_para_app.js');
         if (!hit) {
           const r = await fetch('./PK_SEED_para_app.js', { cache: 'no-cache' });
@@ -7872,8 +7870,12 @@ function toggleMapSheet(){
   let startY = 0, startPos = 1, curDelta = 0, dragging = false;
   const sheetH = () => sh.offsetHeight;
   const peekH  = () => parseFloat(getComputedStyle(scr).getPropertyValue('--map-peek')) || 172;
-  const HANDLE_H = 56; // px visibles en estat ocult (agarrador + marge)
-  const posY = (pos) => pos===0 ? 0 : pos===1 ? sheetH()-peekH() : sheetH()-HANDLE_H;
+  const HANDLE_H = 64; // px SIEMPRE visibles en estat ocult (agafador + pastilla)
+  const posY = (pos) => {
+    if (pos === 0) return 0;                        // obert — a la vista
+    if (pos === 1) return sheetH() - peekH();       // peek — resultat visible
+    return Math.max(sheetH() - HANDLE_H, 0);        // ocult — només agafador
+  };
 
   function onStart(e){
     if (window.innerWidth >= 900) return;
@@ -7916,12 +7918,13 @@ function toggleMapSheet(){
   peek.addEventListener('touchmove',  onMove,  { passive: false });
   peek.addEventListener('touchend',   onEnd);
 
-  /* Tocar el mapa: si obert→peek, si peek→ocult */
+  /* Tocar el mapa: si obert→peek, si peek→ocult; si ja ocult no fa res */
   const lm = document.getElementById('leafletMap');
   if (lm) lm.addEventListener('pointerdown', () => {
     if (window.innerWidth >= 900) return;
     if (_mapSheetPos === 0) tancarMapSheet();
     else if (_mapSheetPos === 1) _ocultarMapSheet();
+    // pos 2 (ocult): no fa res, l'usuari ha de poder arrossegar cap amunt
   }, { passive: true });
 })();
 </script>
