@@ -462,35 +462,52 @@ body::before{
 #mapTopBar{
   position:absolute;top:10px;left:10px;right:10px;
   z-index:30;
+  background:transparent !important;
 }
 #mapTopBarInner{
-  position:relative;display:flex;align-items:center;
+  position:relative;
+  background:transparent !important;
 }
-#mapSearchInp2{
-  width:100%;padding:15px 54px 15px 20px;
-  background:rgba(10,14,28,.93);
-  backdrop-filter:blur(20px) saturate(1.4);
-  -webkit-backdrop-filter:blur(20px) saturate(1.4);
-  border:1px solid rgba(0,212,255,.28);border-radius:999px;
-  color:var(--text-1);font-size:1rem;font-family:var(--sans);
-  box-shadow:0 8px 30px rgba(0,0,0,.6);
+/* LA PÍNDOLA — tot el visual va aquí, mai al input directament */
+#mapSearchPill{
+  position:relative;
+  display:flex;align-items:center;
+  background:rgba(10,14,28,.88);
+  backdrop-filter:blur(22px) saturate(1.5);
+  -webkit-backdrop-filter:blur(22px) saturate(1.5);
+  border:1px solid rgba(0,212,255,.30);
+  border-radius:999px;
+  box-shadow:0 6px 28px rgba(0,0,0,.55);
   transition:border-color .25s,box-shadow .25s;
-  -webkit-appearance:none;appearance:none;outline:none;
+  overflow:hidden; /* talla les cantonades del input fill */
 }
-#mapSearchInp2::placeholder{color:rgba(196,201,212,.38);}
-#mapSearchInp2:focus{
+#mapSearchPill:focus-within{
   border-color:var(--accent);
-  box-shadow:0 8px 30px rgba(0,0,0,.6),0 0 0 3px rgba(0,212,255,.14);
+  box-shadow:0 6px 28px rgba(0,0,0,.55),0 0 0 3px rgba(0,212,255,.15);
 }
+/* L'INPUT: transparent, sense cap estil visual propi */
+#mapSearchInp2{
+  flex:1;
+  padding:15px 8px 15px 20px;
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  outline:none !important;
+  -webkit-appearance:none;appearance:none;
+  color:var(--text-1);font-size:1rem;font-family:var(--sans);
+  min-width:0;
+}
+#mapSearchInp2::placeholder{color:rgba(196,201,212,.40);}
 #mapSearchBtn2{
-  position:absolute;right:7px;top:50%;transform:translateY(-50%);
+  flex-shrink:0;
+  margin-right:6px;
   width:38px;height:38px;border-radius:50%;
   background:rgba(0,212,255,.18);border:1px solid rgba(0,212,255,.5);
   color:var(--accent);font-size:1.15rem;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  transition:var(--tr);flex-shrink:0;
+  transition:var(--tr);
 }
-#mapSearchBtn2:active{transform:translateY(-50%) scale(.9);}
+#mapSearchBtn2:active{transform:scale(.9);}
 #mapTopDrop{
   position:absolute;top:calc(100% + 8px);left:0;right:0;z-index:600;
   border-radius:18px;overflow:hidden;
@@ -3197,12 +3214,14 @@ async function _forzarActualizacion() {
     <!-- Cercador flotant polivalent — estructura mínima sense divs heretats -->
     <div id="mapTopBar">
       <div id="mapTopBarInner">
-        <input id="mapSearchInp2" type="text"
-          placeholder="Municipio, C-14 129, 41.68, 1.27..."
-          autocomplete="off" autocorrect="off" spellcheck="false"
-          oninput="muniOnInput(this.value)"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();muniCercar();}">
-        <button id="mapSearchBtn2" onclick="muniCercar()" aria-label="Buscar">⌕</button>
+        <div id="mapSearchPill">
+          <input id="mapSearchInp2" type="text"
+            placeholder="Municipio, C-14 129, 41.68, 1.27..."
+            autocomplete="off" autocorrect="off" spellcheck="false"
+            oninput="muniOnInput(this.value)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();muniCercar();}">
+          <button id="mapSearchBtn2" onclick="muniCercar()" aria-label="Buscar">⌕</button>
+        </div>
       </div>
       <div id="mapTopDrop"></div>
     </div>
