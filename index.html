@@ -1769,6 +1769,53 @@ body::before{
 .photo-empty-icon{font-size:2.5rem;opacity:.2;}
 
 /* Visor pantalla completa — redissenyat */
+/* ── Visor foto d'incidència — simple, sense botons WA ── */
+#incFotoViewer{
+  position:fixed;inset:0;z-index:501;background:#000;
+  display:none;flex-direction:column;
+}
+#incFotoViewer.open{display:flex;}
+.ifv-topbar{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 14px;background:rgba(0,0,0,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+}
+.ifv-title{
+  font-family:var(--font-cond);font-size:.82rem;font-weight:700;
+  color:var(--text-1);letter-spacing:1px;flex:1;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.ifv-img-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;padding:6px;min-height:0;background:#111214;
+}
+.ifv-img-wrap img{width:100%;height:100%;object-fit:contain;border-radius:var(--radius-sm);}
+.ifv-botbar{
+  background:rgba(0,0,0,.88);backdrop-filter:blur(12px);
+  border-top:1px solid rgba(255,255,255,.08);
+  padding:12px 14px 20px;display:flex;gap:10px;flex-shrink:0;
+}
+.ifv-btn{
+  flex:1;padding:13px 10px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.88rem;font-weight:700;letter-spacing:1px;
+  cursor:pointer;transition:var(--tr);border:1px solid var(--border);
+  background:rgba(255,255,255,.06);color:var(--text-2);
+}
+.ifv-btn.share{border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.12);color:var(--accent);}
+.ifv-btn.del{border-color:rgba(255,90,110,.4);background:rgba(255,90,110,.08);color:var(--red);}
+/* ── Subtabs de la pantalla Fotos ── */
+.photos-subtabs{
+  display:flex;gap:0;border-bottom:1px solid var(--border);flex-shrink:0;
+  background:var(--bg-1);
+}
+.photos-subtab{
+  flex:1;padding:9px 4px;font-family:var(--font-cond);font-size:.75rem;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:var(--text-3);
+  background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;
+  transition:color .2s,border-color .2s;
+}
+.photos-subtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
 .photo-viewer{
   position:fixed;inset:0;z-index:500;background:#000;
   display:none;flex-direction:column;
@@ -2950,6 +2997,22 @@ async function _forzarActualizacion() {
 </div>
 
 <!-- ════ VISOR DE FOTO — pantalla completa ════ -->
+<!-- ════ VISOR FOTO INCIDÈNCIA — simple, sense WA ════ -->
+<div id="incFotoViewer">
+  <div class="ifv-topbar">
+    <button class="pv-back-btn" onclick="closeIncFotoViewer()">← Cerrar</button>
+    <span class="ifv-title" id="ifvTitle">Foto incidencia</span>
+    <button class="pv-del-btn" onclick="eliminarIncFotoVisor()" title="Eliminar">🗑️</button>
+  </div>
+  <div class="ifv-img-wrap">
+    <img id="ifvImg" src="" alt="Foto incidencia">
+  </div>
+  <div class="ifv-botbar">
+    <button class="ifv-btn share" onclick="compartirIncFotoVisor()">📤 Compartir</button>
+    <button class="ifv-btn" onclick="closeIncFotoViewer()">✕ Cerrar</button>
+  </div>
+</div>
+
 <div class="photo-viewer" id="photoViewer">
   <!-- Barra superior -->
   <div class="photo-viewer-topbar">
@@ -3645,7 +3708,6 @@ async function _forzarActualizacion() {
   <div class="header">
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="logo-text">FOTOS</span>
-
     </div>
     <div style="display:flex;gap:8px;">
       <button id="btnSeleccio" onclick="toggleSeleccio()" style="padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-family:var(--font-cond);font-size:.7rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">☑ Selecc.</button>
@@ -3653,7 +3715,12 @@ async function _forzarActualizacion() {
       <button onclick="obrirCamera()" style="padding:7px 12px;border-radius:var(--radius-sm);border:1px solid rgba(168,85,247,.5);background:var(--purple-dim);color:var(--purple);font-family:var(--font-cond);font-size:.7rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">📷 Nueva</button>
     </div>
   </div>
-  <!-- Barra selecció múltiple -->
+  <!-- Subtabs Fotos / Incidencias -->
+  <div class="photos-subtabs">
+    <button class="photos-subtab active" id="subtabFotos" onclick="canviarSubtabFotos('fotos')">📷 Fotos</button>
+    <button class="photos-subtab" id="subtabIncFotos" onclick="canviarSubtabFotos('inc')">⚠️ Incidencias</button>
+  </div>
+  <!-- Barra selecció múltiple (solo para subtab Fotos) -->
   <div class="sel-toolbar" id="selToolbar">
     <span class="sel-count" id="selCount">0 seleccionadas</span>
     <div class="sel-actions">
@@ -3666,8 +3733,13 @@ async function _forzarActualizacion() {
       <button class="sel-btn sel-btn-del" onclick="eliminarSeleccio()">🗑️ Eliminar</button>
     </div>
   </div>
+  <!-- Lista fotos normales -->
   <div class="photos-list" id="photosList">
     <div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">Sin fotos capturadas</div></div>
+  </div>
+  <!-- Lista fotos de incidencias -->
+  <div class="photos-list" id="incFotosList" style="display:none;">
+    <div class="photo-empty"><div class="photo-empty-icon">⚠️</div><div class="inc-empty-text">Sin fotos de incidencias</div></div>
   </div>
 </div>
 
@@ -6796,19 +6868,133 @@ async function compartirIncidenciaWA(id) {
 }
 
 /** Obre el visor de fotos amb la foto vinculada a una incidència */
+/* ═══════════════════════════════════════════════════════════════════
+   VISOR DE FOTO D'INCIDÈNCIA — simple, sense opcions WA
+═══════════════════════════════════════════════════════════════════ */
+let _ifvFotoId  = null;   // id de la foto al STORE_PHOTOS
+let _ifvBlob    = null;   // blob per compartir
+let _ifvNom     = '';
+
 async function obrirFotoIncidencia(fotoId) {
   try {
     const foto = await idbGet(CFG.STORE_PHOTOS, fotoId);
     if (!foto?.blob) { showToast('⚠️ Foto no disponible', 'warn'); return; }
-    // Assegura que estem a la pantalla de fotos perquè el visor tingui context
-    const tabFotos = document.querySelector('.tab-btn[data-tab="screenPhotos"]');
-    if (tabFotos && typeof canviarTab === 'function') { try { canviarTab(tabFotos, 'screenPhotos'); } catch(_) {} }
-    const url = URL.createObjectURL(foto.blob);
-    obrirFotoVisor(url, foto.nom || 'foto.jpg', fotoId, foto.blob, foto);
+    _ifvFotoId = fotoId;
+    _ifvBlob   = foto.blob;
+    _ifvNom    = foto.nom || 'foto_incidencia.jpg';
+    const url  = URL.createObjectURL(foto.blob);
+    document.getElementById('ifvImg').src = url;
+    // Títol: tipus incidència si la trobem
+    let titol = _ifvNom.replace('.jpg','').replace(/_/g,' ');
+    if (foto.incId != null) {
+      try {
+        const inc = await idbGet(CFG.STORE_INC, foto.incId);
+        if (inc) titol = nomIncidencia(inc.tipus) + ' · ' + (inc.carretera || '—');
+      } catch(_) {}
+    }
+    document.getElementById('ifvTitle').textContent = titol;
+    document.getElementById('incFotoViewer').classList.add('open');
   } catch(e) {
     showToast('❌ No se pudo abrir la foto', 'err');
   }
 }
+
+function closeIncFotoViewer() {
+  document.getElementById('incFotoViewer').classList.remove('open');
+  document.getElementById('ifvImg').src = '';
+  _ifvFotoId = null; _ifvBlob = null; _ifvNom = '';
+}
+
+async function eliminarIncFotoVisor() {
+  if (!_ifvFotoId) return;
+  if (!confirm('¿Eliminar esta foto de la incidencia?')) return;
+  const fotoId = _ifvFotoId;
+
+  // Borrar de STORE_PHOTOS
+  await idbDelete(CFG.STORE_PHOTOS, fotoId);
+
+  // Sincronitzar la incidència pare: netejar fotoId/thumb o fotoId2/thumb2
+  try {
+    const incs = await idbGetAll(CFG.STORE_INC);
+    for (const inc of incs) {
+      let canviat = false;
+      if (inc.fotoId === fotoId)  { inc.fotoId  = null; inc.thumb  = null; canviat = true; }
+      if (inc.fotoId2 === fotoId) { inc.fotoId2 = null; inc.thumb2 = null; canviat = true; }
+      if (canviat) await idbPut(CFG.STORE_INC, inc);
+    }
+  } catch(_) {}
+
+  closeIncFotoViewer();
+  showToast('🗑️ Foto eliminada', 'warn', 2000);
+  renderitzarIncidencies();
+  renderitzarIncFotos();
+}
+
+async function compartirIncFotoVisor() {
+  if (!_ifvBlob) return;
+  const file = new File([_ifvBlob], _ifvNom, { type: 'image/jpeg' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: _ifvNom }); return; }
+    catch(err) { if (err.name === 'AbortError') return; }
+  }
+  descarregarBlob(_ifvBlob, _ifvNom);
+  showToast('📥 Foto guardada', 'ok', 2000);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SUBTABS FOTOS / INCIDÈNCIES
+═══════════════════════════════════════════════════════════════════ */
+let _fotosSubtab = 'fotos';  // 'fotos' | 'inc'
+
+function canviarSubtabFotos(subtab) {
+  _fotosSubtab = subtab;
+  document.getElementById('subtabFotos').classList.toggle('active', subtab === 'fotos');
+  document.getElementById('subtabIncFotos').classList.toggle('active', subtab === 'inc');
+  document.getElementById('photosList').style.display    = subtab === 'fotos' ? '' : 'none';
+  document.getElementById('incFotosList').style.display  = subtab === 'inc'   ? '' : 'none';
+  document.getElementById('selToolbar').style.display    = subtab === 'fotos' ? '' : 'none';
+  if (subtab === 'inc') renderitzarIncFotos();
+  else renderitzarFotos();
+}
+
+/* Renderitza les fotos vinculades a incidències */
+async function renderitzarIncFotos() {
+  const lista = document.getElementById('incFotosList');
+  if (!lista) return;
+  try {
+    const fotosDB_all = await idbGetAll(CFG.STORE_PHOTOS);
+    const incFotos = fotosDB_all
+      .filter(f => f.incId != null)
+      .sort((a,b) => b.ts.localeCompare(a.ts));
+
+    if (!incFotos.length) {
+      lista.innerHTML = `<div class="photo-empty"><div class="photo-empty-icon">⚠️</div><div class="inc-empty-text">Sin fotos de incidencias</div></div>`;
+      return;
+    }
+    lista.innerHTML = '';
+    incFotos.forEach(foto => {
+      const url  = URL.createObjectURL(foto.blob);
+      const mStr = foto.m != null ? String(foto.m).padStart(3,'0') : '000';
+      const pkLabel = foto.sensePK || !foto.carretera
+        ? (foto.lat ? `📍 ${foto.lat.toFixed(4)}, ${foto.lon.toFixed(4)}` : '📍 Sin PK')
+        : `${foto.carretera} PK ${foto.km||0}+${mStr}`;
+      const card = document.createElement('div');
+      card.className = 'photo-card';
+      card.dataset.id = foto.id;
+      card.innerHTML = `
+        <img class="photo-thumb" src="${url}" alt="${foto.nom}" loading="lazy">
+        <div class="photo-pk-overlay">${pkLabel}</div>`;
+      card.querySelector('.photo-thumb').addEventListener('click', () => {
+        obrirFotoIncidencia(foto.id);
+      });
+      lista.appendChild(card);
+    });
+  } catch(e) {
+    lista.innerHTML = `<div class="photo-empty"><div class="inc-empty-text">Error al cargar fotos</div></div>`;
+  }
+}
+
+
 
 async function renderitzarIncidencies() {
   const lista = document.getElementById('incidentsList');
@@ -7346,7 +7532,10 @@ async function renderitzarFotos() {
   fotosSeleccionades.clear();
   try {
     fotosDB = await idbGetAll(CFG.STORE_PHOTOS);
-    const sorted = [...fotosDB].sort((a,b) => b.ts.localeCompare(a.ts));
+    // Galeria: nomes fotos sense incId (les d'incidència van a la pestanya Incidències)
+    const sorted = [...fotosDB]
+      .filter(f => f.incId == null)
+      .sort((a,b) => b.ts.localeCompare(a.ts));
 
     if (!sorted.length) {
       lista.innerHTML = `<div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">${pkgTS('Sin fotos capturadas')}</div></div>`;
@@ -7772,14 +7961,31 @@ async function compartirFotoVisor() {
 async function eliminarFotoVisor() {
   if (!viewerFotoId) return;
   if (!confirm('¿Eliminar esta foto?')) return;
+  const fotoId = viewerFotoId;
+
+  // Comprovar si la foto pertany a una incidència i sincronitzar
+  try {
+    const foto = fotosDB.find(f => f.id === fotoId);
+    if (foto?.incId != null) {
+      const inc = await idbGet(CFG.STORE_INC, foto.incId);
+      if (inc) {
+        if (inc.fotoId  === fotoId) { inc.fotoId  = null; inc.thumb  = null; }
+        if (inc.fotoId2 === fotoId) { inc.fotoId2 = null; inc.thumb2 = null; }
+        await idbPut(CFG.STORE_INC, inc);
+        renderitzarIncidencies();
+      }
+    }
+  } catch(_) {}
+
   await new Promise((res,rej)=>{
     const tx = db.transaction(CFG.STORE_PHOTOS,'readwrite');
-    const req = tx.objectStore(CFG.STORE_PHOTOS).delete(viewerFotoId);
+    const req = tx.objectStore(CFG.STORE_PHOTOS).delete(fotoId);
     req.onsuccess = ()=>res(); req.onerror = ()=>rej(req.error);
   });
   showToast('🗑️ Foto eliminada','warn');
   closePhotoViewer();
   renderitzarFotos();
+  renderitzarIncFotos();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -8551,7 +8757,10 @@ function canviarTab(btn, screenId) {
   }
 
   if (screenId === 'screenInc')    renderitzarIncidencies();
-  if (screenId === 'screenPhotos') renderitzarFotos();
+  if (screenId === 'screenPhotos') {
+    if (_fotosSubtab === 'inc') renderitzarIncFotos();
+    else renderitzarFotos();
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════
