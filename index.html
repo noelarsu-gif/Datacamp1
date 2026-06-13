@@ -2015,6 +2015,104 @@ body::before{
 }
 .btn-foto-final:hover{background:rgba(245,158,11,.32);}
 
+/* ── Panel Modo Traza ── */
+/* ── Panel Mapeo de Carretera ── */
+#trazaPanel{
+  position:fixed;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;
+  background:var(--bg-1);border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  border-top:2px solid var(--accent);border-left:1px solid var(--border-acc);border-right:1px solid var(--border-acc);
+  z-index:402;transform:translateY(100%);transition:transform .4s cubic-bezier(.32,.72,0,1);
+  box-shadow:0 -8px 40px rgba(0,212,255,.18);
+  height:96dvh;display:flex;flex-direction:column;overflow:hidden;
+}
+#trazaPanel.open{transform:translateY(0);}
+.traza-panel-handle{width:44px;height:5px;border-radius:3px;background:var(--border);margin:12px auto 0;flex-shrink:0;}
+.traza-panel-header{
+  padding:12px 20px 10px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.traza-panel-title{
+  font-family:var(--font-cond);font-size:1rem;font-weight:900;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent);
+}
+.traza-panel-body{
+  padding:14px 20px;display:flex;flex-direction:column;gap:12px;
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+}
+.traza-panel-actions{
+  padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:8px;flex-shrink:0;
+  border-top:1px solid var(--border);background:var(--bg-1);
+}
+/* Carretera fijada */
+.traza-carr-badge{
+  background:rgba(0,212,255,.10);border:1px solid rgba(0,212,255,.35);
+  border-radius:var(--radius);padding:10px 14px;
+  font-family:var(--font-cond);font-size:1.3rem;font-weight:900;
+  color:var(--text-1);letter-spacing:1px;text-align:center;
+}
+/* Campos de entrada */
+.traza-field-label{
+  font-family:var(--font-cond);font-size:.68rem;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:4px;
+}
+.traza-inp{
+  width:100%;padding:14px 16px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--border);background:var(--bg-3);
+  color:var(--text-1);font-family:var(--font-mono);font-size:1.4rem;font-weight:700;
+  outline:none;box-sizing:border-box;transition:border-color .2s;text-align:center;
+}
+.traza-inp:focus{border-color:var(--accent);}
+/* Fila PK + dirección */
+.traza-pk-row{display:flex;gap:10px;align-items:center;}
+.traza-pk-row .traza-inp{font-size:1.6rem;flex:1;}
+.traza-sep{font-family:var(--font-mono);font-size:1.4rem;color:var(--text-3);}
+/* Selector dirección */
+.traza-dir-btns{display:flex;gap:6px;}
+.traza-dir-btn{
+  flex:1;padding:10px 6px;border-radius:var(--radius-sm);
+  border:1.5px solid var(--border);background:var(--bg-3);
+  color:var(--text-3);font-family:var(--font-cond);font-size:.78rem;font-weight:700;
+  letter-spacing:.5px;cursor:pointer;transition:var(--tr);text-align:center;
+}
+.traza-dir-btn.active{
+  border-color:var(--accent);background:rgba(0,212,255,.12);color:var(--accent);
+}
+/* Lista de puntos marcados */
+.traza-list{
+  background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);
+  max-height:140px;overflow-y:auto;
+}
+.traza-list-item{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--border);font-size:.78rem;
+}
+.traza-list-item:last-child{border-bottom:none;}
+.traza-list-pk{font-family:var(--font-mono);font-weight:700;color:var(--text-1);}
+.traza-list-acc{font-size:.65rem;color:var(--text-3);}
+/* Botones principales */
+.btn-traza-continuar{
+  width:100%;padding:20px;border-radius:var(--radius);
+  border:2px solid var(--accent);background:rgba(0,212,255,.15);
+  color:var(--accent);font-family:var(--font-cond);font-size:1.1rem;font-weight:900;
+  letter-spacing:2px;cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn-traza-continuar:active{background:rgba(0,212,255,.3);transform:scale(.97);}
+.btn-traza-continuar:disabled{opacity:.4;pointer-events:none;}
+.btn-traza-deshacer{
+  width:100%;padding:12px;border-radius:var(--radius-sm);
+  border:1px solid rgba(255,90,110,.35);background:rgba(255,90,110,.07);
+  color:var(--red);font-family:var(--font-cond);font-size:.85rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:var(--tr);
+}
+.btn-traza-finalizar{
+  width:100%;padding:13px;border-radius:var(--radius-sm);
+  border:1px solid rgba(34,217,122,.4);background:rgba(34,217,122,.10);
+  color:var(--green);font-family:var(--font-cond);font-size:.9rem;font-weight:900;
+  letter-spacing:1.5px;cursor:pointer;transition:var(--tr);
+}
+
 /* Botons mini galeria — noms actualitzats */
 .photo-wa-mini.amb-avis{background:#25d366;color:#fff;}
 .photo-wa-mini.amb-avis:hover{transform:scale(1.12);box-shadow:0 4px 14px rgba(37,211,102,.6);}
@@ -2703,6 +2801,21 @@ async function _forzarActualizacion() {
 
 <!-- ════ OVERLAY + SETTINGS ════ -->
 <div class="overlay" id="overlay" onclick="closeSettings()"></div>
+<!-- ════ PANEL DETALL TRAZAS ════ -->
+<div class="settings-panel" id="trazasDetailPanel" style="z-index:450;max-height:100dvh;height:100dvh;border-radius:0;">
+  <div class="panel-handle"></div>
+  <div class="panel-header">
+    <span class="panel-title">📍 Trazas Propias</span>
+    <button class="icon-btn" onclick="cerrarPanelTrazas()">✕</button>
+  </div>
+  <div class="panel-body" id="trazasDetailBody">
+    <div style="font-size:.75rem;color:var(--text-3);text-align:center;padding:20px 0;">Cargando...</div>
+  </div>
+  <div style="padding:0 22px 16px;display:flex;gap:8px;">
+    <button onclick="borrarTodasTrazas()" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:1px solid rgba(255,90,110,.4);background:rgba(255,90,110,.08);color:var(--red);font-family:var(--font-cond);font-size:.75rem;font-weight:700;letter-spacing:1px;cursor:pointer;">🗑️ BORRAR TODAS</button>
+  </div>
+</div>
+
 <div class="settings-panel" id="settingsPanel">
   <div class="panel-handle"></div>
   <div class="panel-header">
@@ -2769,6 +2882,18 @@ async function _forzarActualizacion() {
         oninput="actualitzarLlistaNegra(this.value); _sincronitzarConfTaMapLn(); sincronitzarLlistaNegra(this.value);"
       ></textarea>
       <button onclick="resetLlistaNegra()" style="margin-top:6px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-size:.7rem;cursor:pointer;font-family:var(--font-cond);">↺ Restaurar por defecto</button>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-card">
+      <div class="settings-card-title">📍 Trazas Propias</div>
+      <div class="settings-card-body">Puntos de carretera marcados manualmente. Se usan en el motor de detección igual que los datos oficiales.</div>
+      <div id="trazasResumen" style="font-size:.78rem;color:var(--text-2);margin-bottom:10px;padding:8px 10px;background:var(--bg-2);border-radius:var(--radius-sm);border:1px solid var(--border);">Sin puntos guardados aún.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <button onclick="abrirPanelTrazas()" style="flex:2;min-width:130px;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(0,212,255,.5);background:rgba(0,212,255,.10);color:var(--accent);font-family:var(--font-cond);font-size:.75rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">🗂️ VER PUNTOS →</button>
+        <button onclick="document.getElementById('inputImportTrazas').click()" style="flex:1;min-width:100px;padding:9px 12px;border-radius:var(--radius-sm);border:1px solid rgba(34,217,122,.5);background:rgba(34,217,122,.10);color:var(--green);font-family:var(--font-cond);font-size:.75rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">📥 IMPORTAR</button>
+      </div>
+      <input type="file" id="inputImportTrazas" accept=".json" style="display:none;">
+      <div id="trazasStatus" style="font-size:.7rem;color:var(--text-3);min-height:1em;line-height:1.5;"></div>
     </div>
     <div class="divider"></div>
     <div class="settings-card">
@@ -3027,6 +3152,84 @@ async function _forzarActualizacion() {
         ✕ Cancelar
       </button>
     </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════
+     MODAL MARCAR PUNT DE TRAZA PRÒPIA
+════════════════════════════════════════════════ -->
+<!-- ════════════════════════════════════════════════
+     PANEL MAPEO DE CARRETERA (TRAZAS PRÒPIES)
+════════════════════════════════════════════════ -->
+<div id="trazaPanel">
+  <div class="traza-panel-handle"></div>
+  <div class="traza-panel-header">
+    <span class="traza-panel-title">📍 Mapeo de Carretera</span>
+    <button class="icon-btn" onclick="trazaFinalizar()">✕</button>
+  </div>
+
+  <!-- Zona scrollable: formulario + lista de puntos + estado GPS -->
+  <div class="traza-panel-body">
+
+    <!-- Carretera -->
+    <div>
+      <div class="traza-field-label">Carretera</div>
+      <input class="traza-inp" id="trazaPanelCarr" type="text" placeholder="LV-3025"
+        maxlength="12" oninput="this.value=this.value.toUpperCase();_trazaPanelSync()">
+    </div>
+
+    <!-- PK -->
+    <div>
+      <div class="traza-field-label">Punto kilométrico</div>
+      <div class="traza-pk-row">
+        <input class="traza-inp" id="trazaPanelKm" type="number" placeholder="3"
+          min="0" max="9999" oninput="_trazaPanelSync()">
+        <span class="traza-sep">+</span>
+        <input class="traza-inp" id="trazaPanelM" type="number" placeholder="000"
+          min="0" max="999" style="max-width:100px;" oninput="_trazaPanelSync()">
+      </div>
+    </div>
+
+    <!-- Dirección -->
+    <div>
+      <div class="traza-field-label">Dirección del marcaje</div>
+      <div class="traza-dir-btns">
+        <button class="traza-dir-btn active" id="trazaDirAsc" onclick="_trazaSetDir('asc')">↑ Ascendente</button>
+        <button class="traza-dir-btn" id="trazaDirDesc" onclick="_trazaSetDir('desc')">↓ Descendente</button>
+      </div>
+    </div>
+
+    <!-- Lista de puntos marcados en esta sesión -->
+    <div id="trazaPanelListWrap" style="display:none;">
+      <div class="traza-field-label">Puntos marcados esta sesión</div>
+      <div class="traza-list" id="trazaPanelList"></div>
+    </div>
+
+    <!-- Estado GPS -->
+    <div id="trazaPanelGPS" style="font-size:.75rem;color:var(--text-3);text-align:center;min-height:1.2em;"></div>
+
+  </div>
+
+  <!-- Zona de acciones fija en la parte inferior — siempre visible -->
+  <div class="traza-panel-actions">
+
+    <!-- Botón principal: Guardar y continuar -->
+    <button class="btn-traza-continuar" id="trazaBtnContinuar" onclick="trazaGuardarPunto()">
+      📍 GUARDAR Y CONTINUAR
+    </button>
+
+    <!-- Fila inferior: Guardar y finalizar + Deshacer -->
+    <div style="display:flex;gap:8px;">
+      <button class="btn-traza-finalizar" id="trazaBtnGuardarFin" onclick="trazaGuardarYFinalizar()"
+        style="flex:2;">
+        ✅ FINALIZAR MAPEO
+      </button>
+      <button class="btn-traza-deshacer" id="trazaBtnDeshacer" onclick="trazaDeshacer()"
+        style="flex:1;display:none;">
+        ↩ Deshacer
+      </button>
+    </div>
+
   </div>
 </div>
 
@@ -3600,10 +3803,12 @@ window.pkgSetLang = pkgSetLang;
 const CFG = {
   ARCGIS_URL:'https://services1.arcgis.com/nCKYwcSONQTkPA4K/arcgis/rest/services/Puntos_kilometricos_Espana/FeatureServer/0/query',
   IDB_NAME:'pkgeoloc_v2',
-  IDB_VER:1,
+  IDB_VER:2,
   STORE_CACHE:'pk_cache',
   STORE_INC:'incidencies',
   STORE_PHOTOS:'fotos',
+  STORE_TRAZAS:'trazas_propias',
+  STORE_EXCLUSIONS:'seed_exclusions',
 };
 
 /* ── ESTAT GLOBAL ────────────────────────────────────────────────── */
@@ -3640,6 +3845,7 @@ let mapAmidPunts = [null, null];
 let mapAmidMarkers = [null, null];
 let mapAmidLinia = null;
 let mapAmidEtiqueta = null;
+let _trazasLayer = null;  // LayerGroup amb els marcadors de trazas pròpies
 // Amidament polilínea lliure
 let mapFreePunts = [];
 let mapFreeMarkers = [];
@@ -3802,6 +4008,9 @@ async function iniciarMapa() {
     }
 
     map.invalidateSize();
+
+    // Dibuixar punts de trazas pròpies
+    _renderTrazasEnMapa();
   } catch (err) {
     console.error('[Mapa] Error inicialitzant Leaflet:', err);
     _mostrarMapaNoDisponible();
@@ -3814,6 +4023,40 @@ function _iconaUsuari() {
     html: `<svg width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="#00d4ff" opacity=".25"/><circle cx="13" cy="13" r="6.5" fill="#00d4ff"/><circle cx="13" cy="13" r="3" fill="#fff"/></svg>`,
     className: '', iconSize: [26, 26], iconAnchor: [13, 13],
   });
+}
+
+/* ── Icona de punt de traza pròpia ── */
+function _iconaTraza() {
+  if (typeof L === 'undefined') return null;
+  return L.divIcon({
+    html: `<svg width="22" height="28" viewBox="0 0 22 28" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 0C6.6 0 3 3.6 3 8c0 6.2 8 18 8 18s8-11.8 8-18C19 3.6 15.4 0 11 0z" fill="#00D4FF" opacity=".9"/>
+      <circle cx="11" cy="8" r="3.5" fill="#fff"/>
+    </svg>`,
+    className: '', iconSize: [22, 28], iconAnchor: [11, 28], popupAnchor: [0, -30],
+  });
+}
+
+/** Dibuixa (o actualitza) tots els punts de STORE_TRAZAS al mapa */
+async function _renderTrazasEnMapa() {
+  if (typeof L === 'undefined' || !map) return;
+  try {
+    // Crear o netejar el LayerGroup
+    if (_trazasLayer) { _trazasLayer.clearLayers(); }
+    else { _trazasLayer = L.layerGroup().addTo(map); }
+
+    const totes = await idbGetAll(CFG.STORE_TRAZAS);
+    if (!totes.length) return;
+
+    const icona = _iconaTraza();
+    totes.forEach(t => {
+      if (!t.lat || !t.lon) return;
+      const mStr = String(t.m || 0).padStart(3, '0');
+      L.marker([t.lat, t.lon], { icon: icona, zIndexOffset: 500 })
+        .bindPopup(`<b style="font-family:monospace;">${t.carretera} PK ${t.km}+${mStr}</b><br><small style="color:#888;">Traza propia</small>`)
+        .addTo(_trazasLayer);
+    });
+  } catch(_) {}
 }
 
 /* Actualitza el marcador GPS quan l'usuari es localitza */
@@ -5125,6 +5368,10 @@ function initDB() {
         d.createObjectStore(CFG.STORE_INC, { keyPath: 'id', autoIncrement: true });
       if (!d.objectStoreNames.contains(CFG.STORE_PHOTOS))
         d.createObjectStore(CFG.STORE_PHOTOS, { keyPath: 'id', autoIncrement: true });
+      if (!d.objectStoreNames.contains(CFG.STORE_TRAZAS))
+        d.createObjectStore(CFG.STORE_TRAZAS, { keyPath: 'id', autoIncrement: true });
+      if (!d.objectStoreNames.contains(CFG.STORE_EXCLUSIONS))
+        d.createObjectStore(CFG.STORE_EXCLUSIONS, { keyPath: 'id', autoIncrement: true });
     };
     req.onsuccess = e => { db = e.target.result; res(db); };
     req.onerror   = () => rej(req.error);
@@ -5546,7 +5793,8 @@ function mostrarResultatOK(res) {
   document.getElementById('resultContent').innerHTML = `
     <div class="result-road">${res.carretera}</div>
     <div class="result-pk">PK ${res.km}<span class="sep">+</span>${mStr}</div>
-    <div class="result-dist">±${Math.round(res.dist)} ${pkgT('de_la_calzada')}</div>`
+    <div class="result-dist">±${Math.round(res.dist)} ${pkgT('de_la_calzada')}</div>
+    <button onclick="pkIncorrecte()" style="margin-top:8px;padding:5px 12px;border-radius:20px;border:1px solid rgba(255,184,0,.4);background:rgba(255,184,0,.08);color:var(--amber);font-size:.68rem;font-family:var(--font-cond);font-weight:700;letter-spacing:.5px;cursor:pointer;">⚠️ PK incorrecto</button>`
     + renderSelectorCarreteres(res.carretera);
   document.getElementById('copyBtn').className = 'copy-btn visible';
   const _fc=document.getElementById('fCarretera'); if(_fc) _fc.value = res.carretera;
@@ -5635,22 +5883,24 @@ function mostrarResultatFora(carretera, dist) {
                   onclick="seleccionarCarretera(this.dataset.c)">${nom}<small>${Math.round(c.dist)} m</small></button>`;
       }).join('')}</div>
     </div>` : '';
+  const marcarBtn = `<button onclick="marcarPuntTraza()" style="margin-top:10px;width:100%;padding:10px;border-radius:var(--radius-sm);border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.08);color:var(--accent);font-size:.75rem;font-family:var(--font-cond);font-weight:700;letter-spacing:.5px;cursor:pointer;">📍 Marcar punto de carretera</button>`;
   document.getElementById('resultCard').className = 'result-card state-warn fade-in';
   document.getElementById('resultContent').innerHTML = `
     <div class="result-warn-icon">⚠️</div>
     <div class="result-warn-title">${pkgT('res_fuera')}</div>
     <div class="result-warn-sub">${carretera ? `${pkgT('res_cercana')} ${carretera} (${Math.round(dist)} m)` : pkgT('res_nodetect')}</div>`
-    + selector;
+    + selector + marcarBtn;
   document.getElementById('copyBtn').className = 'copy-btn';
 }
 
 function mostrarResultatError(msg) {
   ultimResultat = null; ultimResultatObj = null;
+  const marcarBtn = `<button onclick="marcarPuntTraza()" style="margin-top:10px;width:100%;padding:10px;border-radius:var(--radius-sm);border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.08);color:var(--accent);font-size:.75rem;font-family:var(--font-cond);font-weight:700;letter-spacing:.5px;cursor:pointer;">📍 Marcar punto de carretera</button>`;
   document.getElementById('resultCard').className = 'result-card state-err fade-in';
   document.getElementById('resultContent').innerHTML = `
     <div class="result-warn-icon">🚫</div>
     <div class="result-warn-title">${pkgT('res_errdet')}</div>
-    <div class="result-warn-sub">${msg}</div>`;
+    <div class="result-warn-sub">${msg}</div>` + marcarBtn;
   document.getElementById('copyBtn').className = 'copy-btn';
 }
 
@@ -5729,6 +5979,12 @@ async function processarPosicio(pos) {
       punts = [...punts, ...puntsSeedExtra];
       if (fontDades === 'cache') fontDades = 'cache+seed';
     }
+    // ─────────────────────────────────────────────────────────────────
+
+    // ── Aplicar exclusions del seed + afegir trazas pròpies ──────────
+    punts = _aplicarExclusions(punts);
+    const trazasProp = await filtrarTrazas(lat, lon, 0.10);
+    if (trazasProp.length) punts = [...punts, ...trazasProp];
     // ─────────────────────────────────────────────────────────────────
 
     const res = calcularPK(lat, lon, punts);
@@ -7567,6 +7823,8 @@ async function exportarBackup() {
 
     const incs   = await idbGetAll(CFG.STORE_INC);
     const fotos  = await idbGetAll(CFG.STORE_PHOTOS);
+    const trazas = await idbGetAll(CFG.STORE_TRAZAS);
+    const excls  = await idbGetAll(CFG.STORE_EXCLUSIONS);
 
     // Convertir blobs a base64 (excloem incId-linked que es reconstruiran)
     const fotosExp = [];
@@ -7581,6 +7839,8 @@ async function exportarBackup() {
       exportedAt: new Date().toISOString(),
       incidencies: incs,
       fotos:       fotosExp,
+      trazas,
+      exclusions:  excls,
     };
 
     const json = JSON.stringify(payload);
@@ -7592,7 +7852,7 @@ async function exportarBackup() {
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: 'PK-GEOLOC backup', text: nom });
-        status.textContent = `✅ Backup compartido (${incs.length} incidencias, ${fotos.length} fotos)`;
+        status.textContent = `✅ Backup compartido (${incs.length} incidencias, ${fotos.length} fotos, ${trazas.length} trazas)`;
         return;
       } catch (err) {
         if (err.name === 'AbortError') { status.textContent = ''; return; }
@@ -7602,7 +7862,7 @@ async function exportarBackup() {
 
     // Intent 2: descàrrega directa
     descarregarBlob(blob, nom);
-    status.textContent = `✅ Backup descargado (${incs.length} incidencias, ${fotos.length} fotos)`;
+    status.textContent = `✅ Backup descargado (${incs.length} incidencias, ${fotos.length} fotos, ${trazas.length} trazas)`;
 
   } catch(e) {
     status.textContent = '❌ Error al exportar: ' + e.message;
@@ -7624,8 +7884,6 @@ document.getElementById('inputImportBackup').addEventListener('change', async fu
 
     if (!data.incidencies || !data.fotos) throw new Error('Formato de archivo no reconocido');
     if (data.app && data.app !== 'PK-GEOLOC') throw new Error('El archivo no es de PK-GEOLOC');
-
-    status.textContent = '⏳ Importando...';
 
     // ── Pas 1: importar fotos i construir mapa oldId → newId ──────────
     const fotoIdMap = {};   // oldId → newId (per remapear les incidències)
@@ -7662,12 +7920,574 @@ document.getElementById('inputImportBackup').addEventListener('change', async fu
     try { renderitzarIncidencies(); } catch(_) {}
     try { renderitzarFotos();       } catch(_) {}
 
-    status.textContent = `✅ Importadas ${nIncsImp} incidencias y ${nFotosImp} fotos`;
-    showToast(`✅ Importación completa: ${nIncsImp} incidencias, ${nFotosImp} fotos`, 'ok', 4000);
+    // ── Importar trazas i exclusions si n'hi ha ───────────────────────
+    let nTrazas = 0, nExcls = 0;
+    for (const t of (data.trazas || [])) {
+      const obj = { ...t }; delete obj.id;
+      await idbAdd(CFG.STORE_TRAZAS, obj); nTrazas++;
+    }
+    for (const ex of (data.exclusions || [])) {
+      const obj = { ...ex }; delete obj.id;
+      await idbAdd(CFG.STORE_EXCLUSIONS, obj); nExcls++;
+    }
+    if (nTrazas || nExcls) {
+      await _carregarExclusions();
+      renderitzarTrazasSettings();
+    }
+
+    status.textContent = `✅ Importadas ${nIncsImp} incidencias, ${nFotosImp} fotos, ${nTrazas} trazas`;
+    showToast(`✅ Importación completa: ${nIncsImp} incidencias, ${nFotosImp} fotos, ${nTrazas} trazas`, 'ok', 4000);
 
   } catch(e) {
     status.textContent = '❌ Error al importar: ' + e.message;
     showToast('❌ ' + e.message, 'err', 4000);
+  }
+});
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   TRAZAS PRÒPIES — Motor, captura i gestió
+   ─────────────────────────────────────────────────────────────────
+   STORE_TRAZAS:     { id, carretera, km, m, lat, lon, ts }
+   STORE_EXCLUSIONS: { id, carretera, kmDes, mDes, kmFins, mFins }
+
+   Les trazas es barregen amb el seed oficial ABANS de calcularPK.
+   Les exclusions filten punts del seed/cache en el mateix punt.
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Cache en memòria de les exclusions (carregat a l'inici) ──── */
+let _seedExclusions = [];   // [{ id, carretera, kmDes, mDes, kmFins, mFins }, ...]
+
+async function _carregarExclusions() {
+  try { _seedExclusions = await idbGetAll(CFG.STORE_EXCLUSIONS); } catch(_) { _seedExclusions = []; }
+}
+
+/** Retorna true si un punt del seed/cache ha de ser exclòs */
+function _puntExclòs(p) {
+  const pkDec = p.pk; // decimal, ex: 2.320
+  return _seedExclusions.some(ex => {
+    if (ex.carretera.trim().toUpperCase() !== (p.carretera||'').trim().toUpperCase()) return false;
+    const des  = ex.kmDes  + ex.mDes  / 1000;
+    const fins = ex.kmFins + ex.mFins / 1000;
+    return pkDec >= des && pkDec <= fins;
+  });
+}
+
+/** Filtra punts de la zona del GPS des de STORE_TRAZAS
+ *  Retorna format idèntic al seed: { carretera, pk, lat, lon } */
+async function filtrarTrazas(lat, lon, bufGraus = 0.10) {
+  try {
+    const totes = await idbGetAll(CFG.STORE_TRAZAS);
+    const latMin = lat - bufGraus, latMax = lat + bufGraus;
+    const lonMin = lon - bufGraus, lonMax = lon + bufGraus;
+    return totes
+      .filter(t => t.lat >= latMin && t.lat <= latMax && t.lon >= lonMin && t.lon <= lonMax)
+      .map(t => ({ carretera: t.carretera, pk: t.km + t.m / 1000, lat: t.lat, lon: t.lon }));
+  } catch(_) { return []; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   INTEGRACIÓ AL MOTOR — patch de processarPosicio per incloure
+   trazas i exclusions sense tocar la lògica existent
+════════════════════════════════════════════════════════════════ */
+
+/** Filtra un array de punts eliminant els exclosos per seedExclusions */
+function _aplicarExclusions(punts) {
+  if (!_seedExclusions.length) return punts;
+  return punts.filter(p => !_puntExclòs(p));
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BOTÓ "⚠️ PK INCORRECTO" — apareix a mostrarResultatOK
+   Afegeix una exclusió del rang ±0.5 km al voltant del PK actual
+   i obre el modal per marcar el punt correcte.
+════════════════════════════════════════════════════════════════ */
+async function pkIncorrecte() {
+  if (!ultimResultatObj || !ultimaPos) { showToast('⚠️ Sin posición activa', 'warn'); return; }
+  const { carretera, km, m } = ultimResultatObj;
+  const pkDec = km + m / 1000;
+
+  if (!confirm(`¿Marcar PK ${km}+${String(m).padStart(3,'0')} de ${carretera} como incorrecto en el seed?\n\nSe excluirá el rango ${Math.max(0, km-1)}+000 → ${km+1}+000.`)) return;
+
+  // Guardar exclusió
+  const excl = {
+    carretera,
+    kmDes: Math.max(0, km - 1), mDes: 0,
+    kmFins: km + 1,              mFins: 0,
+    ts: new Date().toISOString(),
+  };
+  await idbAdd(CFG.STORE_EXCLUSIONS, excl);
+  await _carregarExclusions();
+  showToast(`🚫 Rango excluido: ${carretera} PK ${excl.kmDes}→${excl.kmFins}`, 'warn', 3000);
+
+  // Obrir modal per marcar el punt correcte
+  await _marcarPuntTrazaModal(carretera, km, m);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   BOTÓ "📍 MARCAR PUNTO" — apareix a mostrarResultatFora/Error
+   Obre el modal de confirmació PK i guarda el punt a STORE_TRAZAS
+════════════════════════════════════════════════════════════════ */
+async function marcarPuntTraza() {
+  if (!ultimaPos) { showToast('⚠️ Sin posición GPS. Pulsa ¿DÓNDE ESTOY? primero.', 'warn', 3000); return; }
+  await _marcarPuntTrazaModal('', '', '');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   PANEL MAPEO DE CARRETERA — lògica completa
+   · Un sol panel que llisca des de baix
+   · Carretera fixa, PK auto-increment o decrement
+   · Lista de punts marcats, desfer, finalitzar
+════════════════════════════════════════════════════════════════ */
+
+let _trazaSessio   = [];        // [{carretera,km,m,lat,lon,ts,acc}] punts d'aquesta sessió
+let _trazaDireccio = 'asc';     // 'asc' | 'desc'
+
+/* Obre el panel (cridat des de marcarPuntTraza) */
+function abrirTrazaPanel() {
+  // Si ja hi ha sessió en curs, mantenir estat; si no, reset
+  if (!_trazaSessio.length) {
+    document.getElementById('trazaPanelCarr').value = '';
+    document.getElementById('trazaPanelKm').value   = '';
+    document.getElementById('trazaPanelM').value    = '';
+    document.getElementById('trazaPanelCarr').disabled = false;
+    _trazaSetDir('asc');
+  }
+  _trazaPanelSync();
+  document.getElementById('trazaPanel').classList.add('open');
+}
+
+function _trazaSetDir(dir) {
+  _trazaDireccio = dir;
+  document.getElementById('trazaDirAsc').classList.toggle('active',  dir === 'asc');
+  document.getElementById('trazaDirDesc').classList.toggle('active', dir === 'desc');
+}
+
+function _trazaPanelSync() {
+  // Actualitzar el label del botó principal
+  const carr = (document.getElementById('trazaPanelCarr').value || '').trim().toUpperCase();
+  const km   = parseInt(document.getElementById('trazaPanelKm').value);
+  const m    = parseInt(document.getElementById('trazaPanelM').value) || 0;
+  const btn  = document.getElementById('trazaBtnContinuar');
+  if (carr && !isNaN(km)) {
+    btn.textContent = `📍 GUARDAR PK ${km}+${String(m).padStart(3,'0')} Y CONTINUAR`;
+    btn.disabled = false;
+  } else {
+    btn.textContent = '📍 GUARDAR Y CONTINUAR';
+    btn.disabled = false;
+  }
+}
+
+/* Guarda el punt actual, captura GPS, avança el PK */
+async function trazaGuardarPunto() {
+  const carr = (document.getElementById('trazaPanelCarr').value || '').trim().toUpperCase();
+  const km   = parseInt(document.getElementById('trazaPanelKm').value);
+  const m    = Math.min(999, parseInt(document.getElementById('trazaPanelM').value) || 0);
+
+  if (!carr) { showToast('⚠️ Introduce la carretera primero', 'warn', 2500); return; }
+  if (isNaN(km)) { showToast('⚠️ Introduce el PK', 'warn', 2500); return; }
+
+  const btn = document.getElementById('trazaBtnContinuar');
+  btn.textContent = '📡 Capturando GPS...';
+  btn.disabled = true;
+  document.getElementById('trazaPanelGPS').textContent = '📡 Obteniendo posición exacta...';
+
+  try {
+    const pos = await new Promise((res, rej) =>
+      navigator.geolocation.getCurrentPosition(
+        p => res({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }),
+        rej,
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
+      )
+    );
+
+    // Guardar a IDB
+    const punt = { carretera: carr, km, m, lat: pos.lat, lon: pos.lon, acc: Math.round(pos.acc), ts: new Date().toISOString() };
+    await idbAdd(CFG.STORE_TRAZAS, punt);
+    ultimaPos = { lat: pos.lat, lon: pos.lon, acc: pos.acc };
+
+    // Afegir a la sessió local
+    _trazaSessio.push(punt);
+
+    // Fijar carretera i deshabilitar el camp
+    document.getElementById('trazaPanelCarr').disabled = true;
+
+    // Avançar PK automàticament
+    const nextKm = _trazaDireccio === 'asc' ? km + 1 : Math.max(0, km - 1);
+    document.getElementById('trazaPanelKm').value = nextKm;
+    document.getElementById('trazaPanelM').value  = 0;
+
+    document.getElementById('trazaPanelGPS').textContent = `✅ PK ${km}+${String(m).padStart(3,'0')} guardado · ±${Math.round(pos.acc)} m`;
+    showToast(`✅ ${carr} PK ${km}+${String(m).padStart(3,'0')} guardado`, 'ok', 1800);
+
+    // Mostrar botó desfer i llista
+    document.getElementById('trazaBtnDeshacer').style.display = 'flex';
+    _trazaActualitzarLlista();
+    renderitzarTrazasSettings();
+    try { _renderTrazasEnMapa(); } catch(_) {}
+    _trazaPanelSync();
+
+  } catch(e) {
+    document.getElementById('trazaPanelGPS').textContent = '⚠️ Sin GPS — reintenta';
+    showToast('⚠️ No se pudo obtener GPS. Reintenta.', 'warn', 3000);
+  }
+
+  btn.disabled = false;
+  _trazaPanelSync();
+}
+
+/* Desfer l'últim punt */
+async function trazaDeshacer() {
+  if (!_trazaSessio.length) return;
+  const ultim = _trazaSessio[_trazaSessio.length - 1];
+
+  // Buscar i eliminar de IDB (per ts + carretera + km)
+  try {
+    const tots = await idbGetAll(CFG.STORE_TRAZAS);
+    const match = tots.find(t => t.carretera === ultim.carretera && t.km === ultim.km && t.m === ultim.m && t.ts === ultim.ts);
+    if (match) await idbDelete(CFG.STORE_TRAZAS, match.id);
+  } catch(_) {}
+
+  _trazaSessio.pop();
+
+  // Tornar al PK anterior
+  document.getElementById('trazaPanelKm').value = ultim.km;
+  document.getElementById('trazaPanelM').value  = ultim.m;
+
+  if (!_trazaSessio.length) {
+    document.getElementById('trazaBtnDeshacer').style.display = 'none';
+    document.getElementById('trazaPanelCarr').disabled = false;
+  }
+
+  document.getElementById('trazaPanelGPS').textContent = `↩ PK ${ultim.km}+${String(ultim.m).padStart(3,'0')} eliminado`;
+  _trazaActualitzarLlista();
+  renderitzarTrazasSettings();
+  try { _renderTrazasEnMapa(); } catch(_) {}
+  showToast(`↩ Deshecho PK ${ultim.km}+${String(ultim.m).padStart(3,'0')}`, 'warn', 2000);
+}
+
+/* Actualitza la llista de punts de la sessió al panel */
+function _trazaActualitzarLlista() {
+  const wrap = document.getElementById('trazaPanelListWrap');
+  const list = document.getElementById('trazaPanelList');
+  if (!_trazaSessio.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = [..._trazaSessio].reverse().map(p => `
+    <div class="traza-list-item">
+      <span class="traza-list-pk">${p.carretera} PK ${p.km}+${String(p.m||0).padStart(3,'0')}</span>
+      <span class="traza-list-acc">±${p.acc||'?'} m</span>
+    </div>`).join('');
+}
+
+/* Guardar el punt actual i tancar el panel d'una sola acció */
+async function trazaGuardarYFinalizar() {
+  const carr = (document.getElementById('trazaPanelCarr').value || '').trim().toUpperCase();
+  const km   = parseInt(document.getElementById('trazaPanelKm').value);
+  const m    = Math.min(999, parseInt(document.getElementById('trazaPanelM').value) || 0);
+
+  // Si hi ha dades al formulari i NO s'ha guardat cap punt encara,
+  // preguntem si volen guardar aquest punt abans de sortir
+  if (carr && !isNaN(km) && _trazaSessio.length === 0) {
+    if (!confirm(`¿Guardar ${carr} PK ${km}+${String(m).padStart(3,'0')} antes de finalizar?`)) {
+      trazaFinalizar(); return;
+    }
+    // Guardar amb la última posició GPS coneguda (sense nova captura)
+    if (ultimaPos) {
+      const punt = { carretera: carr, km, m, lat: ultimaPos.lat, lon: ultimaPos.lon, acc: ultimaPos.acc ? Math.round(ultimaPos.acc) : null, ts: new Date().toISOString() };
+      await idbAdd(CFG.STORE_TRAZAS, punt);
+      _trazaSessio.push(punt);
+      renderitzarTrazasSettings();
+      try { _renderTrazasEnMapa(); } catch(_) {}
+    } else {
+      showToast('⚠️ Sin posición GPS — punto no guardado', 'warn', 2500);
+    }
+  }
+  // En qualsevol altre cas, simplement finalitzar
+  trazaFinalizar();
+}
+
+/* Finalitzar: tanca el panel, reseteja sessió */
+function trazaFinalizar() {
+  document.getElementById('trazaPanel').classList.remove('open');
+  const n = _trazaSessio.length;
+  _trazaSessio = [];
+  document.getElementById('trazaPanelCarr').disabled = false;
+  document.getElementById('trazaBtnDeshacer').style.display = 'none';
+  document.getElementById('trazaPanelListWrap').style.display = 'none';
+  document.getElementById('trazaPanelGPS').textContent = '';
+  if (n > 0) showToast(`✅ Mapeo finalizado — ${n} punto${n>1?'s':''} guardado${n>1?'s':''}`, 'ok', 3000);
+}
+
+/* Punt d'entrada des dels botons de la result-card */
+async function marcarPuntTraza() {
+  if (!ultimaPos) {
+    // Intentar capturar GPS mínim per tenir una posició de referència
+    showToast('📡 Obteniendo posición GPS...', 'ok', 2000);
+    try {
+      const pos = await new Promise((res, rej) =>
+        navigator.geolocation.getCurrentPosition(
+          p => res({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }),
+          rej,
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+        )
+      );
+      ultimaPos = { lat: pos.lat, lon: pos.lon, acc: pos.acc };
+    } catch(_) {
+      showToast('⚠️ Sin GPS. El punto se guardará sin coordenadas.', 'warn', 3000);
+    }
+  }
+  abrirTrazaPanel();
+}
+
+/* Compatibilitat: pkIncorrecte segueix usant el panel directament */
+async function _marcarPuntTrazaModal(preCarr, preKm, preM) {
+  if (preCarr) document.getElementById('trazaPanelCarr').value = preCarr;
+  if (preKm !== '' && preKm != null) document.getElementById('trazaPanelKm').value = preKm;
+  if (preM  !== '' && preM  != null) document.getElementById('trazaPanelM').value  = preM;
+  _trazaPanelSync();
+  abrirTrazaPanel();
+}
+
+/* Stubs eliminats — ja no s'usen */
+function _trazaModalPreview(){}
+function _mostrarTrazaModal(){ return Promise.resolve(null); }
+function _trazaModalConfirmar(){}
+function _trazaModalCancelar(){}
+function _iniciarModuTraza(){}
+function _actualitzarBannerTraza(){}
+function trazaSiguientePK(){}
+/* ════════════════════════════════════════════════════════════════
+   GESTIÓ DE TRAZAS EN SETTINGS
+════════════════════════════════════════════════════════════════ */
+async function renderitzarTrazasSettings() {
+  // Actualitza el resum compacte de la card de Settings
+  const resum = document.getElementById('trazasResumen');
+  if (!resum) return;
+  try {
+    const totes = await idbGetAll(CFG.STORE_TRAZAS);
+    const excls = await idbGetAll(CFG.STORE_EXCLUSIONS);
+    if (!totes.length && !excls.length) {
+      resum.textContent = 'Sin puntos guardados aún.';
+      return;
+    }
+    const carrs = [...new Set(totes.map(t => t.carretera))].sort();
+    resum.innerHTML =
+      `<strong style="color:var(--accent);">${totes.length}</strong> punto${totes.length!==1?'s':''} en ` +
+      `<strong style="color:var(--accent);">${carrs.length}</strong> carretera${carrs.length!==1?'s':''}` +
+      (excls.length ? ` · <span style="color:var(--amber);">${excls.length} exclusión${excls.length!==1?'es':''}</span>` : '');
+  } catch(e) {
+    resum.textContent = 'Error al leer trazas.';
+  }
+}
+
+function abrirPanelTrazas() {
+  document.getElementById('trazasDetailPanel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+  renderitzarTrazasDetall();
+}
+
+function cerrarPanelTrazas() {
+  document.getElementById('trazasDetailPanel').classList.remove('open');
+  if (!document.getElementById('settingsPanel').classList.contains('open')) {
+    document.getElementById('overlay').classList.remove('open');
+  }
+}
+
+function trazaToggleAcc(bodyId) {
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(bodyId + '_chev');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.style.transform = open ? '' : 'rotate(90deg)';
+}
+
+async function renderitzarTrazasDetall() {
+  const body = document.getElementById('trazasDetailBody');
+  if (!body) return;
+  body.innerHTML = '<div style="font-size:.75rem;color:var(--text-3);text-align:center;padding:20px 0;">Cargando...</div>';
+  try {
+    const totes = await idbGetAll(CFG.STORE_TRAZAS);
+    const excls = await idbGetAll(CFG.STORE_EXCLUSIONS);
+
+    if (!totes.length && !excls.length) {
+      body.innerHTML = '<div style="font-size:.78rem;color:var(--text-3);text-align:center;padding:24px 0;">Sin puntos guardados aún.<br><br>Pulsa <strong>📍 Marcar punto</strong> cuando el GPS no detecte una carretera.</div>';
+      return;
+    }
+
+    // Agrupar per carretera, ordenat
+    const grups = {};
+    totes.forEach(t => {
+      if (!grups[t.carretera]) grups[t.carretera] = [];
+      grups[t.carretera].push(t);
+    });
+    const carrs = Object.keys(grups).sort();
+
+    let html = '';
+
+    // ── Carreteres amb punts ──────────────────────────────────────
+    carrs.forEach((carr, idx) => {
+      const punts = grups[carr].sort((a,b) => (a.km + a.m/1000) - (b.km + b.m/1000));
+      const exclsCarr = excls.filter(e => e.carretera === carr);
+      const bodyId = `trazaAcc_${idx}`;
+      html += `
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;">
+          <!-- Capçalera carretera — toca per desplegar -->
+          <div onclick="trazaToggleAcc('${bodyId}')"
+            style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg-2);cursor:pointer;user-select:none;">
+            <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+              <span id="${bodyId}_chev" style="font-size:.7rem;color:var(--text-3);transition:transform .2s;">▶</span>
+              <span style="font-family:var(--font-cond);font-size:.95rem;font-weight:900;color:var(--accent);">${carr}</span>
+              <span style="font-size:.65rem;color:var(--text-3);">${punts.length} punto${punts.length!==1?'s':''}${exclsCarr.length?' · 🚫'+exclsCarr.length:''}</span>
+            </div>
+            <button onclick="event.stopPropagation();exportarTrazasCarretera('${carr.replace(/'/g,"\\'")}')"
+              style="padding:4px 10px;border-radius:20px;border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.08);color:var(--accent);font-size:.65rem;font-family:var(--font-cond);font-weight:700;cursor:pointer;flex-shrink:0;">
+              📤
+            </button>
+          </div>
+          <!-- Cos col·lapsable -->
+          <div id="${bodyId}" style="display:none;">
+            ${punts.map(p => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-top:1px solid var(--border);">
+                <div>
+                  <span style="font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--text-1);">PK ${p.km}+${String(p.m||0).padStart(3,'0')}</span>
+                  ${p.acc ? `<span style="font-size:.62rem;color:var(--text-3);margin-left:6px;">±${p.acc} m</span>` : ''}
+                </div>
+                <button onclick="borrarPuntTraza(${p.id})"
+                  style="background:none;border:none;color:var(--red);font-size:.9rem;cursor:pointer;padding:4px 8px;border-radius:6px;">🗑️</button>
+              </div>`).join('')}
+            ${exclsCarr.length ? `
+              <div style="padding:8px 14px;background:rgba(245,166,35,.05);border-top:1px solid var(--border);">
+                <div style="font-size:.62rem;font-weight:700;letter-spacing:1px;color:var(--amber);margin-bottom:4px;">🚫 EXCLUSIONES</div>
+                ${exclsCarr.map(ex => `
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;">
+                    <span style="font-size:.72rem;color:var(--text-2);">PK ${ex.kmDes}+000 → ${ex.kmFins}+000</span>
+                    <button onclick="borrarExclusio(${ex.id})"
+                      style="background:none;border:none;color:var(--red);font-size:.85rem;cursor:pointer;padding:2px 6px;">🗑️</button>
+                  </div>`).join('')}
+              </div>` : ''}
+          </div>
+        </div>`;
+    });
+
+    const carrsAmbPunts = new Set(carrs);
+    const exclsOrfes = excls.filter(e => !carrsAmbPunts.has(e.carretera));
+    if (exclsOrfes.length) {
+      const carrsExcl = [...new Set(exclsOrfes.map(e => e.carretera))].sort();
+      carrsExcl.forEach((carr, idx2) => {
+        const exclsC = exclsOrfes.filter(e => e.carretera === carr);
+        const bodyId = `trazaAccE_${idx2}`;
+        html += `
+          <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;">
+            <div onclick="trazaToggleAcc('${bodyId}')"
+              style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:rgba(245,166,35,.06);cursor:pointer;user-select:none;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span id="${bodyId}_chev" style="font-size:.7rem;color:var(--text-3);transition:transform .2s;">▶</span>
+                <span style="font-family:var(--font-cond);font-size:.9rem;font-weight:900;color:var(--amber);">🚫 ${carr}</span>
+                <span style="font-size:.65rem;color:var(--text-3);">solo exclusiones</span>
+              </div>
+            </div>
+            <div id="${bodyId}" style="display:none;">
+              ${exclsC.map(ex => `
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-top:1px solid var(--border);">
+                  <span style="font-size:.75rem;color:var(--text-2);">PK ${ex.kmDes}+000 → ${ex.kmFins}+000</span>
+                  <button onclick="borrarExclusio(${ex.id})"
+                    style="background:none;border:none;color:var(--red);font-size:.9rem;cursor:pointer;padding:4px 8px;">🗑️</button>
+                </div>`).join('')}
+            </div>
+          </div>`;
+      });
+    }
+
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div style="font-size:.75rem;color:var(--red);padding:16px;">Error: ${e.message}</div>`;
+  }
+}
+
+async function borrarPuntTraza(id) {
+  if (!confirm('¿Eliminar este punto de traza?')) return;
+  await idbDelete(CFG.STORE_TRAZAS, id);
+  renderitzarTrazasSettings();
+  renderitzarTrazasDetall();
+  try { _renderTrazasEnMapa(); } catch(_) {}
+  showToast('🗑️ Punto eliminado', 'warn', 1500);
+}
+
+async function borrarExclusio(id) {
+  if (!confirm('¿Eliminar esta exclusión?')) return;
+  await idbDelete(CFG.STORE_EXCLUSIONS, id);
+  await _carregarExclusions();
+  renderitzarTrazasSettings();
+  renderitzarTrazasDetall();
+  showToast('🗑️ Exclusión eliminada', 'warn', 1500);
+}
+
+async function borrarTodasTrazas() {
+  const totes = await idbGetAll(CFG.STORE_TRAZAS);
+  const excls = await idbGetAll(CFG.STORE_EXCLUSIONS);
+  if (!totes.length && !excls.length) { showToast('Sin trazas que borrar', 'warn'); return; }
+  if (!confirm(`¿Borrar ${totes.length} punto(s) y ${excls.length} exclusión/es?`)) return;
+  for (const t of totes) await idbDelete(CFG.STORE_TRAZAS, t.id);
+  for (const e of excls) await idbDelete(CFG.STORE_EXCLUSIONS, e.id);
+  await _carregarExclusions();
+  renderitzarTrazasSettings();
+  renderitzarTrazasDetall();
+  try { _renderTrazasEnMapa(); } catch(_) {}
+  showToast('🗑️ Todas las trazas y exclusiones borradas', 'warn', 2500);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   EXPORTAR / IMPORTAR TRAZAS (arxiu lleuger, sense fotos)
+════════════════════════════════════════════════════════════════ */
+async function exportarTrazasCarretera(carretera) {
+  const totes  = await idbGetAll(CFG.STORE_TRAZAS);
+  const excls  = await idbGetAll(CFG.STORE_EXCLUSIONS);
+  const punts  = totes.filter(t => t.carretera === carretera);
+  const exclsC = excls.filter(e => e.carretera === carretera);
+
+  const payload = {
+    version: 1, app: 'PK-GEOLOC', type: 'trazas',
+    exportedAt: new Date().toISOString(),
+    trazas: punts, exclusions: exclsC,
+  };
+  const nom  = `PKGEOLOC_trazas_${carretera.replace(/[^a-zA-Z0-9]/g,'-')}_${new Date().toISOString().slice(0,10)}.json`;
+  const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  const file = new File([blob], nom, { type: 'application/json' });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: nom, text: nom }); return; } catch(err) { if (err.name === 'AbortError') return; }
+  }
+  descarregarBlob(blob, nom);
+  showToast(`✅ Trazas ${carretera} exportadas (${punts.length} puntos)`, 'ok', 3000);
+}
+
+document.getElementById('inputImportTrazas').addEventListener('change', async function(e) {
+  const file = e.target.files?.[0];
+  this.value = '';
+  if (!file) return;
+  const status = document.getElementById('trazasStatus');
+  status.textContent = '⏳ Importando...';
+  try {
+    const data = JSON.parse(await file.text());
+    if (data.type !== 'trazas' || !data.trazas) throw new Error('Archivo no reconocido');
+    let nPunts = 0, nExcls = 0;
+    for (const t of data.trazas) {
+      const obj = { ...t }; delete obj.id;
+      await idbAdd(CFG.STORE_TRAZAS, obj); nPunts++;
+    }
+    for (const ex of (data.exclusions || [])) {
+      const obj = { ...ex }; delete obj.id;
+      await idbAdd(CFG.STORE_EXCLUSIONS, obj); nExcls++;
+    }
+    await _carregarExclusions();
+    renderitzarTrazasSettings();
+    renderitzarTrazasDetall();
+    try { _renderTrazasEnMapa(); } catch(_) {}
+    status.textContent = `✅ Importados ${nPunts} puntos y ${nExcls} exclusiones`;
+    showToast(`✅ Trazas importadas: ${nPunts} puntos`, 'ok', 3000);
+  } catch(err) {
+    status.textContent = '❌ Error: ' + err.message;
   }
 });
 
@@ -7719,19 +8539,13 @@ function canviarTab(btn, screenId) {
   // Solució: iniciem el mapa (si cal) i llavors delegem a _forcarMesuraMap()
   // que usa requestAnimationFrame×2 + setTimeout per garantir el repaint.
   if (screenId === 'screenMap') {
-    // Inicialitza el mapa lazy (carrega Leaflet si cal)
-    iniciarMapa(); // és async però no bloqueja: el mapa apareix quan carrega
-    // Sincronitza l'alçada del peek de la hoja d'eines
+    iniciarMapa();
     setTimeout(() => { try { const pk=document.getElementById('mapSheetPeek'), sc=document.getElementById('screenMap'); if(pk&&sc) sc.style.setProperty('--map-peek', Math.min(pk.offsetHeight+8, Math.round(innerHeight*0.55))+'px'); } catch(_){} }, 150);
-    // Doble invalidateSize: 100ms (DOM pintat) + 300ms (seguretat dispositius lents)
+    setTimeout(() => { if (typeof L !== 'undefined' && map) { try { map.invalidateSize(); } catch (_) {} } }, 100);
     setTimeout(() => {
       if (typeof L !== 'undefined' && map) {
         try { map.invalidateSize(); } catch (_) {}
-      }
-    }, 100);
-    setTimeout(() => {
-      if (typeof L !== 'undefined' && map) {
-        try { map.invalidateSize(); } catch (_) {}
+        try { _renderTrazasEnMapa(); } catch (_) {}
       }
     }, 300);
   }
@@ -7744,7 +8558,11 @@ function canviarTab(btn, screenId) {
    SETTINGS
 ═══════════════════════════════════════════════════════════════════ */
 function openSettings()  { document.getElementById('overlay').classList.add('open'); document.getElementById('settingsPanel').classList.add('open'); actualitzarUICache(); }
-function closeSettings() { document.getElementById('overlay').classList.remove('open'); document.getElementById('settingsPanel').classList.remove('open'); }
+function closeSettings() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('trazasDetailPanel').classList.remove('open');
+}
 
 /* ═══════════════════════════════════════════════════════════════════
    TOAST
@@ -7768,6 +8586,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   try { inicialitzarUILlistaNegra(); } catch (e) { console.warn('[INIT] llistaNegra:', e); }
   try { mapLnRenderTags(); }   catch (e) { console.warn('[INIT] mapLnTags:', e); }
   try { _initDayMode(); }      catch (e) { console.warn('[INIT] dayMode:', e); }
+  try { await _carregarExclusions(); } catch (e) { console.warn('[INIT] exclusions:', e); }
+  try { renderitzarTrazasSettings(); } catch (e) { console.warn('[INIT] trazasSettings:', e); }
 
   // ── i18n: aplica l'idioma desat (estàtics + dinàmics + botó actiu) ──
   try { pkgSetLang(getPkgLang()); } catch (e) { console.warn('[INIT] i18n:', e); }
