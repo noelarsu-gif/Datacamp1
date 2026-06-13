@@ -1470,7 +1470,6 @@ body::before{
 .incident-card.senyalitzacio::before{background:var(--red);}
 .incident-card.forat::before{background:var(--purple);}
 .incident-card.altra::before{background:var(--accent);}
-.incident-card.averia::before{background:var(--red);}
 
 /* Icona fixa sense distorsió */
 .inc-icon{
@@ -2672,8 +2671,7 @@ async function _forzarActualizacion() {
     </div>
     <div class="inc-post-thumb-wrap" id="incPostThumbWrap" style="display:none;">
       <img class="inc-post-thumb" id="incPostThumb" alt="foto">
-      <img class="inc-post-thumb" id="incPostThumb2" alt="foto 2" style="display:none;">
-      <span class="inc-post-thumb-badge" id="incPostThumbBadge">📷 Foto adjunta</span>
+      <span class="inc-post-thumb-badge">📷 Foto adjunta</span>
     </div>
     <div class="inc-post-btns">
       <button class="inc-post-btn foto" id="incPostFotoBtn" onclick="afegirFotoIncidencia()">📷 Añadir foto</button>
@@ -2769,19 +2767,6 @@ async function _forzarActualizacion() {
         oninput="actualitzarLlistaNegra(this.value); _sincronitzarConfTaMapLn(); sincronitzarLlistaNegra(this.value);"
       ></textarea>
       <button onclick="resetLlistaNegra()" style="margin-top:6px;padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-size:.7rem;cursor:pointer;font-family:var(--font-cond);">↺ Restaurar por defecto</button>
-    </div>
-    <div class="divider"></div>
-    <div class="settings-card">
-      <div class="settings-card-title">💾 Copia de Seguridad</div>
-      <div class="settings-card-body">
-        Exporta todas las incidencias y fotos a un archivo JSON que puedes guardar o compartir. Al importar, los datos se <strong>suman</strong> a los existentes sin borrar nada.
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button onclick="exportarBackup()" style="flex:1;min-width:120px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid rgba(0,212,255,.5);background:rgba(0,212,255,.10);color:var(--accent);font-family:var(--font-cond);font-size:.78rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">📤 EXPORTAR</button>
-        <button onclick="document.getElementById('inputImportBackup').click()" style="flex:1;min-width:120px;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid rgba(34,217,122,.5);background:rgba(34,217,122,.10);color:var(--green);font-family:var(--font-cond);font-size:.78rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">📥 IMPORTAR</button>
-      </div>
-      <input type="file" id="inputImportBackup" accept=".json" style="display:none;">
-      <div id="backupStatus" style="margin-top:8px;font-size:.7rem;color:var(--text-3);min-height:1em;line-height:1.5;"></div>
     </div>
     <div class="divider"></div>
     <div class="settings-card">
@@ -6151,23 +6136,6 @@ async function registrarIncidencia(tipus, nom) {
     }
     resDefinitiu = decisio.res ?? resAuto;  // si cancel·la chips, manté la detecció auto
     sensePK      = decisio.sensePK;
-  } else if (!sensePK && resDefinitiu) {
-    // Detecció vàlida i única → confirmar carretera igual que al flux de foto
-    const preCarr = resDefinitiu.carretera || '';
-    const preKm   = resDefinitiu.km ?? '';
-    const preM    = resDefinitiu.m  ?? '';
-    const confirmat = await _mostrarModalConfirmPK(preCarr, preKm, preM, { hideChips: true });
-    if (confirmat === null) {
-      showToast('❌ Registro cancelado', 'warn', 2500);
-      return;
-    }
-    resDefinitiu = {
-      ...resDefinitiu,
-      carretera: confirmat.carretera,
-      km: confirmat.km,
-      m:  confirmat.m,
-    };
-    if (!confirmat.carretera || confirmat.carretera === '—') sensePK = true;
   }
 
   await _guardarIncidencia(tipus, nom, pos, resDefinitiu, sensePK);
@@ -6191,8 +6159,6 @@ async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
     ts_legible: formatarDataHora(ara),
     fotoId:     null,   // s'omple si l'usuari afegeix foto
     thumb:      null,   // miniatura base64 per a la targeta
-    fotoId2:    null,   // segona foto (màx. 2 per incidència)
-    thumb2:     null,   // miniatura de la segona foto
   };
   try {
     const newId = await idbAdd(CFG.STORE_INC, inc);
@@ -6226,8 +6192,6 @@ function _mostrarSheetPostInc(id, inc) {
   document.getElementById('incPostTitle').textContent = pkgT('post_title');
   document.getElementById('incPostSub').textContent = sub;
   document.getElementById('incPostThumbWrap').style.display = 'none';
-  document.getElementById('incPostThumb2').style.display = 'none';
-  document.getElementById('incPostThumbBadge').textContent = '📷 Foto adjunta';
   const fotoBtn = document.getElementById('incPostFotoBtn');
   fotoBtn.textContent = pkgT('post_addfoto');
   fotoBtn.style.display = 'flex';
@@ -6244,17 +6208,10 @@ function tancarSheetPostInc() {
 }
 
 /** Obre el selector d'origen (càmera/galeria) per a la incidència indicada */
-async function afegirFotoIncidencia(id) {
+function afegirFotoIncidencia(id) {
   clearTimeout(_incPostAutoTimer);
   _incFotoPendentId = id ?? _incPostData?.id ?? null;
   if (_incFotoPendentId == null) { showToast('⚠️ No hay incidencia asociada', 'warn'); return; }
-  // Comprova que no s'hagi arribat al límit de 2 fotos
-  try {
-    const inc = await idbGet(CFG.STORE_INC, _incFotoPendentId);
-    if (inc && inc.fotoId != null && inc.fotoId2 != null) {
-      showToast('⚠️ Máximo 2 fotos por incidencia', 'warn', 3000); return;
-    }
-  } catch(_) {}
   // Mostra la hoja d'elecció d'origen
   document.getElementById('incFotoSrcSheet').classList.add('open');
 }
@@ -6335,16 +6292,8 @@ document.getElementById('inputIncFoto').addEventListener('change', async functio
     // Miniatura per a la targeta + actualitza la incidència amb les dades confirmades
     const thumb = await _ferThumbnail(blobFinal, 96);
     if (!sensePKFoto) { inc.carretera = carrFinal; inc.km = kmFinal; inc.m = mFinal; inc.sensePK = false; }
-
-    // Desa a fotoId si no hi ha cap, a fotoId2 si ja n'hi ha una
-    const esSegona = inc.fotoId != null;
-    if (esSegona) {
-      inc.fotoId2 = fotoId;
-      inc.thumb2  = thumb;
-    } else {
-      inc.fotoId  = fotoId;
-      inc.thumb   = thumb;
-    }
+    inc.fotoId     = fotoId;
+    inc.thumb      = thumb;
     inc.sentidoFoto = sentidoFotoConf;  // propagar sentido foto al WA
     await idbPut(CFG.STORE_INC, inc);
 
@@ -6354,20 +6303,11 @@ document.getElementById('inputIncFoto').addEventListener('change', async functio
 
     // Actualitza la hoja si encara és oberta
     if (_incPostData && _incPostData.id === id) {
-      if (esSegona) {
-        _incPostData.fotoId2 = fotoId;
-        _incPostData.thumb2  = thumb;
-        document.getElementById('incPostThumb2').src = thumb;
-        document.getElementById('incPostThumb2').style.display = '';
-        document.getElementById('incPostThumbBadge').textContent = '📷 2 fotos adjuntas';
-        document.getElementById('incPostFotoBtn').style.display = 'none'; // límit 2
-      } else {
-        _incPostData.fotoId = fotoId;
-        _incPostData.thumb  = thumb;
-        document.getElementById('incPostThumb').src = thumb;
-        document.getElementById('incPostThumbWrap').style.display = 'flex';
-        document.getElementById('incPostFotoBtn').textContent = pkgT('post_otrafoto');
-      }
+      _incPostData.fotoId = fotoId;
+      _incPostData.thumb  = thumb;
+      document.getElementById('incPostThumb').src = thumb;
+      document.getElementById('incPostThumbWrap').style.display = 'flex';
+      document.getElementById('incPostFotoBtn').textContent = '📷 Añadir otra foto';
       clearTimeout(_incPostAutoTimer);
       _incPostAutoTimer = setTimeout(() => tancarSheetPostInc(), 9000);
     }
@@ -6427,15 +6367,8 @@ document.getElementById('inputIncGaleria').addEventListener('change', async func
     // editat el PK, sincronitzem també les dades de la incidència.
     const thumb = await _ferThumbnail(blobFinal, 96);
     if (!sensePK) { inc.carretera = carrFinal; inc.km = kmFinal; inc.m = mFinal; inc.sensePK = false; }
-
-    const esSegona = inc.fotoId != null;
-    if (esSegona) {
-      inc.fotoId2 = fotoId;
-      inc.thumb2  = thumb;
-    } else {
-      inc.fotoId  = fotoId;
-      inc.thumb   = thumb;
-    }
+    inc.fotoId      = fotoId;
+    inc.thumb       = thumb;
     inc.sentidoFoto = confirmat.sentidoFoto || '';  // propagar sentido foto al WA
     await idbPut(CFG.STORE_INC, inc);
 
@@ -6444,20 +6377,11 @@ document.getElementById('inputIncGaleria').addEventListener('change', async func
     showToast(pkgTS('📸 Foto añadida a la incidencia'), 'ok', 2500);
 
     if (_incPostData && _incPostData.id === id) {
-      if (esSegona) {
-        _incPostData.fotoId2 = fotoId;
-        _incPostData.thumb2  = thumb;
-        document.getElementById('incPostThumb2').src = thumb;
-        document.getElementById('incPostThumb2').style.display = '';
-        document.getElementById('incPostThumbBadge').textContent = '📷 2 fotos adjuntas';
-        document.getElementById('incPostFotoBtn').style.display = 'none';
-      } else {
-        _incPostData.fotoId = fotoId;
-        _incPostData.thumb  = thumb;
-        document.getElementById('incPostThumb').src = thumb;
-        document.getElementById('incPostThumbWrap').style.display = 'flex';
-        document.getElementById('incPostFotoBtn').textContent = pkgT('post_otrafoto');
-      }
+      _incPostData.fotoId = fotoId;
+      _incPostData.thumb  = thumb;
+      document.getElementById('incPostThumb').src = thumb;
+      document.getElementById('incPostThumbWrap').style.display = 'flex';
+      document.getElementById('incPostFotoBtn').textContent = pkgT('post_otrafoto');
       clearTimeout(_incPostAutoTimer);
       _incPostAutoTimer = setTimeout(() => tancarSheetPostInc(), 9000);
     }
@@ -6508,31 +6432,23 @@ async function compartirIncidenciaWA(id) {
       `*${pkgT('WA_fechahora')}* ${inc.ts_legible}\n` +
       coordLine;
 
-    // Recupera les fotos vinculades (fins a 2)
-    const files = [];
+    // Recupera la foto vinculada
+    let file = null;
     if (inc.fotoId != null) {
       const foto = await idbGet(CFG.STORE_PHOTOS, inc.fotoId);
-      if (foto?.blob) files.push(new File([foto.blob], foto.nom || 'incidencia_1.jpg', { type: 'image/jpeg' }));
+      if (foto?.blob) file = new File([foto.blob], foto.nom || 'incidencia.jpg', { type: 'image/jpeg' });
     }
-    if (inc.fotoId2 != null) {
-      const foto2 = await idbGet(CFG.STORE_PHOTOS, inc.fotoId2);
-      if (foto2?.blob) files.push(new File([foto2.blob], foto2.nom || 'incidencia_2.jpg', { type: 'image/jpeg' }));
-    }
-    const file = files[0] ?? null;  // per al fallback
 
-    // ── INTENT 1: Web Share v2 amb foto(s) + text en un sol pas ──────────
-    if (files.length > 0 && navigator.canShare && navigator.canShare({ files, text: textWA })) {
-      try { await navigator.share({ files, text: textWA, title: 'PK-GEOLOC' }); return; }
+    // ── INTENT 1: Web Share v2 amb foto + text en un sol pas ──────────
+    if (file && navigator.canShare && navigator.canShare({ files: [file], text: textWA })) {
+      try { await navigator.share({ files: [file], text: textWA, title: 'PK-GEOLOC' }); return; }
       catch (err) { if (err.name === 'AbortError') return; }
     }
 
     // ── FALLBACK: copia text + obre WhatsApp ─────────────────────────
     let copiat = false;
     try { await navigator.clipboard.writeText(textWA); copiat = true; } catch(_) {}
-    const toastMsg = copiat
-      ? (files.length > 1 ? '📋 Texto copiado. Adjunta las fotos en WhatsApp.' : '📋 Texto copiado. Adjunta la foto en WhatsApp.')
-      : '📲 Abre WhatsApp y pega el texto.';
-    showToast(toastMsg, 'ok', 5000);
+    showToast(copiat ? '📋 Texto copiado. Adjunta la foto en WhatsApp.' : '📲 Abre WhatsApp y pega el texto.', 'ok', 5000);
     setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`, '_blank'), 400);
   } catch(e) {
     showToast('❌ Error al compartir: ' + e.message, 'err');
@@ -6572,19 +6488,16 @@ async function renderitzarIncidencies() {
       const sentitTxt   = _sentitWAComplet(inc);
       const coordsStr   = inc.lat ? `${inc.lat.toFixed(5)}, ${inc.lon.toFixed(5)}` : '';
       const teFoto      = inc.fotoId != null;
-      const teFoto2     = inc.fotoId2 != null;
-      const nFotos      = (teFoto ? 1 : 0) + (teFoto2 ? 1 : 0);
 
       // Línia PK — omitida si sensePK
       const pkLine = sensePK
         ? `<div class="inc-pk" style="color:var(--text-3);font-style:italic;">${pkgT('card_sinpk')}</div>`
         : `<div class="inc-pk">${inc.carretera} · PK ${inc.km}+${mStr}</div>`;
 
-      // Miniatures (fins a 2) — obren el visor de fotos en tocar-les
-      const thumbHTML = [
-        (teFoto  && inc.thumb)  ? `<img class="inc-thumb" src="${inc.thumb}"  alt="foto"   onclick="obrirFotoIncidencia(${inc.fotoId})">` : '',
-        (teFoto2 && inc.thumb2) ? `<img class="inc-thumb" src="${inc.thumb2}" alt="foto 2" onclick="obrirFotoIncidencia(${inc.fotoId2})">` : '',
-      ].join('');
+      // Miniatura (si té foto) — obre el visor de fotos en tocar-la
+      const thumbHTML = (teFoto && inc.thumb)
+        ? `<img class="inc-thumb" src="${inc.thumb}" alt="foto" onclick="obrirFotoIncidencia(${inc.fotoId})">`
+        : '';
 
       // Botons d'acció
       let accioBtns = '';
@@ -6608,13 +6521,13 @@ async function renderitzarIncidencies() {
         const waUrl = `https://api.whatsapp.com/send?text=${waText}`;
 
         // Si té foto → botó WhatsApp que adjunta la imatge (Web Share v2)
-        // Si no → botó WhatsApp text + botó per afegir foto (fins a 2)
+        // Si no → botó WhatsApp text + botó per afegir foto
         const waBtn = teFoto
           ? `<button class="inc-action-btn whatsapp con-foto" onclick="compartirIncidenciaWA(${inc.id})">${pkgT('card_wa_foto')}</button>`
           : `<a class="inc-action-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener">${pkgT('card_wa')}</a>`;
-        const fotoBtn = nFotos < 2
-          ? `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`
-          : '';
+        const fotoBtn = teFoto
+          ? ''
+          : `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`;
 
         accioBtns = `
           <div class="inc-actions">
@@ -6623,10 +6536,10 @@ async function renderitzarIncidencies() {
             ${fotoBtn}
           </div>`;
       } else {
-        // Sense coordenades però encara permetem afegir foto (fins a 2)
-        const fotoBtn = nFotos < 2
-          ? `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`
-          : '';
+        // Sense coordenades però encara permetem afegir foto
+        const fotoBtn = teFoto
+          ? ''
+          : `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`;
         if (fotoBtn) accioBtns = `<div class="inc-actions">${fotoBtn}</div>`;
       }
 
@@ -6651,7 +6564,7 @@ async function renderitzarIncidencies() {
 }
 
 function tipusIcon(tipus) {
-  const icons = { animal:'🐗', senyalitzacio:'🛑', forat:'🕳️', altra:'⚠️', averia:'🚨' };
+  const icons = { animal:'🐗', senyalitzacio:'🛑', forat:'🕳️', altra:'⚠️' };
   return icons[tipus] || '❓';
 }
 
@@ -6662,9 +6575,6 @@ async function esborrarIncidenciaIndividual(id) {
     const inc = await idbGet(CFG.STORE_INC, id);
     if (inc && inc.fotoId != null) {
       try { await idbDelete(CFG.STORE_PHOTOS, inc.fotoId); } catch(_) {}
-    }
-    if (inc && inc.fotoId2 != null) {
-      try { await idbDelete(CFG.STORE_PHOTOS, inc.fotoId2); } catch(_) {}
     }
     await idbDelete(CFG.STORE_INC, id);
     renderitzarIncidencies();
@@ -7190,53 +7100,26 @@ async function compartirSeleccio() {
   const fotos = fotosDB.filter(f => ids.includes(f.id));
   if (!fotos.length) return;
 
-  // ── Detectar si totes les fotos seleccionades son del mateix grup PK ──
-  // Grup: carretera + km + m idèntics (i cap és sensePK)
-  const totsAmbPK = fotos.every(f => !f.sensePK && f.carretera && f.carretera !== '—');
-  let textWA = null;
-  if (totsAmbPK && fotos.length > 1) {
-    const ref = fotos[0];
-    const mateixGrup = fotos.every(f =>
-      f.carretera === ref.carretera &&
-      f.km        === ref.km        &&
-      f.m         === ref.m
-    );
-    if (mateixGrup) {
-      // Preguntar aviso — confirm és el més ràpid en camp
-      const ambAvis = window.confirm(
-        `📍 ${ref.carretera} PK ${ref.km}+${String(ref.m||0).padStart(3,'0')}\n\n¿Enviar CON AVISO al CCC?\n\nAceptar = Con aviso 🟢\nCancelar = Sin aviso 🔵`
-      );
-      const avis = ambAvis ? 'CON AVISO' : 'SIN AVISO';
-      const mStr = String(ref.m ?? 0).padStart(3, '0');
-      textWA = _construirTextWA(ref.carretera, ref.km, mStr, ref.lat ?? null, ref.lon ?? null, avis);
-    }
-  }
-
   // Converteix cada blob a File per a la Web Share API
   const files = fotos.map(f => new File([f.blob], f.nom, { type: 'image/jpeg' }));
 
   // ── Cas A: Web Share API amb suport de múltiples fitxers ──────────
-  const shareData = textWA
-    ? { files, text: textWA, title: 'PK-GEOLOC' }
-    : { files, title: 'PK-GEOLOC' };
-
-  if (navigator.canShare && navigator.canShare(shareData)) {
+  if (navigator.canShare && navigator.canShare({ files })) {
     try {
-      await navigator.share(shareData);
+      await navigator.share({ files, title: 'PK-GEOLOC' });
       desactivarSeleccio();
       return;
     } catch (err) {
+      // L'usuari ha cancelado el Share Sheet — no fem res
       if (err.name === 'AbortError') return;
+      // Qualsevol altre error: caiem al fallback
     }
   }
 
   // ── Cas B: navigator.share sense suport multi-fitxer (1 foto) ─────
   if (navigator.share && files.length === 1) {
     try {
-      const sd1 = textWA
-        ? { files, text: textWA, title: 'PK-GEOLOC' }
-        : { files, title: 'PK-GEOLOC', text: files[0].name };
-      await navigator.share(sd1);
+      await navigator.share({ files, title: 'PK-GEOLOC', text: files[0].name });
       desactivarSeleccio();
       return;
     } catch (err) {
@@ -7244,21 +7127,14 @@ async function compartirSeleccio() {
     }
   }
 
-  // ── Cas C: Fallback — clipboard + WhatsApp URL si hi ha text, o descàrrega ──
-  if (textWA) {
-    let copiat = false;
-    try { await navigator.clipboard.writeText(textWA); copiat = true; } catch(_) {}
-    const toastMsg = copiat
-      ? pkgTS('📋 Texto copiado. Selecciona las fotos en WhatsApp.')
-      : pkgTS('📲 Abre WhatsApp, pega el texto y adjunta las fotos.');
-    showToast(toastMsg, 'ok', 5000);
-    setTimeout(() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(textWA)}`, '_blank'), 400);
-    desactivarSeleccio();
-    return;
-  }
+  // ── Cas C: Descàrrega en lot (fallback per a escriptori o navegadors sense Share API) ──
+  const msg = navigator.share
+    ? `El navegador no permite compartir ${fotos.length} archivos a la vez.\nSe descargarán directamente.`
+    : `El navegador no soporta la función de compartir.\nSe descargarán ${fotos.length} foto(s) directamente.`;
 
-  // Sense text: descàrrega en lot (fallback per a escriptori o navegadors sense Share API)
   showToast(`⬇️ Descargando ${fotos.length} foto(s)...`, 'ok', 3500);
+
+  // Petita pausa entre descàrregues per evitar bloqueigs del navegador
   for (let i = 0; i < fotos.length; i++) {
     descarregarBlob(fotos[i].blob, fotos[i].nom);
     if (i < fotos.length - 1) await new Promise(r => setTimeout(r, 350));
@@ -7526,152 +7402,7 @@ async function eliminarFotoVisor() {
   renderitzarFotos();
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   CÒPIA DE SEGURETAT — Exportar / Importar JSON
-   ─────────────────────────────────────────────────────────────────
-   · Exporta STORE_INC + STORE_PHOTOS (blobs → base64)
-   · Importa sumant els registres (mai sobreescriu els existents)
-   · Els fotoId / fotoId2 de les incidències es remapegen als nous
-     IDs generats per autoincrement durant la importació
-═══════════════════════════════════════════════════════════════════ */
-
-/** Blob → cadena base64 */
-function _blobToB64(blob) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(r.error);
-    r.readAsDataURL(blob);
-  });
-}
-
-/** base64 + mimeType → Blob */
-function _b64ToBlob(b64, mime = 'image/jpeg') {
-  const bin  = atob(b64);
-  const buf  = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-  return new Blob([buf], { type: mime });
-}
-
-/** Nom de fitxer amb data per al JSON exportat */
-function _nomBackup() {
-  const ara = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  return `PKGEOLOC_backup_${ara.getFullYear()}${pad(ara.getMonth()+1)}${pad(ara.getDate())}_${pad(ara.getHours())}${pad(ara.getMinutes())}.json`;
-}
-
-async function exportarBackup() {
-  const status = document.getElementById('backupStatus');
-  try {
-    status.textContent = '⏳ Preparando exportación...';
-
-    const incs   = await idbGetAll(CFG.STORE_INC);
-    const fotos  = await idbGetAll(CFG.STORE_PHOTOS);
-
-    // Convertir blobs a base64 (excloem incId-linked que es reconstruiran)
-    const fotosExp = [];
-    for (const f of fotos) {
-      const b64 = f.blob ? await _blobToB64(f.blob) : null;
-      fotosExp.push({ ...f, blob: b64, _mime: 'image/jpeg' });
-    }
-
-    const payload = {
-      version:    2,
-      app:        'PK-GEOLOC',
-      exportedAt: new Date().toISOString(),
-      incidencies: incs,
-      fotos:       fotosExp,
-    };
-
-    const json = JSON.stringify(payload);
-    const nom  = _nomBackup();
-    const blob = new Blob([json], { type: 'application/json' });
-
-    // Intent 1: Web Share (per enviar a WhatsApp, mail, etc.)
-    const file = new File([blob], nom, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'PK-GEOLOC backup', text: nom });
-        status.textContent = `✅ Backup compartido (${incs.length} incidencias, ${fotos.length} fotos)`;
-        return;
-      } catch (err) {
-        if (err.name === 'AbortError') { status.textContent = ''; return; }
-        // fallback si Share falla per altres raons
-      }
-    }
-
-    // Intent 2: descàrrega directa
-    descarregarBlob(blob, nom);
-    status.textContent = `✅ Backup descargado (${incs.length} incidencias, ${fotos.length} fotos)`;
-
-  } catch(e) {
-    status.textContent = '❌ Error al exportar: ' + e.message;
-  }
-}
-
-/** Listener per al <input type="file"> d'importació */
-document.getElementById('inputImportBackup').addEventListener('change', async function(e) {
-  const file = e.target.files?.[0];
-  this.value = '';
-  if (!file) return;
-
-  const status = document.getElementById('backupStatus');
-  status.textContent = '⏳ Leyendo archivo...';
-
-  try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-
-    if (!data.incidencies || !data.fotos) throw new Error('Formato de archivo no reconocido');
-    if (data.app && data.app !== 'PK-GEOLOC') throw new Error('El archivo no es de PK-GEOLOC');
-
-    status.textContent = '⏳ Importando...';
-
-    // ── Pas 1: importar fotos i construir mapa oldId → newId ──────────
-    const fotoIdMap = {};   // oldId → newId (per remapear les incidències)
-    let nFotosImp = 0;
-
-    for (const f of data.fotos) {
-      const oldId = f.id;
-      // Reconstruïm el blob des de base64
-      const blob = f.blob ? _b64ToBlob(f.blob, f._mime || 'image/jpeg') : null;
-      const obj  = { ...f, blob };
-      delete obj.id;       // forçar autoincrement → nou ID sense col·lisió
-      delete obj._mime;
-      const newId = await idbAdd(CFG.STORE_PHOTOS, obj);
-      if (oldId != null) fotoIdMap[oldId] = newId;
-      nFotosImp++;
-    }
-
-    // ── Pas 2: importar incidències remapejant fotoId/fotoId2 ─────────
-    let nIncsImp = 0;
-    for (const inc of data.incidencies) {
-      const obj = { ...inc };
-      delete obj.id;       // nou ID autoincrement
-
-      // Remapeig de referències a foto
-      if (obj.fotoId  != null) obj.fotoId  = fotoIdMap[obj.fotoId]  ?? null;
-      if (obj.fotoId2 != null) obj.fotoId2 = fotoIdMap[obj.fotoId2] ?? null;
-      // thumb i thumb2 es conserven (són dataURL, no depenen de l'ID)
-
-      await idbAdd(CFG.STORE_INC, obj);
-      nIncsImp++;
-    }
-
-    // ── Actualitzar la UI ─────────────────────────────────────────────
-    try { renderitzarIncidencies(); } catch(_) {}
-    try { renderitzarFotos();       } catch(_) {}
-
-    status.textContent = `✅ Importadas ${nIncsImp} incidencias y ${nFotosImp} fotos`;
-    showToast(`✅ Importación completa: ${nIncsImp} incidencias, ${nFotosImp} fotos`, 'ok', 4000);
-
-  } catch(e) {
-    status.textContent = '❌ Error al importar: ' + e.message;
-    showToast('❌ ' + e.message, 'err', 4000);
-  }
-});
-
-
+function descarregarBlob(blob, nom, urlOpc) {
   const url = urlOpc || URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nom; a.style.display='none';
