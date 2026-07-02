@@ -1759,14 +1759,14 @@ body::before{
   padding:4px;align-content:start;
 }
 .photo-card{
-  position:relative;aspect-ratio:1/1;overflow:hidden;cursor:pointer;
+  position:relative;height:0;padding-bottom:100%;overflow:hidden;cursor:pointer;
   background:var(--bg-3);border-radius:8px;
 }
 .photo-card.selected::after{
   content:'';position:absolute;inset:0;background:rgba(0,212,255,.22);
   border:2px solid var(--accent);border-radius:8px;pointer-events:none;
 }
-.photo-thumb{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;}
+.photo-thumb{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;}
 .photo-card:hover .photo-thumb{transform:scale(1.03);}
 
 /* Checkbox de selecció — només visible en mode selecció (evita l'amuntegament visual) */
