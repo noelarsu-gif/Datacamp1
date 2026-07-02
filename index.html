@@ -8212,6 +8212,13 @@ function _pfObrirCataleg() {
   });
 }
 
+/* Nom de la senyal segons l'idioma actiu de l'app (el catàleg font
+   porta els noms en català; nEs és el nom oficial en castellà) */
+function _scNomSenyal(s) {
+  if (!s) return '';
+  return (typeof PKG_LANG !== 'undefined' && PKG_LANG === 'ca') ? s.n : (s.nEs || s.n);
+}
+
 function _pfMostrarSenyalChip(senyal) {
   const chip = document.getElementById('pfSenyalChip');
   chip.style.display = '';
@@ -8219,7 +8226,7 @@ function _pfMostrarSenyalChip(senyal) {
     <div class="sc-selected-chip">
       <img src="data:image/png;base64,${senyal.img}" alt="${senyal.c}">
       <span class="sc-code">${senyal.c}</span>
-      <span class="sc-name">${senyal.n}</span>
+      <span class="sc-name">${_scNomSenyal(senyal)}</span>
       <span class="sc-chip-del" onclick="_pfEsborrarSenyal()">✕</span>
     </div>`;
 }
@@ -8245,7 +8252,7 @@ async function _pfGuardar() {
       : document.getElementById('pfEspecie').selectedOptions[0].textContent;
     subtipus = { especie: esp, especieLabel };
   } else if (tipus === 'senyalitzacio') {
-    if (_pfSenyalSeleccionada) subtipus = { c: _pfSenyalSeleccionada.c, n: _pfSenyalSeleccionada.n };
+    if (_pfSenyalSeleccionada) subtipus = { c: _pfSenyalSeleccionada.c, n: _pfSenyalSeleccionada.n, nEs: _pfSenyalSeleccionada.nEs };
   } else if (tipus === 'altra') {
     subtipus = { texto: document.getElementById('pfAltraTexto').value.trim() };
   }
@@ -8316,7 +8323,7 @@ function _pfLineaTipus(tipus, subtipus) {
   if (!tipus || !_PF_TIPUS_LABELS[tipus]) return '';
   let detall = '';
   if (tipus === 'animal' && subtipus?.especie) detall = ` (${subtipus.especieLabel || subtipus.especie})`;
-  if (tipus === 'senyalitzacio' && subtipus?.c) detall = ` (${subtipus.c} — ${subtipus.n})`;
+  if (tipus === 'senyalitzacio' && subtipus?.c) detall = ` (${subtipus.c} — ${subtipus.nEs || subtipus.n})`;
   if (tipus === 'altra' && subtipus?.texto) detall = ` (${subtipus.texto})`;
   return `\n📋 Tipo: ${_PF_TIPUS_LABELS[tipus]}${detall}`;
 }
@@ -9925,7 +9932,7 @@ function _renderScGrid() {
   const q = (document.getElementById('scSearch').value || '').trim().toLowerCase();
   let items = SENYALS_CATALEG;
   if (_scTabActiva !== 'totes') items = items.filter(s => s.s === _scTabActiva);
-  if (q) items = items.filter(s => s.c.toLowerCase().includes(q) || s.n.toLowerCase().includes(q));
+  if (q) items = items.filter(s => s.c.toLowerCase().includes(q) || s.n.toLowerCase().includes(q) || (s.nEs && s.nEs.toLowerCase().includes(q)));
 
   if (!items.length) {
     gridEl.innerHTML = `<div class="sc-empty">${pkgTS('Sin resultados')}</div>`;
@@ -9935,7 +9942,7 @@ function _renderScGrid() {
     <button class="sc-item" onclick="_scSeleccionar('${s.c.replace(/'/g,"\\'")}')">
       <img src="data:image/png;base64,${s.img}" alt="${s.c}" loading="lazy">
       <span class="sc-code">${s.c}</span>
-      <span class="sc-name">${s.n}</span>
+      <span class="sc-name">${_scNomSenyal(s)}</span>
     </button>
   `).join('');
 }
