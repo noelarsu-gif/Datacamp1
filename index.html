@@ -4142,8 +4142,20 @@ function _mostrarMapaNoDisponible() {
           La detección de PK funciona igualmente.<br>
           Activa la conexión para usar el mapa.
         </div>
+        <button onclick="_reintentarMapa()" style="
+          margin-top:6px;padding:10px 20px;border-radius:10px;
+          border:1px solid rgba(0,212,255,.4);background:rgba(0,212,255,.12);
+          color:var(--accent);font-family:var(--font-cond);font-size:.8rem;
+          font-weight:700;letter-spacing:.5px;cursor:pointer;
+        ">🔄 Reintentar</button>
       </div>`;
   }
+}
+
+/** Reintenta carregar el mapa manualment (botó dins l'avís de "sense connexió") */
+function _reintentarMapa() {
+  mapInicialitzat = false;
+  iniciarMapa();
 }
 
 /**
@@ -4177,8 +4189,10 @@ async function iniciarMapa() {
   if (mapInicialitzat) return;
 
   // Guard: si no hay conexión y Leaflet no está cargado, mostrar aviso
+  // (NO marquem mapInicialitzat aquí — així si es torna a obrir la pestanya
+  // Mapa amb connexió recuperada, es torna a intentar en lloc de quedar-se
+  // bloquejat per sempre mostrant "sin conexión".)
   if (!_leafletDisponible() && !navigator.onLine) {
-    mapInicialitzat = true; // evitar reintentos en bucle
     console.warn('[Mapa] Sin conexión — Leaflet no disponible. Mapa desactivado.');
     _mostrarMapaNoDisponible();
     return;
@@ -4189,7 +4203,6 @@ async function iniciarMapa() {
     try {
       await _carregarLeaflet();
     } catch (err) {
-      mapInicialitzat = true;
       console.warn('[Mapa]', err.message);
       _mostrarMapaNoDisponible();
       return;
@@ -9318,6 +9331,12 @@ if ('caches' in window) {
   _actualitzarBannerOffline();
   window.addEventListener('online',  _actualitzarBannerOffline);
   window.addEventListener('offline', _actualitzarBannerOffline);
+  // Si torna la connexió i el mapa s'havia quedat sense carregar, reintenta sol
+  window.addEventListener('online', () => {
+    if (!mapInicialitzat) {
+      try { iniciarMapa(); } catch(_) {}
+    }
+  });
 
   // Clic fora del panel d'incidències el tanca
   document.addEventListener('click', e => {
