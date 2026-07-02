@@ -1761,7 +1761,7 @@ body::before{
   content:'';position:absolute;inset:0;background:rgba(0,212,255,.22);
   border:2px solid var(--accent);border-radius:8px;pointer-events:none;
 }
-.photo-thumb{width:100%;height:100%;object-fit:cover;display:block;transition:transform .2s;}
+.photo-thumb{width:100%;height:100%;object-fit:contain;background:#0a0a0c;display:block;transition:transform .2s;}
 .photo-card:hover .photo-thumb{transform:scale(1.03);}
 
 /* Checkbox de selecció — només visible en mode selecció (evita l'amuntegament visual) */
@@ -3899,23 +3899,25 @@ async function _forzarActualizacion() {
       <option value="altra">⚠️ Otras</option>
     </select>
   </div>
-  <!-- Barra selecció múltiple (bottom sheet) -->
-  <div class="sel-toolbar" id="selToolbar">
-    <span class="sel-count" id="selCount">0 seleccionadas</span>
-    <div class="sel-actions">
-      <button class="sel-btn sel-btn-share" id="selBtnShare" onclick="compartirSeleccio()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
-          <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-3 3c.36 0 .69-.08 1-.21l-6.83 3.99A2.987 2.987 0 0 0 9 11c-1.66 0-3 1.34-3 3s1.34 3 3 3c.74 0 1.41-.29 1.93-.76l7 4.08A2.97 2.97 0 0 0 18 22a3 3 0 1 0 0-6z"/>
-        </svg>
-        <span id="selShareLabel">Compartir</span>
-      </button>
-      <button class="sel-btn sel-btn-del" onclick="eliminarSeleccio()">🗑️ Eliminar</button>
-      <button class="sel-btn sel-btn-save" onclick="guardarSeleccio()">📥 Guardar</button>
-    </div>
-  </div>
   <!-- Lista única de fotos (incidencias incluidas, se filtran con los chips de arriba) -->
   <div class="photos-list" id="photosList">
     <div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">Sin fotos capturadas</div></div>
+  </div>
+</div>
+
+<!-- Barra selecció múltiple (bottom sheet) — fora de .screen perquè no la
+     recorti el overflow-y:auto de la pantalla i quedi per sota del tab-bar -->
+<div class="sel-toolbar" id="selToolbar">
+  <span class="sel-count" id="selCount">0 seleccionadas</span>
+  <div class="sel-actions">
+    <button class="sel-btn sel-btn-share" id="selBtnShare" onclick="compartirSeleccio()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
+        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11A2.99 2.99 0 0 0 21 5a3 3 0 1 0-3 3c.36 0 .69-.08 1-.21l-6.83 3.99A2.987 2.987 0 0 0 9 11c-1.66 0-3 1.34-3 3s1.34 3 3 3c.74 0 1.41-.29 1.93-.76l7 4.08A2.97 2.97 0 0 0 18 22a3 3 0 1 0 0-6z"/>
+      </svg>
+      <span id="selShareLabel">Compartir</span>
+    </button>
+    <button class="sel-btn sel-btn-del" onclick="eliminarSeleccio()">🗑️ Eliminar</button>
+    <button class="sel-btn sel-btn-save" onclick="guardarSeleccio()">📥 Guardar</button>
   </div>
 </div>
 
