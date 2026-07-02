@@ -1708,23 +1708,66 @@ body::before{
 ═══════════════════════════════════════════════════════════ */
 .photos-header{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;}
 .photos-header-left{display:flex;align-items:center;gap:8px;}
-/* Barra de selecció múltiple */
+/* Barra de selecció múltiple — bottom sheet que puja des de baix (estil Samsung) */
 .sel-toolbar{
-  width:100%;display:none;align-items:center;justify-content:space-between;
-  padding:8px 14px;background:var(--bg-3);border-bottom:1px solid var(--border-acc);
-  gap:8px;
+  position:fixed;left:0;right:0;bottom:0;z-index:400;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));
+  background:var(--bg-3);border-top:1px solid var(--border-acc);
+  gap:8px;box-shadow:0 -6px 20px rgba(0,0,0,.35);
+  transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
+  pointer-events:none;
 }
-.sel-toolbar.visible{display:flex;}
+.sel-toolbar.visible{transform:translateY(0);pointer-events:auto;}
 .sel-count{font-family:var(--font-cond);font-size:.82rem;font-weight:700;color:var(--accent);letter-spacing:1px;}
 .sel-actions{display:flex;gap:8px;}
 .sel-btn{
   padding:7px 13px;border-radius:var(--radius-sm);font-family:var(--font-cond);
   font-size:.72rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);
 }
-.sel-btn-del{border:1px solid rgba(255,59,92,.4);background:var(--red-dim);color:var(--red);}
-.sel-btn-del:hover{background:rgba(255,59,92,.25);}
 .sel-btn-share{border:1px solid rgba(0,212,255,.4);background:var(--accent-dim);color:var(--accent);display:inline-flex;align-items:center;gap:5px;}
 .sel-btn-share:hover{background:rgba(0,212,255,.22);}
+.sel-btn-del{border:1px solid rgba(255,59,92,.4);background:var(--red-dim);color:var(--red);}
+.sel-btn-del:hover{background:rgba(255,59,92,.25);}
+.sel-btn-save{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:var(--text-2);display:inline-flex;align-items:center;gap:5px;}
+.sel-btn-save:hover{background:rgba(255,255,255,.16);}
+
+/* Menú de tres puntets (⋮) de la capçalera de Fotos */
+.gal-menu-wrap{position:relative;}
+.gal-menu-btn{
+  padding:6px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-2);font-size:1.15rem;line-height:1;cursor:pointer;
+}
+.gal-menu-dropdown{
+  position:absolute;top:calc(100% + 6px);right:0;min-width:200px;
+  background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  box-shadow:0 10px 28px rgba(0,0,0,.45);overflow:hidden;z-index:500;
+  display:none;
+}
+.gal-menu-dropdown.open{display:block;}
+.gal-menu-item{
+  display:flex;align-items:center;gap:9px;padding:12px 14px;
+  font-family:var(--font-cond);font-size:.78rem;font-weight:700;letter-spacing:.5px;
+  color:var(--text-2);cursor:pointer;transition:var(--tr);
+}
+.gal-menu-item:active,.gal-menu-item:hover{background:rgba(255,255,255,.06);}
+
+/* Filtres de galeria: ordre (recents/antics) + tipus d'incidència */
+.gal-filters{
+  display:flex;align-items:center;gap:8px;padding:8px 14px;
+  border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+.gal-filter-chip{
+  padding:6px 12px;border-radius:20px;border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-2);font-family:var(--font-cond);
+  font-size:.68rem;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:var(--tr);
+}
+.gal-filter-chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
+.gal-filter-select{
+  padding:6px 10px;border-radius:20px;border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-2);font-family:var(--font-cond);
+  font-size:.68rem;font-weight:700;letter-spacing:.3px;
+}
 
 /* Grid de 3 columnes */
 .photos-list{
@@ -1754,6 +1797,12 @@ body::before{
   background:var(--accent);border-color:var(--accent);color:#000;font-weight:900;
 }
 
+/* Badge del tipus d'incidència sobre la miniatura */
+.photo-tipus-badge{
+  position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;z-index:2;pointer-events:none;
+}
 /* Badge pk sobre la foto */
 .photo-pk-overlay{
   position:absolute;bottom:0;left:0;right:0;
@@ -1911,6 +1960,59 @@ body::before{
 }
 .pv-wa-big.reparar:hover,.pv-wa-big.reparar:active{background:rgba(245,158,11,.28);}
 /* Llegenda */
+/* ── Menú ⋮ del visor de fotos (substitueix els botons solts) ── */
+.pv-menu-wrap{position:relative;}
+.pv-menu-btn{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+  color:#fff;border-radius:8px;padding:6px 12px;font-size:1.1rem;line-height:1;
+}
+.pv-menu-dropdown{
+  position:absolute;top:calc(100% + 6px);right:0;min-width:190px;
+  background:#1a1c22;border:1px solid rgba(255,255,255,.14);border-radius:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,.5);overflow:hidden;z-index:500;display:none;
+}
+.pv-menu-dropdown.open{display:block;}
+.pv-menu-item{
+  display:flex;align-items:center;gap:9px;padding:12px 14px;
+  font-family:var(--font-cond);font-size:.8rem;font-weight:700;letter-spacing:.4px;
+  color:rgba(255,255,255,.85);cursor:pointer;
+}
+.pv-menu-item:active,.pv-menu-item:hover{background:rgba(255,255,255,.08);}
+.pv-menu-item.danger{color:var(--red,#ff3b5c);}
+
+/* ── Formulario post-foto: tipo / subtipo de incidencia ── */
+.pf-form{
+  display:none;flex-direction:column;gap:10px;padding:12px 14px;
+  background:rgba(255,255,255,.03);border-top:1px solid rgba(255,255,255,.1);
+}
+.pf-form.open{display:flex;}
+.pf-row{display:flex;gap:8px;}
+.pf-field{display:flex;flex-direction:column;gap:5px;flex:1;}
+.pf-field-sm{flex:0 0 auto;min-width:118px;}
+.pf-label{font-family:var(--font-cond);font-size:.68rem;font-weight:700;letter-spacing:.6px;color:rgba(255,255,255,.55);text-transform:uppercase;}
+.pf-input-group{display:flex;align-items:center;gap:5px;}
+.pf-input,.pf-select{
+  width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);
+  color:#fff;font-size:14px;font-family:inherit;
+}
+.pf-pk-plus{color:rgba(255,255,255,.5);font-weight:700;}
+.pf-clear-btn{
+  flex-shrink:0;width:32px;height:32px;border-radius:8px;border:1px solid rgba(255,59,92,.35);
+  background:rgba(255,59,92,.12);color:var(--red,#ff3b5c);font-weight:900;
+}
+.pf-subtipo{padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);}
+.pf-catalog-btn{
+  padding:10px 14px;border-radius:9px;border:1px solid rgba(168,85,247,.45);
+  background:rgba(168,85,247,.14);color:var(--purple,#a855f7);font-weight:700;
+  font-family:var(--font-cond);font-size:.8rem;letter-spacing:.4px;text-align:left;
+}
+.pf-senyal-chip{margin-top:8px;}
+.pf-save-btn{
+  padding:13px;border-radius:10px;border:none;background:var(--accent,#00d4ff);
+  color:#04141a;font-weight:900;font-family:var(--font-cond);font-size:.9rem;letter-spacing:.6px;
+}
+
 .pv-wa-legend{
   display:flex;flex-direction:column;gap:2px;padding:5px 8px;
   background:rgba(255,255,255,.06);border-radius:var(--radius-sm);
@@ -2239,8 +2341,70 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 .fade-in{animation:fadeIn .35s ease forwards;}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @media(max-height:640px){.result-card{min-height:180px;padding:22px 18px}.result-pk{font-size:3rem}.btn-main{padding:16px}}
+/* ═══════════════════════════════════════════════════════════════════
+   CATÀLEG DE SENYALS DE TRÀNSIT (selector visual)
+   ─────────────────────────────────────────────────────────────────── */
+.sc-overlay{
+  position:fixed;inset:0;z-index:9600;background:rgba(8,10,14,.92);
+  display:none;flex-direction:column;backdrop-filter:blur(6px);
+}
+.sc-overlay.open{display:flex;}
+.sc-topbar{
+  display:flex;align-items:center;gap:10px;padding:14px 14px 10px;
+  border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0;
+}
+.sc-title{font-size:16px;font-weight:800;color:#fff;flex:1;}
+.sc-close-btn{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);
+  color:#fff;border-radius:10px;padding:8px 14px;font-size:14px;font-weight:700;
+}
+.sc-search-wrap{padding:0 14px 10px;flex-shrink:0;}
+.sc-search{
+  width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);
+  color:#fff;font-size:14px;
+}
+.sc-search::placeholder{color:rgba(255,255,255,.4);}
+.sc-tabs{
+  display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;flex-shrink:0;
+  -webkit-overflow-scrolling:touch;
+}
+.sc-tab{
+  flex-shrink:0;padding:7px 13px;border-radius:20px;font-size:12.5px;font-weight:700;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.65);
+  white-space:nowrap;
+}
+.sc-tab.active{background:var(--purple,#a855f7);border-color:var(--purple,#a855f7);color:#fff;}
+.sc-grid{
+  flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));
+  gap:10px;padding:6px 14px 24px;
+}
+.sc-item{
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;padding:8px 6px 10px;text-align:center;
+}
+.sc-item:active{background:rgba(168,85,247,.22);border-color:var(--purple,#a855f7);transform:scale(.96);}
+.sc-item img{width:56px;height:48px;object-fit:contain;background:#fff;border-radius:6px;padding:3px;}
+/* ── Código de la señal: máximo grosor para lectura rápida en campo ── */
+.sc-code{
+  font-size:14px;font-weight:900;color:#fff;letter-spacing:.2px;
+  -webkit-text-stroke:.3px currentColor;
+}
+.sc-name{font-size:10.5px;color:rgba(255,255,255,.6);line-height:1.25;}
+.sc-empty{grid-column:1/-1;text-align:center;color:rgba(255,255,255,.4);padding:40px 10px;font-size:13px;}
+/* ── Chip de señal seleccionada (dentro del formulario post-foto) ── */
+.sc-selected-chip{
+  display:inline-flex;align-items:center;gap:8px;background:rgba(168,85,247,.15);
+  border:1px solid rgba(168,85,247,.4);border-radius:10px;padding:6px 10px;
+}
+.sc-selected-chip img{width:32px;height:28px;object-fit:contain;background:#fff;border-radius:4px;}
+.sc-selected-chip .sc-code{font-size:13px;-webkit-text-stroke:.25px currentColor;}
+.sc-selected-chip .sc-name{font-size:11px;max-width:140px;text-align:left;}
+.sc-selected-chip .sc-chip-del{margin-left:2px;color:var(--red,#ff3b5c);font-weight:900;padding:0 4px;}
 </style>
 <script src="PK_SEED_para_app.js" defer></script>
+<script src="senales_catalogo.js" defer></script>
 </head>
 <body>
 
@@ -3067,12 +3231,78 @@ async function _forzarActualizacion() {
   <div class="photo-viewer-topbar">
     <button class="pv-back-btn" onclick="closePhotoViewer()">← Cerrar</button>
     <span class="photo-viewer-title" id="photoViewerTitle">Foto</span>
-    <button class="pv-save-btn" onclick="descarregarFotoVisor()" title="Guardar en el móvil">📥 Guardar</button>
-    <button class="pv-del-btn" onclick="eliminarFotoVisor()" title="Eliminar">🗑️</button>
+    <div class="pv-menu-wrap">
+      <button class="pv-menu-btn" onclick="togglePvMenu(event)" title="Opciones">⋮</button>
+      <div class="pv-menu-dropdown" id="pvMenuDropdown">
+        <div class="pv-menu-item" onclick="closePvMenu();_pfGuardar();">✔ Guardar</div>
+        <div class="pv-menu-item" onclick="closePvMenu();compartirWhatsAppFotoVisor('SIN AVISO');">📤 Compartir</div>
+        <div class="pv-menu-item" onclick="closePvMenu();_pfToggleForm();">✏️ Editar</div>
+        <div class="pv-menu-item danger" onclick="closePvMenu();eliminarFotoVisor();">🗑️ Eliminar</div>
+      </div>
+    </div>
   </div>
   <!-- Imatge principal -->
   <div class="photo-viewer-img-wrap">
     <img id="photoViewerImg" src="" alt="Foto">
+  </div>
+  <!-- Formulario post-foto: carretera/PK + tipo de incidencia -->
+  <div class="pf-form" id="pfForm">
+    <div class="pf-row">
+      <div class="pf-field">
+        <label class="pf-label">🛣️ Carretera</label>
+        <div class="pf-input-group">
+          <input type="text" class="pf-input" id="pfCarretera" placeholder="Carretera">
+          <button class="pf-clear-btn" onclick="document.getElementById('pfCarretera').value=''" title="Borrar">✕</button>
+        </div>
+      </div>
+      <div class="pf-field pf-field-sm">
+        <label class="pf-label">📍 PK</label>
+        <div class="pf-input-group">
+          <input type="number" class="pf-input" id="pfKm" placeholder="Km">
+          <span class="pf-pk-plus">+</span>
+          <input type="number" class="pf-input" id="pfM" placeholder="m">
+        </div>
+      </div>
+    </div>
+    <div class="pf-field">
+      <label class="pf-label">📋 Tipo de incidencia</label>
+      <select class="pf-select" id="pfTipo" onchange="_pfActualitzarSubtipus()">
+        <option value="">Ninguna (foto normal)</option>
+        <option value="animal">🐗 Animal</option>
+        <option value="senyalitzacio">🛑 Señalización</option>
+        <option value="averia">🚨 Accidente / Avería</option>
+        <option value="bionda">🛡️ Bionda</option>
+        <option value="forat">🕳️ Bache / Grieta</option>
+        <option value="altra">⚠️ Otras</option>
+      </select>
+    </div>
+    <!-- Subtipo: animal -->
+    <div class="pf-subtipo" id="pfSubAnimal" style="display:none;">
+      <label class="pf-label">Especie</label>
+      <select class="pf-select" id="pfEspecie" onchange="_pfToggleEspecieOtra()">
+        <option value="jabali">Jabalí</option>
+        <option value="corzo">Corzo</option>
+        <option value="ciervo">Ciervo</option>
+        <option value="zorro">Zorro</option>
+        <option value="perro">Perro</option>
+        <option value="gato">Gato</option>
+        <option value="ave">Ave</option>
+        <option value="otra">Otra especie...</option>
+      </select>
+      <input type="text" class="pf-input" id="pfEspecieOtra" placeholder="Especifica la especie" style="display:none;margin-top:8px;">
+    </div>
+    <!-- Subtipo: señalización -->
+    <div class="pf-subtipo" id="pfSubSenyal" style="display:none;">
+      <label class="pf-label">Señal</label>
+      <button class="pf-catalog-btn" onclick="_pfObrirCataleg()">🛑 Elegir del catálogo</button>
+      <div class="pf-senyal-chip" id="pfSenyalChip" style="display:none;"></div>
+    </div>
+    <!-- Subtipo: otras -->
+    <div class="pf-subtipo" id="pfSubAltra" style="display:none;">
+      <label class="pf-label">Describe la incidencia</label>
+      <input type="text" class="pf-input" id="pfAltraTexto" placeholder="Ej: Vertido de residuos...">
+    </div>
+    <button class="pf-save-btn" onclick="_pfGuardar()">✔ Guardar</button>
   </div>
   <!-- Tira multi-foto -->
   <div class="pv-strip-wrap" id="pvStripWrap">
@@ -3758,18 +3988,29 @@ async function _forzarActualizacion() {
     <div style="display:flex;align-items:center;gap:10px;">
       <span class="logo-text">FOTOS</span>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button id="btnSeleccio" onclick="toggleSeleccio()" style="padding:7px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);font-family:var(--font-cond);font-size:.7rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">☑ Selecc.</button>
-      <button onclick="afegirFotoGaleria()" style="padding:7px 12px;border-radius:var(--radius-sm);border:1px solid rgba(0,212,255,.5);background:rgba(0,212,255,.10);color:var(--accent);font-family:var(--font-cond);font-size:.7rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">🖼️ Galería</button>
-      <button onclick="obrirCamera()" style="padding:7px 12px;border-radius:var(--radius-sm);border:1px solid rgba(168,85,247,.5);background:var(--purple-dim);color:var(--purple);font-family:var(--font-cond);font-size:.7rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">📷 Nueva</button>
+    <div class="gal-menu-wrap">
+      <button class="gal-menu-btn" onclick="toggleGalMenu(event)" title="Opciones">⋮</button>
+      <div class="gal-menu-dropdown" id="galMenuDropdown">
+        <div class="gal-menu-item" onclick="closeGalMenu();toggleSeleccio();">☑ Seleccionar</div>
+        <div class="gal-menu-item" onclick="closeGalMenu();afegirFotoGaleria();">🖼️ Subir de la galería</div>
+      </div>
     </div>
   </div>
-  <!-- Subtabs Fotos / Incidencias -->
-  <div class="photos-subtabs">
-    <button class="photos-subtab active" id="subtabFotos" onclick="canviarSubtabFotos('fotos')">📷 Fotos</button>
-    <button class="photos-subtab" id="subtabIncFotos" onclick="canviarSubtabFotos('inc')">⚠️ Incidencias</button>
+  <!-- Filtros: orden (recientes/antiguos) + tipo de incidencia -->
+  <div class="gal-filters" id="galFilters">
+    <button class="gal-filter-chip active" id="galSortRecent" onclick="galeriaSetOrdre('recent')">🕐 Recientes</button>
+    <button class="gal-filter-chip" id="galSortOld" onclick="galeriaSetOrdre('old')">⏳ Antiguos</button>
+    <select class="gal-filter-select" id="galFiltreTipo" onchange="galeriaFiltrarTipo(this.value)">
+      <option value="">Todos los tipos</option>
+      <option value="animal">🐗 Animal</option>
+      <option value="senyalitzacio">🛑 Señalización</option>
+      <option value="averia">🚨 Accidente/Avería</option>
+      <option value="bionda">🛡️ Bionda</option>
+      <option value="forat">🕳️ Bache/Grieta</option>
+      <option value="altra">⚠️ Otras</option>
+    </select>
   </div>
-  <!-- Barra selecció múltiple (solo para subtab Fotos) -->
+  <!-- Barra selecció múltiple (bottom sheet) -->
   <div class="sel-toolbar" id="selToolbar">
     <span class="sel-count" id="selCount">0 seleccionadas</span>
     <div class="sel-actions">
@@ -3780,15 +4021,12 @@ async function _forzarActualizacion() {
         <span id="selShareLabel">Compartir</span>
       </button>
       <button class="sel-btn sel-btn-del" onclick="eliminarSeleccio()">🗑️ Eliminar</button>
+      <button class="sel-btn sel-btn-save" onclick="guardarSeleccio()">📥 Guardar</button>
     </div>
   </div>
-  <!-- Lista fotos normales -->
+  <!-- Lista única de fotos (incidencias incluidas, se filtran con los chips de arriba) -->
   <div class="photos-list" id="photosList">
     <div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">Sin fotos capturadas</div></div>
-  </div>
-  <!-- Lista fotos de incidencias -->
-  <div class="photos-list" id="incFotosList" style="display:none;">
-    <div class="photo-empty"><div class="photo-empty-icon">⚠️</div><div class="inc-empty-text">Sin fotos de incidencias</div></div>
   </div>
 </div>
 
@@ -6976,7 +7214,7 @@ async function eliminarIncFotoVisor() {
   closeIncFotoViewer();
   showToast('🗑️ Foto eliminada', 'warn', 2000);
   renderitzarIncidencies();
-  renderitzarIncFotos();
+  renderitzarFotos();
 }
 
 async function compartirIncFotoVisor() {
@@ -6991,57 +7229,9 @@ async function compartirIncFotoVisor() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   SUBTABS FOTOS / INCIDÈNCIES
+   GALERIA ÚNICA — fotos normals + fotos d'incidència, es filtren amb
+   els chips de dalt (Recientes/Antiguos + tipo)
 ═══════════════════════════════════════════════════════════════════ */
-let _fotosSubtab = 'fotos';  // 'fotos' | 'inc'
-
-function canviarSubtabFotos(subtab) {
-  _fotosSubtab = subtab;
-  document.getElementById('subtabFotos').classList.toggle('active', subtab === 'fotos');
-  document.getElementById('subtabIncFotos').classList.toggle('active', subtab === 'inc');
-  document.getElementById('photosList').style.display    = subtab === 'fotos' ? '' : 'none';
-  document.getElementById('incFotosList').style.display  = subtab === 'inc'   ? '' : 'none';
-  document.getElementById('selToolbar').style.display    = subtab === 'fotos' ? '' : 'none';
-  if (subtab === 'inc') renderitzarIncFotos();
-  else renderitzarFotos();
-}
-
-/* Renderitza les fotos vinculades a incidències */
-async function renderitzarIncFotos() {
-  const lista = document.getElementById('incFotosList');
-  if (!lista) return;
-  try {
-    const fotosDB_all = await idbGetAll(CFG.STORE_PHOTOS);
-    const incFotos = fotosDB_all
-      .filter(f => f.incId != null)
-      .sort((a,b) => b.ts.localeCompare(a.ts));
-
-    if (!incFotos.length) {
-      lista.innerHTML = `<div class="photo-empty"><div class="photo-empty-icon">⚠️</div><div class="inc-empty-text">Sin fotos de incidencias</div></div>`;
-      return;
-    }
-    lista.innerHTML = '';
-    incFotos.forEach(foto => {
-      const url  = URL.createObjectURL(foto.blob);
-      const mStr = foto.m != null ? String(foto.m).padStart(3,'0') : '000';
-      const pkLabel = foto.sensePK || !foto.carretera
-        ? (foto.lat ? `📍 ${foto.lat.toFixed(4)}, ${foto.lon.toFixed(4)}` : '📍 Sin PK')
-        : `${foto.carretera} PK ${foto.km||0}+${mStr}`;
-      const card = document.createElement('div');
-      card.className = 'photo-card';
-      card.dataset.id = foto.id;
-      card.innerHTML = `
-        <img class="photo-thumb" src="${url}" alt="${foto.nom}" loading="lazy">
-        <div class="photo-pk-overlay">${pkLabel}</div>`;
-      card.querySelector('.photo-thumb').addEventListener('click', () => {
-        obrirFotoIncidencia(foto.id);
-      });
-      lista.appendChild(card);
-    });
-  } catch(e) {
-    lista.innerHTML = `<div class="photo-empty"><div class="inc-empty-text">Error al cargar fotos</div></div>`;
-  }
-}
 
 
 
@@ -7221,10 +7411,10 @@ document.getElementById('inputCaptura').addEventListener('change', async functio
 });
 
 /* ═══════════════════════════════════════════════════════════════════
-   GALERIA — Pujar una foto existent del telèfon i incrustar-li el peu
-   de foto (PK, carretera, sentit). Els camps surten EN BLANC: l'usuari
-   els ha d'omplir sempre. La foto resultant és idèntica a la d'una
-   captura normal i té les mateixes opcions al visor (amb/sense avís…).
+   GALERIA — Pujar una foto existent del telèfon. Fa servir la mateixa
+   detecció automàtica de PK (posició GPS actual) i el mateix selector
+   de múltiples carreteres properes que la captura amb càmera —
+   només canvia l'origen del fitxer.
 ═══════════════════════════════════════════════════════════════════ */
 function afegirFotoGaleria() {
   document.getElementById('inputGaleria').click();
@@ -7234,7 +7424,9 @@ document.getElementById('inputGaleria').addEventListener('change', async functio
   const file = e.target.files?.[0];
   this.value = '';
   if (!file) return;
-  await processarFotoGaleria(file);
+  showToast('📡 Capturando posición GPS...', 'ok', 4000);
+  const { pos, res: resAuto } = await obtenirPosicioFrescaAmbPK(5000).catch(() => ({ pos: null, res: null }));
+  await processarFoto(file, pos, resAuto);
 });
 
 async function processarFotoGaleria(file) {
@@ -7461,7 +7653,7 @@ async function processarFoto(file, pos, resAuto) {
   try {
     const blobFinal = await aplicarMarcaAigua(file, pkStr, sentitStr);
 
-    await idbAdd(CFG.STORE_PHOTOS, {
+    const novaId = await idbAdd(CFG.STORE_PHOTOS, {
       nom: nomFitxer, blob: blobFinal,
       carretera: _carrFinal,
       km: _kmFinal,
@@ -7478,6 +7670,10 @@ async function processarFoto(file, pos, resAuto) {
     const url = URL.createObjectURL(blobFinal);
     const fotoObj = { carretera: _carrFinal, km: _kmFinal, m: _mFinal, lat, lon, sensePK, nom: nomFitxer };
     obrirFotoVisor(url, nomFitxer, null, blobFinal, fotoObj);
+    // Vincula l'id real (obrirFotoVisor rep null per mantenir la sessió multi-foto)
+    // i obre directament el formulari de tipus — carretera/PK ja detectats automàticament.
+    _pfActiveFotoId = novaId;
+    await _pfToggleForm();
     renderitzarFotos();
   } catch(e) {
     showToast('❌ Error processant la foto: ' + e.message, 'err');
@@ -7576,25 +7772,65 @@ let modeSeleccio = false;
 let fotosSeleccionades = new Set(); // ids seleccionadas
 let fotosDB = []; // cache de fotos per operacions
 
+/* ── Menú de tres puntets (⋮) de la capçalera de Fotos ── */
+function toggleGalMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('galMenuDropdown').classList.toggle('open');
+}
+function closeGalMenu() {
+  document.getElementById('galMenuDropdown').classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.gal-menu-wrap');
+  if (wrap && !wrap.contains(e.target)) closeGalMenu();
+});
+
+/* ── Filtres de galeria: ordre + tipus d'incidència ── */
+let _galOrdre = 'recent';   // 'recent' | 'old'
+let _galFiltreTipo = '';    // '' = tots
+
+function galeriaSetOrdre(ordre) {
+  _galOrdre = ordre;
+  document.getElementById('galSortRecent').classList.toggle('active', ordre === 'recent');
+  document.getElementById('galSortOld').classList.toggle('active', ordre === 'old');
+  renderitzarFotos();
+}
+function galeriaFiltrarTipo(tipus) {
+  _galFiltreTipo = tipus;
+  renderitzarFotos();
+}
+
 async function renderitzarFotos() {
   const lista = document.getElementById('photosList');
   fotosSeleccionades.clear();
   try {
     fotosDB = await idbGetAll(CFG.STORE_PHOTOS);
-    // Galeria: nomes fotos sense incId (les d'incidència van a la pestanya Incidències)
+    // Galeria única: fotos normals + fotos d'incidència (join per obtenir tipus)
+    const incsAll  = await idbGetAll(CFG.STORE_INC);
+    const incsById = {};
+    incsAll.forEach(i => { incsById[i.id] = i; });
+
     const sorted = [...fotosDB]
-      .filter(f => f.incId == null)
-      .sort((a,b) => b.ts.localeCompare(a.ts));
+      .filter(f => {
+        if (!_galFiltreTipo) return true;
+        const t = f.tipus || (f.incId != null && incsById[f.incId] ? incsById[f.incId].tipus : null);
+        return t === _galFiltreTipo;
+      })
+      .sort((a,b) => _galOrdre === 'recent' ? b.ts.localeCompare(a.ts) : a.ts.localeCompare(b.ts));
 
     if (!sorted.length) {
       lista.innerHTML = `<div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">${pkgTS('Sin fotos capturadas')}</div></div>`;
       return;
     }
+    const iconsTipus = { animal:'🐗', senyalitzacio:'🛑', averia:'🚨', bionda:'🛡️', forat:'🕳️', altra:'⚠️' };
     lista.innerHTML = '';
     sorted.forEach(foto => {
       const url     = URL.createObjectURL(foto.blob);
       const sensePK = !!foto.sensePK;
       const mStr    = sensePK ? '000' : String(foto.m||0).padStart(3,'0');
+      const inc     = foto.incId != null ? incsById[foto.incId] : null;
+      const tipus   = foto.tipus || (inc ? inc.tipus : null);
+      const badge   = tipus && iconsTipus[tipus] ? `<div class="photo-tipus-badge">${iconsTipus[tipus]}</div>` : '';
       const pkLabel = sensePK
         ? (foto.lat ? `📍 ${foto.lat.toFixed(4)}, ${foto.lon.toFixed(4)}` : pkgT('post_sinpk'))
         : `${foto.carretera||'—'} PK ${foto.km||0}+${mStr}`;
@@ -7605,12 +7841,13 @@ async function renderitzarFotos() {
       card.innerHTML = `
         <img class="photo-thumb" src="${url}" alt="${foto.nom}" loading="lazy">
         <div class="photo-checkbox">✓</div>
+        ${badge}
         <div class="photo-pk-overlay">${pkLabel}</div>`;
 
-      // Clic foto: mode selecció o visor
+      // Clic foto: mode selecció o visor únic (permet editar tipus també si ve d'incidència)
       card.querySelector('.photo-thumb').addEventListener('click', () => {
-        if (modeSeleccio) toggleFotoSeleccionada(foto.id, card);
-        else obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
+        if (modeSeleccio) { toggleFotoSeleccionada(foto.id, card); return; }
+        obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
       });
       card.querySelector('.photo-checkbox').addEventListener('click', e => {
         e.stopPropagation();
@@ -7629,16 +7866,12 @@ function toggleSeleccio() {
 }
 function activarSeleccio() {
   modeSeleccio = true;
-  document.getElementById('btnSeleccio').style.color = 'var(--accent)';
-  document.getElementById('btnSeleccio').style.borderColor = 'var(--border-acc)';
   actualitzarBarraSeleccio();
 }
 function desactivarSeleccio() {
   modeSeleccio = false;
   fotosSeleccionades.clear();
   document.querySelectorAll('.photo-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('btnSeleccio').style.color = '';
-  document.getElementById('btnSeleccio').style.borderColor = '';
   actualitzarBarraSeleccio();
 }
 function toggleFotoSeleccionada(id, card) {
@@ -7672,9 +7905,31 @@ async function eliminarSeleccio() {
       req.onsuccess = ()=>res(); req.onerror = ()=>rej(req.error);
     });
   }
+  // Neteja referències a incidències (fotoId/fotoId2) si n'hi havia
+  try {
+    const incs = await idbGetAll(CFG.STORE_INC);
+    for (const inc of incs) {
+      let canviat = false;
+      if (ids.includes(inc.fotoId))  { inc.fotoId  = null; inc.thumb  = null; canviat = true; }
+      if (ids.includes(inc.fotoId2)) { inc.fotoId2 = null; inc.thumb2 = null; canviat = true; }
+      if (canviat) await idbPut(CFG.STORE_INC, inc);
+    }
+  } catch(_) {}
   showToast(`🗑️ ${ids.length} foto(s) eliminada(s)`,'warn');
   desactivarSeleccio();
+  renderitzarIncidencies();
   renderitzarFotos();
+}
+
+async function guardarSeleccio() {
+  if (!fotosSeleccionades.size) return;
+  const ids   = [...fotosSeleccionades];
+  const fotos = fotosDB.filter(f => ids.includes(f.id));
+  for (const foto of fotos) {
+    descarregarBlob(foto.blob, foto.nom || `foto_${foto.id}.jpg`);
+    await new Promise(r => setTimeout(r, 250)); // evita que el navegador bloquegi descàrregues massives
+  }
+  showToast(`📥 ${fotos.length} foto(s) guardada(s)`, 'ok');
 }
 
 async function compartirSeleccio() {
@@ -7771,6 +8026,8 @@ let viewerLon = null;
 let viewerCarretera = null;
 let viewerKm = null;
 let viewerM = null;
+let _pfActiveFotoId = null;         // id real a IndexedDB de la foto mostrada (per guardar tipus/subtipus)
+let _pfSenyalSeleccionada = null;   // {c,n,img} triada al catàleg de senyals
 
 /* ── SESSIÓ MULTI-FOTO ───────────────────────────────────────────── */
 // Array de { blob, nom, url } de totes les fotos de la sessió actual (màx 5)
@@ -7795,6 +8052,9 @@ function obrirFotoVisor(url, nom, id, blob, fotoObj) {
   viewerCarretera = fotoObj?.carretera ?? null;
   viewerKm        = fotoObj?.km    ?? null;
   viewerM         = fotoObj?.m     ?? null;
+  _pfActiveFotoId = id;
+  document.getElementById('pfForm').classList.remove('open');
+  closePvMenu();
 
   document.getElementById('photoViewerImg').src = url;
   const nomCurt = nom.replace('.jpg','').replace(/_/g,' ');
@@ -7860,9 +8120,174 @@ function afegirFotoAlVisor() {
 }
 function closePhotoViewer() {
   document.getElementById('photoViewer').classList.remove('open');
+  document.getElementById('pfForm').classList.remove('open');
+  closePvMenu();
   // Neteja la sessió multi-foto quan es tanca el visor
   sessionFotos = [];
   _esperantFotoAddicional = false;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MENÚ ⋮ DEL VISOR DE FOTOS
+═══════════════════════════════════════════════════════════════════ */
+function togglePvMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('pvMenuDropdown').classList.toggle('open');
+}
+function closePvMenu() {
+  const d = document.getElementById('pvMenuDropdown');
+  if (d) d.classList.remove('open');
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.querySelector('.pv-menu-wrap');
+  if (wrap && !wrap.contains(e.target)) closePvMenu();
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   FORMULARI POST-FOTO — carretera/PK + tipo/subtipo de incidencia
+   La detecció automàtica de PK i el selector de múltiples carreteres
+   properes es fan ABANS d'arribar aquí (a processarFoto), aquest
+   formulari només permet revisar/corregir el resultat i etiquetar-lo.
+═══════════════════════════════════════════════════════════════════ */
+async function _pfToggleForm() {
+  const form = document.getElementById('pfForm');
+  const isOpening = !form.classList.contains('open');
+  if (isOpening) await _pfCarregarDades();
+  form.classList.toggle('open', isOpening);
+}
+
+async function _pfCarregarDades() {
+  document.getElementById('pfCarretera').value = viewerCarretera || '';
+  document.getElementById('pfKm').value = viewerKm ?? '';
+  document.getElementById('pfM').value  = viewerM  ?? '';
+  document.getElementById('pfTipo').value = '';
+  document.getElementById('pfEspecie').value = 'jabali';
+  document.getElementById('pfEspecieOtra').value = '';
+  document.getElementById('pfEspecieOtra').style.display = 'none';
+  document.getElementById('pfAltraTexto').value = '';
+  _pfSenyalSeleccionada = null;
+  document.getElementById('pfSenyalChip').style.display = 'none';
+  document.getElementById('pfSenyalChip').innerHTML = '';
+
+  if (_pfActiveFotoId != null) {
+    try {
+      const foto = await idbGet(CFG.STORE_PHOTOS, _pfActiveFotoId);
+      if (foto) {
+        let tipus = foto.tipus, subtipus = foto.subtipus;
+        // Fotos antigues vinculades a una incidència: el tipus viu al registre d'incidència
+        if (!tipus && foto.incId != null) {
+          const inc = await idbGet(CFG.STORE_INC, foto.incId);
+          if (inc) { tipus = inc.tipus; subtipus = inc.subtipus; }
+        }
+        if (foto.carretera) document.getElementById('pfCarretera').value = foto.carretera;
+        if (foto.km != null) document.getElementById('pfKm').value = foto.km;
+        if (foto.m  != null) document.getElementById('pfM').value  = foto.m;
+        document.getElementById('pfTipo').value = tipus || '';
+        if (tipus === 'animal' && subtipus?.especie) {
+          const opts = [...document.getElementById('pfEspecie').options].map(o => o.value);
+          if (opts.includes(subtipus.especie)) {
+            document.getElementById('pfEspecie').value = subtipus.especie;
+          } else {
+            document.getElementById('pfEspecie').value = 'otra';
+            document.getElementById('pfEspecieOtra').style.display = '';
+            document.getElementById('pfEspecieOtra').value = subtipus.especieLabel || subtipus.especie;
+          }
+        }
+        if (tipus === 'senyalitzacio' && subtipus?.c) {
+          _pfSenyalSeleccionada = subtipus;
+          _pfMostrarSenyalChip(subtipus);
+        }
+        if (tipus === 'altra' && subtipus?.texto) {
+          document.getElementById('pfAltraTexto').value = subtipus.texto;
+        }
+      }
+    } catch(_) {}
+  }
+  _pfActualitzarSubtipus();
+}
+
+function _pfActualitzarSubtipus() {
+  const tipus = document.getElementById('pfTipo').value;
+  document.getElementById('pfSubAnimal').style.display = tipus === 'animal'        ? '' : 'none';
+  document.getElementById('pfSubSenyal').style.display = tipus === 'senyalitzacio' ? '' : 'none';
+  document.getElementById('pfSubAltra').style.display  = tipus === 'altra'         ? '' : 'none';
+}
+
+function _pfToggleEspecieOtra() {
+  const esOtra = document.getElementById('pfEspecie').value === 'otra';
+  document.getElementById('pfEspecieOtra').style.display = esOtra ? '' : 'none';
+}
+
+function _pfObrirCataleg() {
+  obrirCatalegSenyals((senyal) => {
+    _pfSenyalSeleccionada = senyal;
+    _pfMostrarSenyalChip(senyal);
+  });
+}
+
+function _pfMostrarSenyalChip(senyal) {
+  const chip = document.getElementById('pfSenyalChip');
+  chip.style.display = '';
+  chip.innerHTML = `
+    <div class="sc-selected-chip">
+      <img src="data:image/png;base64,${senyal.img}" alt="${senyal.c}">
+      <span class="sc-code">${senyal.c}</span>
+      <span class="sc-name">${senyal.n}</span>
+      <span class="sc-chip-del" onclick="_pfEsborrarSenyal()">✕</span>
+    </div>`;
+}
+function _pfEsborrarSenyal() {
+  _pfSenyalSeleccionada = null;
+  document.getElementById('pfSenyalChip').style.display = 'none';
+  document.getElementById('pfSenyalChip').innerHTML = '';
+}
+
+async function _pfGuardar() {
+  if (_pfActiveFotoId == null) { showToast('⚠️ No hay foto activa', 'warn'); return; }
+
+  const carretera = document.getElementById('pfCarretera').value.trim().toUpperCase() || null;
+  const kmVal = document.getElementById('pfKm').value;
+  const mVal  = document.getElementById('pfM').value;
+  const tipus = document.getElementById('pfTipo').value || null;
+
+  let subtipus = null;
+  if (tipus === 'animal') {
+    const esp = document.getElementById('pfEspecie').value;
+    const especieLabel = esp === 'otra'
+      ? (document.getElementById('pfEspecieOtra').value.trim() || 'Otra')
+      : document.getElementById('pfEspecie').selectedOptions[0].textContent;
+    subtipus = { especie: esp, especieLabel };
+  } else if (tipus === 'senyalitzacio') {
+    if (_pfSenyalSeleccionada) subtipus = { c: _pfSenyalSeleccionada.c, n: _pfSenyalSeleccionada.n };
+  } else if (tipus === 'altra') {
+    subtipus = { texto: document.getElementById('pfAltraTexto').value.trim() };
+  }
+
+  try {
+    const foto = await idbGet(CFG.STORE_PHOTOS, _pfActiveFotoId);
+    if (!foto) { showToast('⚠️ Foto no encontrada', 'warn'); return; }
+    foto.tipus    = tipus;
+    foto.subtipus = subtipus;
+    if (carretera) { foto.carretera = carretera; foto.sensePK = false; }
+    if (kmVal !== '') foto.km = parseInt(kmVal) || 0;
+    if (mVal  !== '') foto.m  = Math.min(999, parseInt(mVal) || 0);
+    await idbPut(CFG.STORE_PHOTOS, foto);
+
+    // Fotos vinculades a una incidència antiga: sincronitza el tipus també allà
+    if (foto.incId != null) {
+      const inc = await idbGet(CFG.STORE_INC, foto.incId);
+      if (inc) { inc.tipus = tipus; inc.subtipus = subtipus; await idbPut(CFG.STORE_INC, inc); }
+    }
+
+    viewerCarretera = foto.carretera;
+    viewerKm        = foto.km;
+    viewerM         = foto.m;
+    showToast('✔ Guardado', 'ok');
+    document.getElementById('pfForm').classList.remove('open');
+    renderitzarFotos();
+  } catch(e) {
+    showToast('❌ Error al guardar: ' + e.message, 'err');
+  }
 }
 function descarregarFotoVisor() {
   if (viewerBlobUrl && viewerNomFitxer)
@@ -7895,14 +8320,30 @@ function obrirMapsFotoVisor() {
  * Construye el texto del mensaje para CCC.
  * Format net, sense "Incidència Carretera" ni triangles d'advertència.
  */
-function _construirTextWA(carr, km, mStr, lat, lon, avis) {
+const _PF_TIPUS_LABELS = {
+  animal: '🐗 Animal en la calzada', senyalitzacio: '🛑 Señalización dañada',
+  averia: '🚨 Accidente / Avería', bionda: '🛡️ Bionda dañada',
+  forat: '🕳️ Bache / Grieta', altra: '⚠️ Incidencia'
+};
+function _pfLineaTipus(tipus, subtipus) {
+  if (!tipus || !_PF_TIPUS_LABELS[tipus]) return '';
+  let detall = '';
+  if (tipus === 'animal' && subtipus?.especie) detall = ` (${subtipus.especieLabel || subtipus.especie})`;
+  if (tipus === 'senyalitzacio' && subtipus?.c) detall = ` (${subtipus.c} — ${subtipus.n})`;
+  if (tipus === 'altra' && subtipus?.texto) detall = ` (${subtipus.texto})`;
+  return `\n📋 Tipo: ${_PF_TIPUS_LABELS[tipus]}${detall}`;
+}
+
+function _construirTextWA(carr, km, mStr, lat, lon, avis, tipus, subtipus) {
   const ccLine = (avis === 'CON AVISO') ? '\n' + pkgT('fwa_conaviso') : '';
   const coordLine = (lat && lon)
     ? `\n${pkgT('fwa_ubic')} http://maps.google.com/maps?q=${lat},${lon}`
     : '';
+  const tipusLine = _pfLineaTipus(tipus, subtipus);
   return (
     `${pkgT('fwa_carretera')} ${carr || '—'}\n` +
     `${pkgT('fwa_pk')} ${km}+${mStr}` +
+    tipusLine +
     ccLine +
     coordLine
   );
@@ -7912,9 +8353,9 @@ function _construirTextWA(carr, km, mStr, lat, lon, avis) {
  * Funció central: comparteix TOTES les fotos de la sessió + text per WhatsApp.
  * Usa sessionFotos[] si hi ha multi-foto, sinó usa el blob individual.
  */
-async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SIN AVISO') {
+async function compartirFotoWhatsApp(blob, nom, carr, km, m, lat, lon, avis = 'SIN AVISO', tipus = null, subtipus = null) {
   const mStr   = String(m ?? 0).padStart(3, '0');
-  const textWA = _construirTextWA(carr, km, mStr, lat, lon, avis);
+  const textWA = _construirTextWA(carr, km, mStr, lat, lon, avis, tipus, subtipus);
 
   // Construeix l'array de fitxers — usa la sessió multi-foto si és possible
   let fitxers;
@@ -7961,10 +8402,18 @@ async function compartirWhatsAppFotoVisor(avis = 'SIN AVISO') {
   if (!viewerBlob || !viewerNomFitxer) {
     showToast('⚠️ No hi ha foto oberta', 'warn'); return;
   }
+  let tipus = null, subtipus = null;
+  if (_pfActiveFotoId != null) {
+    try {
+      const foto = await idbGet(CFG.STORE_PHOTOS, _pfActiveFotoId);
+      tipus = foto?.tipus ?? null;
+      subtipus = foto?.subtipus ?? null;
+    } catch(_) {}
+  }
   await compartirFotoWhatsApp(
     viewerBlob, viewerNomFitxer,
     viewerCarretera, viewerKm ?? 0, viewerM ?? 0,
-    viewerLat, viewerLon, avis
+    viewerLat, viewerLon, avis, tipus, subtipus
   );
 }
 
@@ -8008,9 +8457,9 @@ async function compartirFotoVisor() {
   descarregarBlob(viewerBlob, viewerNomFitxer);
 }
 async function eliminarFotoVisor() {
-  if (!viewerFotoId) return;
+  if (_pfActiveFotoId == null) return;
   if (!confirm('¿Eliminar esta foto?')) return;
-  const fotoId = viewerFotoId;
+  const fotoId = _pfActiveFotoId;
 
   // Comprovar si la foto pertany a una incidència i sincronitzar
   try {
@@ -8034,7 +8483,6 @@ async function eliminarFotoVisor() {
   showToast('🗑️ Foto eliminada','warn');
   closePhotoViewer();
   renderitzarFotos();
-  renderitzarIncFotos();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -8806,10 +9254,7 @@ function canviarTab(btn, screenId) {
   }
 
   if (screenId === 'screenInc')    renderitzarIncidencies();
-  if (screenId === 'screenPhotos') {
-    if (_fotosSubtab === 'inc') renderitzarIncFotos();
-    else renderitzarFotos();
-  }
+  if (screenId === 'screenPhotos') renderitzarFotos();
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -9432,8 +9877,94 @@ function toggleMapSheet(){
     if (_mapSheetPos === 0) tancarMapSheet();
   }, { passive: true });
 })();
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATÀLEG DE SENYALS DE TRÀNSIT — selector visual
+   Dades: window.SENYALS_CATALEG (array) i window.SENYALS_SECCIONS (obj)
+   carregades des de senales_catalogo.js
+   ─────────────────────────────────────────────────────────────────── */
+let _scCallback = null;
+let _scTabActiva = 'totes';
+
+function obrirCatalegSenyals(callback) {
+  if (typeof SENYALS_CATALEG === 'undefined' || !SENYALS_CATALEG.length) {
+    showToast('⚠️ Catálogo de señales no disponible', 'warn');
+    return;
+  }
+  _scCallback = callback || null;
+  _scTabActiva = 'totes';
+  document.getElementById('scSearch').value = '';
+  _renderScTabs();
+  _renderScGrid();
+  document.getElementById('scOverlay').classList.add('open');
+}
+
+function tancarCatalegSenyals() {
+  document.getElementById('scOverlay').classList.remove('open');
+  _scCallback = null;
+}
+
+function _renderScTabs() {
+  const tabsEl = document.getElementById('scTabs');
+  const secs = (typeof SENYALS_SECCIONS !== 'undefined') ? SENYALS_SECCIONS : {};
+  let html = `<button class="sc-tab${_scTabActiva === 'totes' ? ' active' : ''}" onclick="_scCanviarTab('totes')">Todas</button>`;
+  for (const key in secs) {
+    html += `<button class="sc-tab${_scTabActiva === key ? ' active' : ''}" onclick="_scCanviarTab('${key}')">${secs[key]}</button>`;
+  }
+  tabsEl.innerHTML = html;
+}
+
+function _scCanviarTab(key) {
+  _scTabActiva = key;
+  _renderScTabs();
+  filtrarCatalegSenyals();
+}
+
+function filtrarCatalegSenyals() {
+  _renderScGrid();
+}
+
+function _renderScGrid() {
+  const gridEl = document.getElementById('scGrid');
+  const q = (document.getElementById('scSearch').value || '').trim().toLowerCase();
+  let items = SENYALS_CATALEG;
+  if (_scTabActiva !== 'totes') items = items.filter(s => s.s === _scTabActiva);
+  if (q) items = items.filter(s => s.c.toLowerCase().includes(q) || s.n.toLowerCase().includes(q));
+
+  if (!items.length) {
+    gridEl.innerHTML = '<div class="sc-empty">Sin resultados</div>';
+    return;
+  }
+  gridEl.innerHTML = items.map(s => `
+    <button class="sc-item" onclick="_scSeleccionar('${s.c.replace(/'/g,"\\'")}')">
+      <img src="data:image/png;base64,${s.img}" alt="${s.c}" loading="lazy">
+      <span class="sc-code">${s.c}</span>
+      <span class="sc-name">${s.n}</span>
+    </button>
+  `).join('');
+}
+
+function _scSeleccionar(codi) {
+  const senyal = SENYALS_CATALEG.find(s => s.c === codi);
+  if (!senyal) return;
+  if (typeof _scCallback === 'function') _scCallback(senyal);
+  tancarCatalegSenyals();
+}
 </script>
 </div><!-- /appContent -->
 
-</body></body>
+<!-- ════ CATÀLEG DE SENYALS DE TRÀNSIT ════ -->
+<div class="sc-overlay" id="scOverlay">
+  <div class="sc-topbar">
+    <span class="sc-title">🛑 Catálogo de señales</span>
+    <button class="sc-close-btn" onclick="tancarCatalegSenyals()">✕ Cerrar</button>
+  </div>
+  <div class="sc-search-wrap">
+    <input type="text" class="sc-search" id="scSearch" placeholder="Buscar por código o nombre..." oninput="filtrarCatalegSenyals()">
+  </div>
+  <div class="sc-tabs" id="scTabs"></div>
+  <div class="sc-grid" id="scGrid"></div>
+</div>
+
+</body>
 </html>
