@@ -1977,14 +1977,13 @@ body::before{
 }
 .pf-form.open{display:flex;}
 .pf-field{display:flex;flex-direction:column;gap:5px;min-width:0;}
-.pf-field-pk{max-width:200px;}
+.pf-field-pk{max-width:none;}
 .pf-label{font-family:var(--font-cond);font-size:.68rem;font-weight:700;letter-spacing:.6px;color:rgba(255,255,255,.55);text-transform:uppercase;}
-.pf-label-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
 .pf-reloc-btn{
-  flex-shrink:0;width:22px;height:22px;border-radius:50%;
+  flex-shrink:0;width:44px;align-self:stretch;border-radius:9px;
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);
-  color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;
-  font-size:.65rem;cursor:pointer;transition:var(--tr);padding:0;
+  color:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center;
+  font-size:1.05rem;cursor:pointer;transition:var(--tr);padding:0;
 }
 .pf-reloc-btn:hover,.pf-reloc-btn:active{background:rgba(0,212,255,.14);color:var(--accent,#00d4ff);border-color:rgba(0,212,255,.4);}
 .pf-reloc-btn.spinning{animation:pfRelocSpin .9s linear infinite;color:var(--accent,#00d4ff);border-color:rgba(0,212,255,.4);}
@@ -3162,7 +3161,6 @@ async function _forzarActualizacion() {
       <div class="pv-menu-dropdown" id="pvMenuDropdown">
         <div class="pv-menu-item" onclick="closePvMenu();_pfGuardar();">✔ Guardar</div>
         <div class="pv-menu-item" onclick="closePvMenu();_pfCompartirActual();">📤 Compartir</div>
-        <div class="pv-menu-item" onclick="closePvMenu();_pfToggleForm();">✏️ Editar</div>
         <div class="pv-menu-item danger" onclick="closePvMenu();eliminarFotoVisor();">🗑️ Eliminar</div>
       </div>
     </div>
@@ -3176,10 +3174,7 @@ async function _forzarActualizacion() {
   <!-- Formulario post-foto: carretera/PK + tipo de incidencia -->
   <div class="pf-form" id="pfForm">
     <div class="pf-field">
-      <div class="pf-label-row">
-        <label class="pf-label">🛣️ Carretera</label>
-        <button type="button" class="pf-reloc-btn" id="pfRelocBtn" onclick="_pfRelocalitzar()" title="Volver a localizar">🎯</button>
-      </div>
+      <label class="pf-label">🛣️ Carretera</label>
       <div class="pf-input-group">
         <input type="text" class="pf-input" id="pfCarretera" placeholder="Carretera">
         <button class="pf-clear-btn" onclick="document.getElementById('pfCarretera').value=''" title="Borrar">✕</button>
@@ -3192,6 +3187,7 @@ async function _forzarActualizacion() {
         <input type="number" class="pf-input pf-input-pk" id="pfKm" placeholder="Km">
         <span class="pf-pk-plus">+</span>
         <input type="number" class="pf-input pf-input-pk" id="pfM" placeholder="m">
+        <button type="button" class="pf-reloc-btn" id="pfRelocBtn" onclick="_pfRelocalitzar()" title="Volver a localizar">🎯</button>
       </div>
     </div>
     <div class="pf-field">
@@ -3862,17 +3858,6 @@ async function _forzarActualizacion() {
 <!-- ════════════════════════════════════════════════
      SCREEN 3 — INCIDENCIAS
 ════════════════════════════════════════════════ -->
-<div class="screen" id="screenInc">
-  <div class="header">
-    <span class="logo-text">INCIDENCIAS</span>
-  </div>
-  <div class="incidents-header">
-    <span class="incidents-count" id="incCount">0 REGISTROS</span>
-  </div>
-  <div class="incidents-list" id="incidentsList">
-    <div class="inc-empty"><div class="inc-empty-icon">📋</div><div class="inc-empty-text">Sin incidencias registradas</div></div>
-  </div>
-</div>
 
 <!-- ════════════════════════════════════════════════
      SCREEN 4 — FOTOS
@@ -3940,10 +3925,6 @@ async function _forzarActualizacion() {
   <button class="tab-btn" data-tab="screenOdo" onclick="canviarTab(this,'screenOdo')">
     <svg viewBox="0 0 24 24"><path d="M12 4C6.48 4 2 8.48 2 14c0 1.95.56 3.76 1.52 5.29.17.27.47.43.79.43h15.38c.32 0 .62-.16.79-.43A9.94 9.94 0 0 0 22 14c0-5.52-4.48-10-10-10zm0 3c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM5.5 15c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2.62-4.46c-.39.39-1.02.39-1.41 0s-.39-1.02 0-1.41 1.02-.39 1.41 0c.39.38.39 1.02 0 1.41zM13.6 16.6c-.88.88-2.32.88-3.2 0-.7-.7-1.7-4.05-2.16-5.71-.13-.46.31-.9.77-.77 1.66.46 5.01 1.46 5.71 2.16.88.88.88 2.32-.12 3.32zm2.69-6.06c-.39-.39-.39-1.02 0-1.41s1.02-.39 1.41 0 .39 1.02 0 1.41c-.38.39-1.02.39-1.41 0zM18.5 15c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/></svg>
     <span class="tab-label">Odómetro</span>
-  </button>
-  <button class="tab-btn" data-tab="screenInc" onclick="canviarTab(this,'screenInc')">
-    <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
-    <span class="tab-label">Incidencias</span>
   </button>
   <button class="tab-btn" data-tab="screenPhotos" onclick="canviarTab(this,'screenPhotos')">
     <svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 0 1 8.8 12 3.2 3.2 0 0 1 12 8.8 3.2 3.2 0 0 1 15.2 12 3.2 3.2 0 0 1 12 15.2M20 4h-3.17L15 2H9L7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>
@@ -6993,6 +6974,7 @@ async function compartirIncFotoVisor() {
 async function renderitzarIncidencies() {
   const lista = document.getElementById('incidentsList');
   const comptador = document.getElementById('incCount');
+  if (!lista || !comptador) return; // pantalla "Incidencias" eliminada — tot viu ja a la galeria
   try {
     const incs = await idbGetAll(CFG.STORE_INC);
     comptador.textContent = `${incs.length} ${pkgT('REGISTROS')}`;
@@ -7387,11 +7369,7 @@ async function processarFoto(file, pos, resAuto) {
 
     const url = URL.createObjectURL(blobFinal);
     const fotoObj = { carretera, km, m, lat, lon, sensePK, nom: nomFitxer };
-    obrirFotoVisor(url, nomFitxer, null, blobFinal, fotoObj);
-    // Vincula l'id real (obrirFotoVisor rep null per mantenir la sessió multi-foto)
-    // i obre directament el formulari — tot en una única pantalla.
-    _pfActiveFotoId = novaId;
-    await _pfToggleForm();
+    obrirFotoVisor(url, nomFitxer, novaId, blobFinal, fotoObj, true);
     renderitzarFotos();
   } catch(e) {
     showToast('❌ Error processant la foto: ' + e.message, 'err');
@@ -7759,9 +7737,9 @@ const MAX_SESSION_FOTOS = 5;
 // Indica si estem esperant una nova foto per afegir al strip (no és la foto inicial)
 let _esperantFotoAddicional = false;
 
-function obrirFotoVisor(url, nom, id, blob, fotoObj) {
-  // Si ve d'una nova foto de càmera (no de la galeria), reinicia la sessió
-  if (id === null) {
+function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture) {
+  // Si ve d'una nova foto de càmera/galeria (captura nova), reinicia la sessió
+  if (isNewCapture || id === null) {
     // Nova sessió: la primera foto
     sessionFotos = [{ blob, nom, url }];
   }
@@ -7776,13 +7754,17 @@ function obrirFotoVisor(url, nom, id, blob, fotoObj) {
   viewerKm        = fotoObj?.km    ?? null;
   viewerM         = fotoObj?.m     ?? null;
   _pfActiveFotoId = id;
-  document.getElementById('pfForm').classList.remove('open');
   closePvMenu();
 
   document.getElementById('photoViewerImg').src = url;
   const nomCurt = nom.replace('.jpg','').replace(/_/g,' ');
   document.getElementById('photoViewerTitle').textContent = nomCurt;
   document.getElementById('photoViewer').classList.add('open');
+
+  // El formulari s'obre sempre automàticament — ja no cal el botó "Editar"
+  _pfCarregarDades().then(() => {
+    document.getElementById('pfForm').classList.add('open');
+  });
 
   // Actualitza el strip de miniatures
   _actualitzarPvStrip();
