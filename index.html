@@ -1682,6 +1682,168 @@ body::before{
 @keyframes incFlash{0%{transform:scale(.93)}100%{transform:scale(1)}}
 
 /* ═══════════════════════════════════════════════════════════
+   BOTTOM SHEET BIONDA — panel deslizable inferior (Antes/Después)
+═══════════════════════════════════════════════════════════ */
+.sheet-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:990;
+  opacity:0;pointer-events:none;transition:opacity .28s ease;
+}
+.sheet-overlay.is-open{opacity:1;pointer-events:auto;}
+
+.bottom-sheet-bionda{
+  position:fixed;left:0;right:0;bottom:0;z-index:991;
+  max-width:560px;margin:0 auto;
+  background:var(--bg-2);
+  border-radius:20px 20px 0 0;
+  border:1px solid var(--border);border-bottom:none;
+  box-shadow:var(--shadow-lg);
+  display:flex;flex-direction:column;
+  max-height:92vh;
+  transform:translateY(100%);
+  transition:transform .34s cubic-bezier(.32,.72,0,1);
+  padding-bottom:env(safe-area-inset-bottom,0);
+}
+.bottom-sheet-bionda.is-open{transform:translateY(0);}
+
+.sheet-grabber-wrap{display:flex;justify-content:center;padding:10px 0 4px;flex-shrink:0;cursor:grab;}
+.sheet-grabber{width:42px;height:5px;border-radius:3px;background:var(--border-acc);}
+
+/* ── Cabecera fija ── */
+.bionda-sheet-header{flex-shrink:0;padding:2px 18px 14px;border-bottom:1px solid var(--border);}
+.bionda-sheet-title-row{display:flex;align-items:flex-start;gap:10px;}
+.bionda-sheet-icon{font-size:1.5rem;line-height:1.2;}
+.bionda-sheet-title{font-family:var(--font-cond);font-size:1.05rem;font-weight:900;letter-spacing:.6px;color:var(--text-1);}
+.bionda-sheet-subtitle{font-size:.7rem;color:var(--text-3);margin-top:2px;}
+.bionda-sheet-close{
+  margin-left:auto;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-2);font-size:1rem;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:var(--tr);
+}
+.bionda-sheet-close:active{background:var(--bg-4);transform:scale(.94);}
+
+.bionda-sheet-meta-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.bionda-meta-chip{
+  padding:5px 10px;border-radius:999px;font-size:.68rem;font-weight:700;
+  font-family:var(--font-mono);background:var(--bg-3);border:1px solid var(--border);color:var(--text-2);
+  letter-spacing:.2px;
+}
+.bionda-meta-chip.pk{color:var(--accent);border-color:rgba(0,212,255,.35);background:var(--accent-dim);}
+
+.bionda-sheet-estado-badge{
+  display:inline-flex;align-items:center;gap:5px;margin-top:10px;padding:4px 11px;border-radius:999px;
+  font-family:var(--font-cond);font-size:.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+  background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,.35);
+}
+.bionda-sheet-estado-badge.reparada{
+  background:var(--green-dim);color:var(--green);border-color:rgba(34,217,122,.35);
+}
+
+/* ── Cuerpo con scroll independiente ── */
+.bionda-sheet-body{flex:1 1 auto;overflow-y:auto;padding:16px 18px 8px;-webkit-overflow-scrolling:touch;}
+.bionda-form-section{margin-bottom:18px;}
+.bionda-form-label{
+  display:block;font-family:var(--font-cond);font-size:.72rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--text-3);margin-bottom:7px;
+}
+
+.bionda-select{
+  width:100%;padding:12px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-1);font-family:var(--font);font-size:.86rem;
+  outline:none;transition:var(--tr);-webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%238A909E'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat;background-position:right 10px center;background-size:20px;
+}
+.bionda-select:focus{border-color:var(--border-acc);}
+
+.bionda-date-input{
+  width:100%;padding:11px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg-3);color:var(--text-2);font-family:var(--font-mono);font-size:.8rem;outline:none;
+}
+.bionda-date-input:disabled{opacity:.5;}
+
+.bionda-pf-resumen{
+  display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:8px;
+  border-radius:var(--radius-sm);background:var(--bg-3);border:1px solid var(--border);
+  font-size:.74rem;color:var(--text-2);
+}
+.bionda-pf-resumen .estado{
+  font-family:var(--font-cond);font-weight:800;letter-spacing:.6px;padding:2px 8px;border-radius:999px;
+  background:var(--amber-dim);color:var(--amber);font-size:.64rem;text-transform:uppercase;
+}
+.bionda-pf-resumen .estado.reparada{background:var(--green-dim);color:var(--green);}
+
+/* ── Bloque fotográfico Antes/Después ── */
+.bionda-photo-block{
+  border-radius:var(--radius);border:1px solid var(--border);padding:12px;background:var(--bg-3);
+  transition:var(--tr);
+}
+.bionda-photo-block.antes{border-color:rgba(245,166,35,.3);}
+.bionda-photo-block.despues{border-color:rgba(34,217,122,.3);}
+.bionda-photo-block.despues.locked{opacity:.55;}
+
+.bionda-photo-block-header{display:flex;align-items:baseline;gap:6px;margin-bottom:10px;}
+.bionda-photo-block-title{font-family:var(--font-cond);font-size:.88rem;font-weight:800;letter-spacing:.8px;color:var(--text-1);}
+.bionda-photo-block.antes .bionda-photo-block-title{color:var(--amber);}
+.bionda-photo-block.despues .bionda-photo-block-title{color:var(--green);}
+.bionda-photo-block-sub{font-size:.66rem;color:var(--text-3);font-weight:500;}
+.bionda-photo-block-hint{margin-top:9px;font-size:.68rem;color:var(--text-3);text-align:center;font-style:italic;}
+
+.bionda-photo-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.bionda-photo-slot{
+  position:relative;aspect-ratio:1/1;border-radius:var(--radius-sm);cursor:pointer;overflow:hidden;
+  border:1.5px dashed rgba(245,166,35,.4);background:var(--amber-dim);transition:var(--tr);
+}
+.bionda-photo-block.despues .bionda-photo-slot{border-color:rgba(34,217,122,.4);background:var(--green-dim);}
+.bionda-photo-slot:active{transform:scale(.97);}
+.bionda-photo-slot.disabled{pointer-events:none;border-style:solid;border-color:var(--border);background:var(--bg-2);}
+.bionda-photo-slot.filled{border-style:solid;}
+.bionda-photo-slot-inner{
+  width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+}
+.bionda-photo-slot-icon{font-size:1.4rem;opacity:.85;}
+.bionda-photo-slot-label{font-size:.66rem;font-weight:700;color:var(--text-2);letter-spacing:.4px;}
+.bionda-photo-slot.disabled .bionda-photo-slot-icon,
+.bionda-photo-slot.disabled .bionda-photo-slot-label{opacity:.35;}
+.bionda-photo-slot img.bionda-thumb{width:100%;height:100%;object-fit:cover;display:block;}
+.bionda-photo-slot .bionda-slot-badge{
+  position:absolute;top:5px;right:5px;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.55);color:#fff;font-size:.7rem;display:flex;align-items:center;justify-content:center;
+}
+.bionda-photo-slot .bionda-slot-remove{
+  position:absolute;top:5px;left:5px;width:22px;height:22px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:#fff;font-size:.72rem;border:none;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+
+/* ── Pie de acciones ── */
+.bionda-sheet-footer{
+  flex-shrink:0;display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom,0));
+  border-top:1px solid var(--border);background:var(--bg-2);
+}
+.bionda-btn-secondary,.bionda-btn-primary{
+  flex:1;padding:13px;border-radius:var(--radius);font-family:var(--font-cond);font-size:.82rem;
+  font-weight:800;letter-spacing:1px;cursor:pointer;transition:var(--tr);border:none;
+}
+.bionda-btn-secondary{background:var(--bg-3);color:var(--text-2);border:1px solid var(--border);}
+.bionda-btn-secondary:active{background:var(--bg-4);}
+.bionda-btn-primary{background:linear-gradient(135deg,var(--green),#1ab863);color:#06170d;box-shadow:0 4px 16px rgba(34,217,122,.35);}
+.bionda-btn-primary:active{transform:scale(.97);}
+.bionda-btn-primary:disabled{opacity:.5;pointer-events:none;}
+
+/* ── Badge de estado sobre la tarjeta de incidencia (lista) ── */
+.incident-card.bionda{cursor:pointer;}
+.inc-bionda-estado{
+  display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:3px 9px;border-radius:999px;
+  font-family:var(--font-cond);font-size:.62rem;font-weight:800;letter-spacing:.8px;text-transform:uppercase;
+  background:var(--amber-dim);color:var(--amber);border:1px solid rgba(245,166,35,.35);
+}
+.inc-bionda-estado.reparada{background:var(--green-dim);color:var(--green);border-color:rgba(34,217,122,.35);}
+
+@media (min-width:560px){
+  .sheet-overlay{cursor:pointer;}
+}
+
+/* ═══════════════════════════════════════════════════════════
    SCREEN 4 — FOTOS (galeria estil natiu)
 ═══════════════════════════════════════════════════════════ */
 .photos-header{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap;}
@@ -3408,7 +3570,7 @@ async function _forzarActualizacion() {
     </div>
     <div class="pf-field">
       <label class="pf-label">📋 Tipo de incidencia</label>
-      <select class="pf-select" id="pfTipo" onchange="_pfActualitzarSubtipus()">
+      <select class="pf-select" id="pfTipo" onchange="_pfActualitzarSubtipus(true)">
         <option value="">Ninguna (foto normal)</option>
         <option value="animal">🐗 Animal</option>
         <option value="senyalitzacio">🛑 Señalización</option>
@@ -3450,6 +3612,12 @@ async function _forzarActualizacion() {
     <div class="pf-subtipo" id="pfSubAltra" style="display:none;">
       <label class="pf-label">Describe la incidencia</label>
       <input type="text" class="pf-input" id="pfAltraTexto" placeholder="Ej: Vertido de residuos...">
+    </div>
+    <!-- Subtipo: bionda — abre el Bottom Sheet Antes/Después -->
+    <div class="pf-subtipo" id="pfSubBionda" style="display:none;">
+      <label class="pf-label">Reparación Bionda</label>
+      <div class="bionda-pf-resumen" id="biondaPfResumen" style="display:none;"></div>
+      <button type="button" class="pf-catalog-btn" onclick="abrirBottomSheetBionda()">🛡️ Configurar Antes/Después</button>
     </div>
     <!-- Switch: avisar al CCC al compartir -->
     <div class="pf-switch-row">
@@ -4127,6 +4295,123 @@ async function _forzarActualizacion() {
     <button class="sel-btn sel-btn-save" onclick="guardarSeleccio()">📥 Guardar</button>
   </div>
 </div>
+
+<!-- ════════════════════════════════════════════════
+     BOTTOM SHEET BIONDA — reparación Antes/Después
+     Fora de .screen perquè no la recorti l'overflow-y:auto
+     ════════════════════════════════════════════════ -->
+<div class="sheet-overlay" id="biondaSheetOverlay" onclick="cerrarBottomSheetBionda()"></div>
+<div class="bottom-sheet-bionda" id="biondaBottomSheet" role="dialog" aria-modal="true" aria-labelledby="biondaSheetTitle">
+  <div class="sheet-grabber-wrap" id="biondaGrabberWrap"><div class="sheet-grabber"></div></div>
+
+  <div class="bionda-sheet-header">
+    <div class="bionda-sheet-title-row">
+      <span class="bionda-sheet-icon">🛡️</span>
+      <div>
+        <div class="bionda-sheet-title" id="biondaSheetTitle">Reparación Bionda</div>
+        <div class="bionda-sheet-subtitle">Antes / Después · fotos emparejadas</div>
+      </div>
+      <button class="bionda-sheet-close" onclick="cerrarBottomSheetBionda()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="bionda-sheet-meta-chips">
+      <span class="bionda-meta-chip" id="biondaChipCarretera">🛣️ —</span>
+      <span class="bionda-meta-chip" id="biondaChipCalzada">↔️ Calzada —</span>
+      <span class="bionda-meta-chip" id="biondaChipMargen">📍 Margen —</span>
+      <span class="bionda-meta-chip pk" id="biondaChipPK">📌 PK —</span>
+    </div>
+    <div class="bionda-sheet-estado-badge" id="biondaEstadoBadge">🟠 Pendiente</div>
+  </div>
+
+  <div class="bionda-sheet-body">
+
+    <div class="bionda-form-section">
+      <label class="bionda-form-label" for="biondaSelectElemento">Elemento afectado</label>
+      <select class="bionda-select" id="biondaSelectElemento">
+        <option value="abatimiento_8">Abatimiento de 8 m.</option>
+        <option value="abatimiento_12">Abatimiento de 12 m.</option>
+        <option value="barrera_motorista_4">Barrera motorista 4 m.</option>
+        <option value="bionda_reducida_4">Bionda reducida 4 m.</option>
+        <option value="poste_simple">Poste de sujeción de bionda para simple</option>
+        <option value="bionda_superpuesta_simple_4">Bionda superpuesta simple 4 m.</option>
+        <option value="bionda_simple_4">Bionda simple 4 m.</option>
+        <option value="bionda_desmontada_tornilleria">Bionda desmontada - Falta tornillería</option>
+        <option value="poste_superpuesta">Poste de sujeción de bionda para superpuesta</option>
+        <option value="terminal_cola_pez">Terminal cola de pez</option>
+        <option value="terminal_cola_retorno">Terminal cola de retorno</option>
+        <option value="terminal_cola_pez_aplastada">Terminal cola de pez aplastada</option>
+        <option value="terminal_doble">Terminal para doble</option>
+        <option value="terminal_simple">Terminal para simple</option>
+        <option value="terminal_champinon">Terminal champiñón</option>
+      </select>
+    </div>
+
+    <div class="bionda-form-section">
+      <div class="bionda-photo-block antes">
+        <div class="bionda-photo-block-header">
+          <span class="bionda-photo-block-title">📷 ANTES</span>
+          <span class="bionda-photo-block-sub">(apertura)</span>
+        </div>
+        <div class="bionda-photo-grid">
+          <div class="bionda-photo-slot" data-slot="antesA" onclick="_biondaSlotClick('antesA')">
+            <div class="bionda-photo-slot-inner" id="biondaSlotInner_antesA">
+              <span class="bionda-photo-slot-icon">📷</span>
+              <span class="bionda-photo-slot-label">Ángulo A</span>
+            </div>
+          </div>
+          <div class="bionda-photo-slot" data-slot="antesB" onclick="_biondaSlotClick('antesB')">
+            <div class="bionda-photo-slot-inner" id="biondaSlotInner_antesB">
+              <span class="bionda-photo-slot-icon">📷</span>
+              <span class="bionda-photo-slot-label">Ángulo B</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bionda-form-section">
+      <label class="bionda-form-label">🕐 Fecha visualización / comunicación</label>
+      <input type="datetime-local" class="bionda-date-input" id="biondaFechaVisualizacion" disabled>
+    </div>
+
+    <div class="bionda-form-section">
+      <div class="bionda-photo-block despues locked" id="biondaDespuesBlock">
+        <div class="bionda-photo-block-header">
+          <span class="bionda-photo-block-title">✅ DESPUÉS</span>
+          <span class="bionda-photo-block-sub">(reparación)</span>
+        </div>
+        <div class="bionda-photo-grid">
+          <div class="bionda-photo-slot disabled" data-slot="despuesA" onclick="_biondaSlotClick('despuesA')">
+            <div class="bionda-photo-slot-inner" id="biondaSlotInner_despuesA">
+              <span class="bionda-photo-slot-icon">📷</span>
+              <span class="bionda-photo-slot-label">Ángulo A</span>
+            </div>
+          </div>
+          <div class="bionda-photo-slot disabled" data-slot="despuesB" onclick="_biondaSlotClick('despuesB')">
+            <div class="bionda-photo-slot-inner" id="biondaSlotInner_despuesB">
+              <span class="bionda-photo-slot-icon">📷</span>
+              <span class="bionda-photo-slot-label">Ángulo B</span>
+            </div>
+          </div>
+        </div>
+        <div class="bionda-photo-block-hint" id="biondaDespuesHint">🔒 Completa las 2 fotos del "antes" para desbloquear</div>
+      </div>
+    </div>
+
+    <div class="bionda-form-section">
+      <label class="bionda-form-label">✅ Fecha de reparación</label>
+      <input type="datetime-local" class="bionda-date-input" id="biondaFechaReparacion" disabled>
+    </div>
+
+  </div>
+
+  <div class="bionda-sheet-footer">
+    <button class="bionda-btn-secondary" onclick="cerrarBottomSheetBionda()">Cerrar</button>
+    <button class="bionda-btn-primary" id="biondaBtnGuardar" onclick="guardarBiondaSheet()">💾 Guardar</button>
+  </div>
+</div>
+
+<!-- Input de archivo oculto compartido por los 4 slots -->
+<input type="file" accept="image/*" capture="environment" id="biondaFileInput" style="display:none;">
 
 <!-- ════ TAB BAR ════ -->
 <nav class="tab-bar">
@@ -7304,7 +7589,7 @@ async function renderitzarIncidencies() {
           : '';
 
         accioBtns = `
-          <div class="inc-actions">
+          <div class="inc-actions" onclick="event.stopPropagation()">
             <a class="inc-action-btn maps" href="${mapsUrl}" target="_blank" rel="noopener">${pkgT('card_maps')}</a>
             ${waBtn}
             ${fotoBtn}
@@ -7314,12 +7599,21 @@ async function renderitzarIncidencies() {
         const fotoBtn = nFotos < 2
           ? `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`
           : '';
-        if (fotoBtn) accioBtns = `<div class="inc-actions">${fotoBtn}</div>`;
+        if (fotoBtn) accioBtns = `<div class="inc-actions" onclick="event.stopPropagation()">${fotoBtn}</div>`;
       }
 
+      // Bionda: la tarjeta abre el Bottom Sheet de reparación Antes/Después,
+      // apuntando a la foto vinculada (inc.fotoId), que es donde vive el subtipus.
+      const esBionda      = inc.tipus === 'bionda';
+      const biondaEstado  = inc.subtipus?.estado === 'reparada' ? 'reparada' : 'pendiente';
+      const biondaClickAttr = (esBionda && inc.fotoId != null) ? ` onclick="abrirBottomSheetBionda(${inc.fotoId})"` : '';
+      const biondaBadgeHTML = esBionda
+        ? `<span class="inc-bionda-estado ${biondaEstado === 'reparada' ? 'reparada' : ''}">${biondaEstado === 'reparada' ? '✅ Reparada' : '🟠 Pendiente'}</span>`
+        : '';
+
       return `
-      <div class="incident-card ${inc.tipus}">
-        <button class="inc-del-btn" title="Eliminar incidencia" onclick="esborrarIncidenciaIndividual(${inc.id})">🗑️</button>
+      <div class="incident-card ${inc.tipus}" data-id="${inc.id}"${biondaClickAttr}>
+        <button class="inc-del-btn" title="Eliminar incidencia" onclick="event.stopPropagation();esborrarIncidenciaIndividual(${inc.id})">🗑️</button>
         <div class="inc-icon">${tipusIcon(inc.tipus)}</div>
         ${thumbHTML}
         <div class="inc-body">
@@ -7330,6 +7624,7 @@ async function renderitzarIncidencies() {
             <span class="inc-meta-row">${coordsStr || (sensePK ? pkgT('card_sincoords') : `${inc.carretera} PK ${inc.km}+${mStr}`)}</span>
           </div>
           <span class="inc-sentit ${sentitClass}">${sentitTxt}</span>
+          ${biondaBadgeHTML}
           ${accioBtns}
         </div>
       </div>`;
@@ -7359,6 +7654,293 @@ async function esborrarIncidenciaIndividual(id) {
     showToast(pkgTS('🗑️ Incidencia eliminada'), 'warn', 2000);
   } catch(e) {
     showToast('❌ ' + e.message, 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BOTTOM SHEET BIONDA — reparación Antes/Después
+   Se activa al marcar una foto como tipo "Bionda" en el formulario
+   post-foto (pfTipo). Guarda las 4 fotos en CFG.STORE_PHOTOS y
+   persiste el resultado como foto.subtipus (igual que animal/señal),
+   sincronizando también la incidencia vinculada si existe (foto.incId).
+═══════════════════════════════════════════════════════════════════ */
+const BIONDA_SLOTS = ['antesA', 'antesB', 'despuesA', 'despuesB'];
+
+/* Último subtipus guardado — lo recoge _pfGuardar() al confirmar el formulario */
+let _pfBiondaSubtipus = null;
+
+const _biondaState = {
+  fotoId: null,                // id en CFG.STORE_PHOTOS de la foto que se está etiquetando
+  elemento: 'abatimiento_8',
+  fechaVisualizacion: null,    // ISO string
+  fechaReparacion: null,       // ISO string
+  fotos: { antesA: null, antesB: null, despuesA: null, despuesB: null }, // {file,url,fotoId?}
+  fotosEliminarIds: [],        // fotoIds que había en IDB y hay que borrar si se reemplazan
+  slotPendiente: null
+};
+
+function _biondaFmtDatetimeLocal(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function _biondaAntesCompleto() {
+  return !!(_biondaState.fotos.antesA && _biondaState.fotos.antesB);
+}
+function _biondaDespuesCompleto() {
+  return !!(_biondaState.fotos.despuesA && _biondaState.fotos.despuesB);
+}
+
+/**
+ * Abre el Bottom Sheet Bionda.
+ * @param {number|null} fotoId — id de CFG.STORE_PHOTOS a etiquetar. Si se omite,
+ *        usa la foto activa del visor (_pfActiveFotoId) — caso normal: el usuario
+ *        acaba de elegir "🛡️ Bionda" en el desplegable "Tipo de incidencia".
+ */
+async function abrirBottomSheetBionda(fotoId) {
+  const targetId = (fotoId != null) ? fotoId : _pfActiveFotoId;
+  if (targetId == null) { showToast(pkgTS('⚠️ No hay foto activa'), 'warn'); return; }
+
+  let foto;
+  try {
+    foto = await idbGet(CFG.STORE_PHOTOS, targetId);
+  } catch (e) {
+    showToast('❌ ' + e.message, 'err'); return;
+  }
+  if (!foto) { showToast(pkgTS('⚠️ Foto no encontrada'), 'warn'); return; }
+
+  // Reset de estado
+  _biondaState.fotoId = targetId;
+  _biondaState.fotos  = { antesA: null, antesB: null, despuesA: null, despuesB: null };
+  _biondaState.fotosEliminarIds = [];
+  _biondaState.slotPendiente = null;
+
+  // Si la foto ya tenía datos de Bionda guardados (edición), los recupera
+  const previo = (foto.tipus === 'bionda' && foto.subtipus) ? foto.subtipus : (_pfBiondaSubtipus || {});
+  _biondaState.elemento           = previo.elemento || 'abatimiento_8';
+  _biondaState.fechaVisualizacion = previo.fechaVisualizacion || null;
+  _biondaState.fechaReparacion    = previo.fechaReparacion || null;
+
+  // Cabecera: carretera / PK — de la propia foto. Calzada/Margen: de la incidencia
+  // vinculada si existe (foto.incId), si no, sin dato.
+  let calzadaTxt = '—', margenTxt = '—';
+  if (foto.incId != null) {
+    try {
+      const inc = await idbGet(CFG.STORE_INC, foto.incId);
+      if (inc?.sentit === 'creixent')  { calzadaTxt = '1'; margenTxt = 'Derecho'; }
+      if (inc?.sentit === 'decreixent') { calzadaTxt = '2'; margenTxt = 'Izquierdo'; }
+    } catch (_) {}
+  }
+  const kmStr = (foto.km != null) ? `${foto.km}+${String(foto.m ?? 0).padStart(3, '0')}` : '—';
+  document.getElementById('biondaChipCarretera').textContent = `🛣️ ${foto.carretera || '—'}`;
+  document.getElementById('biondaChipCalzada').textContent   = `↔️ Calzada ${calzadaTxt}`;
+  document.getElementById('biondaChipMargen').textContent    = `📍 Margen ${margenTxt}`;
+  document.getElementById('biondaChipPK').textContent        = `📌 PK ${kmStr}`;
+
+  // Selector de elemento
+  document.getElementById('biondaSelectElemento').value = _biondaState.elemento;
+
+  // Fechas
+  document.getElementById('biondaFechaVisualizacion').value = _biondaFmtDatetimeLocal(_biondaState.fechaVisualizacion);
+  document.getElementById('biondaFechaReparacion').value    = _biondaFmtDatetimeLocal(_biondaState.fechaReparacion);
+
+  // Restaura miniaturas de fotos ya guardadas (cargando el blob desde IDB)
+  for (const slot of BIONDA_SLOTS) {
+    const slotFotoId = previo['fotoId_' + slot];
+    if (slotFotoId != null) {
+      try {
+        const slotFoto = await idbGet(CFG.STORE_PHOTOS, slotFotoId);
+        if (slotFoto && slotFoto.blob) {
+          const url = URL.createObjectURL(slotFoto.blob);
+          _biondaState.fotos[slot] = { fotoId: slotFotoId, url, file: null };
+        }
+      } catch (_) {}
+    }
+    _biondaPintarSlot(slot);
+  }
+
+  _biondaActualizarBloqueoDespues();
+  _biondaActualizarBadgeEstado();
+
+  document.getElementById('biondaSheetOverlay').classList.add('is-open');
+  document.getElementById('biondaBottomSheet').classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+
+/** Cierra el Bottom Sheet sin guardar. */
+function cerrarBottomSheetBionda() {
+  document.getElementById('biondaSheetOverlay').classList.remove('is-open');
+  document.getElementById('biondaBottomSheet').classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+/** Click en un slot de foto: abre selector si está permitido. */
+function _biondaSlotClick(slot) {
+  const esDespues = slot.startsWith('despues');
+  if (esDespues && !_biondaAntesCompleto()) {
+    showToast('🔒 Completa antes las 2 fotos del "Antes"', 'warn', 2200);
+    return;
+  }
+  _biondaState.slotPendiente = slot;
+  document.getElementById('biondaFileInput').click();
+}
+
+document.getElementById('biondaFileInput').addEventListener('change', function (e) {
+  const file = e.target.files?.[0];
+  this.value = '';
+  const slot = _biondaState.slotPendiente;
+  if (!file || !slot) return;
+
+  const url = URL.createObjectURL(file);
+  // Si había una foto previa guardada en IDB y se reemplaza, márcala para borrar al guardar
+  const previa = _biondaState.fotos[slot];
+  if (previa && previa.fotoId != null) _biondaState.fotosEliminarIds.push(previa.fotoId);
+
+  _biondaState.fotos[slot] = { file, url, fotoId: null };
+  _biondaState.slotPendiente = null;
+  _biondaPintarSlot(slot);
+
+  // Al capturar la 1ª foto del "antes" se congela la fecha de visualización/comunicación
+  if (slot === 'antesA' || slot === 'antesB') {
+    if (!_biondaState.fechaVisualizacion) {
+      _biondaState.fechaVisualizacion = new Date().toISOString();
+      document.getElementById('biondaFechaVisualizacion').value = _biondaFmtDatetimeLocal(_biondaState.fechaVisualizacion);
+    }
+    _biondaActualizarBloqueoDespues();
+  }
+
+  // Al capturar la 1ª foto del "después" se autocompleta la fecha de reparación
+  if (slot === 'despuesA' || slot === 'despuesB') {
+    if (!_biondaState.fechaReparacion) {
+      _biondaState.fechaReparacion = new Date().toISOString();
+      document.getElementById('biondaFechaReparacion').value = _biondaFmtDatetimeLocal(_biondaState.fechaReparacion);
+    }
+    _biondaActualizarBadgeEstado();
+  }
+});
+
+/** Pinta (o limpia) la miniatura de un slot concreto. */
+function _biondaPintarSlot(slot) {
+  const wrap  = document.querySelector(`.bionda-photo-slot[data-slot="${slot}"]`);
+  const inner = document.getElementById('biondaSlotInner_' + slot);
+  const foto  = _biondaState.fotos[slot];
+  if (!wrap || !inner) return;
+
+  if (foto) {
+    wrap.classList.add('filled');
+    inner.innerHTML = `
+      <img class="bionda-thumb" src="${foto.url}" alt="${slot}">
+      <span class="bionda-slot-badge">✓</span>
+      <button class="bionda-slot-remove" onclick="event.stopPropagation();_biondaEliminarFotoSlot('${slot}')">✕</button>`;
+  } else {
+    wrap.classList.remove('filled');
+    const label = slot.endsWith('A') ? 'Ángulo A' : 'Ángulo B';
+    inner.innerHTML = `<span class="bionda-photo-slot-icon">📷</span><span class="bionda-photo-slot-label">${label}</span>`;
+  }
+}
+
+/** Quita la foto de un slot (antes de guardar). */
+function _biondaEliminarFotoSlot(slot) {
+  const foto = _biondaState.fotos[slot];
+  if (foto && foto.fotoId != null) _biondaState.fotosEliminarIds.push(foto.fotoId);
+  _biondaState.fotos[slot] = null;
+  _biondaPintarSlot(slot);
+  if (slot.startsWith('antes')) _biondaActualizarBloqueoDespues();
+  _biondaActualizarBadgeEstado();
+}
+
+/** Activa/bloquea visualmente el bloque "Después" según el estado del "Antes". */
+function _biondaActualizarBloqueoDespues() {
+  const bloque = document.getElementById('biondaDespuesBlock');
+  const hint   = document.getElementById('biondaDespuesHint');
+  const listo  = _biondaAntesCompleto();
+
+  bloque.classList.toggle('locked', !listo);
+  ['despuesA', 'despuesB'].forEach(slot => {
+    const el = document.querySelector(`.bionda-photo-slot[data-slot="${slot}"]`);
+    if (el) el.classList.toggle('disabled', !listo);
+  });
+  hint.style.display = listo ? 'none' : 'block';
+}
+
+/** Actualiza el badge visual Pendiente/Reparada dentro del propio sheet. */
+function _biondaActualizarBadgeEstado() {
+  const badge = document.getElementById('biondaEstadoBadge');
+  const reparada = _biondaDespuesCompleto();
+  badge.classList.toggle('reparada', reparada);
+  badge.textContent = reparada ? '✅ Reparada' : '🟠 Pendiente';
+}
+
+/** Refleja un resumen compacto dentro del formulario post-foto (pfSubBionda). */
+function _pfBiondaRenderResumen(subtipus) {
+  const wrap = document.getElementById('biondaPfResumen');
+  if (!wrap) return;
+  const nombreEl = document.getElementById('biondaSelectElemento')?.selectedOptions?.[0]?.textContent || subtipus.elemento;
+  const reparada = subtipus.estado === 'reparada';
+  const nFotos = BIONDA_SLOTS.filter(s => subtipus['fotoId_' + s] != null).length;
+  wrap.style.display = 'flex';
+  wrap.innerHTML = `
+    <span class="estado ${reparada ? 'reparada' : ''}">${reparada ? '✅ Reparada' : '🟠 Pendiente'}</span>
+    <span>${nombreEl} · ${nFotos}/4 fotos</span>`;
+}
+
+/** Guarda el estado del sheet: sube las fotos nuevas a IDB y etiqueta la foto activa. */
+async function guardarBiondaSheet() {
+  const btn = document.getElementById('biondaBtnGuardar');
+  btn.disabled = true;
+  try {
+    if (_biondaState.fotoId == null) throw new Error(pkgTS('⚠️ No hay foto activa'));
+    const foto = await idbGet(CFG.STORE_PHOTOS, _biondaState.fotoId);
+    if (!foto) throw new Error(pkgTS('⚠️ Foto no encontrada'));
+
+    const subtipus = { elemento: document.getElementById('biondaSelectElemento').value };
+
+    // Sube a IDB solo las fotos nuevas (con .file); las ya existentes conservan su fotoId
+    for (const slot of BIONDA_SLOTS) {
+      const slotFoto = _biondaState.fotos[slot];
+      const key = 'fotoId_' + slot;
+      if (!slotFoto) { subtipus[key] = null; continue; }
+      if (slotFoto.fotoId != null) { subtipus[key] = slotFoto.fotoId; continue; }
+      const nuevoId = await idbAdd(CFG.STORE_PHOTOS, {
+        blob: slotFoto.file, nom: `bionda_${slot}_${Date.now()}.jpg`, ts: Date.now(),
+        incId: foto.incId ?? null
+      });
+      subtipus[key] = nuevoId;
+    }
+
+    // Borra en IDB las fotos que se reemplazaron/eliminaron
+    for (const fotoIdBorrar of _biondaState.fotosEliminarIds) {
+      try { await idbDelete(CFG.STORE_PHOTOS, fotoIdBorrar); } catch (_) {}
+    }
+
+    subtipus.fechaVisualizacion = _biondaState.fechaVisualizacion;
+    subtipus.fechaReparacion    = _biondaState.fechaReparacion;
+    subtipus.estado = _biondaDespuesCompleto() ? 'reparada' : 'pendiente';
+
+    // Etiqueta la foto activa como Bionda con este subtipus (igual que animal/señal)
+    foto.tipus    = 'bionda';
+    foto.subtipus = subtipus;
+    await idbPut(CFG.STORE_PHOTOS, foto);
+
+    // Sincroniza la incidencia vinculada, si existe (mismo patrón que _pfGuardar)
+    if (foto.incId != null) {
+      const inc = await idbGet(CFG.STORE_INC, foto.incId);
+      if (inc) { inc.tipus = 'bionda'; inc.subtipus = subtipus; await idbPut(CFG.STORE_INC, inc); }
+    }
+
+    _pfBiondaSubtipus = subtipus;
+    _pfBiondaRenderResumen(subtipus);
+
+    showToast(subtipus.estado === 'reparada' ? '✅ Bionda marcada como Reparada' : '💾 Datos de la Bionda guardados', 'ok', 2200);
+    cerrarBottomSheetBionda();
+    try { renderitzarFotos(); } catch (_) {}
+    try { renderitzarIncidencies(); } catch (_) {}
+  } catch (e) {
+    showToast('❌ ' + e.message, 'err');
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -8162,6 +8744,8 @@ async function _pfCarregarDades() {
   document.getElementById('pfEspecieOtra').value = '';
   document.getElementById('pfEspecieOtra').style.display = 'none';
   document.getElementById('pfAltraTexto').value = '';
+  _pfBiondaSubtipus = null;
+  document.getElementById('biondaPfResumen').style.display = 'none';
   _pfAvisoCCC = false;
   document.getElementById('pfAvisoSwitch').classList.remove('on');
   document.getElementById('pfAvisoLabel').textContent = pkgTS('AVISO: NO');
@@ -8205,10 +8789,14 @@ async function _pfCarregarDades() {
         if (tipus === 'altra' && subtipus?.texto) {
           document.getElementById('pfAltraTexto').value = subtipus.texto;
         }
+        if (tipus === 'bionda' && subtipus) {
+          _pfBiondaSubtipus = subtipus;
+          _pfBiondaRenderResumen(subtipus);
+        }
       }
     } catch(_) {}
   }
-  _pfActualitzarSubtipus();
+  _pfActualitzarSubtipus(false);
 }
 
 /* Torna a localitzar: repeteix la detecció GPS+PK sense tornar a fer la foto */
@@ -8258,11 +8846,13 @@ function _pfElegirCandidat(nom) {
   showToast(pkgF('tpl_carr_seleccionada', cand.carretera), 'ok', 1500);
 }
 
-function _pfActualitzarSubtipus() {
+function _pfActualitzarSubtipus(userTriggered) {
   const tipus = document.getElementById('pfTipo').value;
   document.getElementById('pfSubAnimal').style.display = tipus === 'animal'        ? '' : 'none';
   document.getElementById('pfSubSenyal').style.display = tipus === 'senyalitzacio' ? '' : 'none';
   document.getElementById('pfSubAltra').style.display  = tipus === 'altra'         ? '' : 'none';
+  document.getElementById('pfSubBionda').style.display = tipus === 'bionda'        ? '' : 'none';
+  if (tipus === 'bionda' && userTriggered) abrirBottomSheetBionda();
 }
 
 function _pfToggleEspecieOtra() {
@@ -8359,6 +8949,8 @@ async function _pfGuardar() {
     }
   } else if (tipus === 'altra') {
     subtipus = { texto: document.getElementById('pfAltraTexto').value.trim() };
+  } else if (tipus === 'bionda') {
+    subtipus = _pfBiondaSubtipus || { elemento: document.getElementById('biondaSelectElemento')?.value || 'abatimiento_8' };
   }
 
   try {
