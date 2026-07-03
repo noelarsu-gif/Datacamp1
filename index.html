@@ -2468,7 +2468,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 
     <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
       🔒 Acceso restringido a participantes de la prueba piloto.<br>
-      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-19 · 12/06/2026</span>
+      <span style="font-family:'Roboto Mono',monospace;color:#5A6070;">BUILD sw-20 · 03/07/2026</span>
     </div>
     <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
       📴 Sin conexión — la validación funciona igualmente
@@ -4159,30 +4159,63 @@ function _reintentarMapa() {
 }
 
 /**
- * Carga Leaflet dinámicamente y devuelve una Promise que se resuelve
- * cuando L está disponible, o se rechaza si hay error de red.
+ * Carga Leaflet dinámicamente probando varias CDNs en cascada y devuelve
+ * una Promise que se resuelve cuando L está disponible, o se rechaza si
+ * TODAS las CDNs fallan.
+ *
+ * NOTA IMPORTANTE: NO usamos integrity (SRI) aquí a propósito. Muchas redes
+ * móviles españolas (proxies de compresión de datos de operadoras) alteran
+ * ligeramente los bytes de JS/CSS al vuelo para ahorrar tráfico; eso rompe
+ * la verificación SRI aunque la conexión funcione perfectamente, y el script
+ * dispara onerror SIEMPRE aunque haya internet. Preferimos fiabilidad (HTTPS
+ * ya garantiza que nadie inyecta código malicioso) a un hash que da falsos
+ * negativos constantes.
  */
-function _carregarLeaflet() {
-  return new Promise((resolve, reject) => {
-    if (_leafletDisponible()) { resolve(); return; }
+const _LEAFLET_CDNS = [
+  { css: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css', js: 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js' },
+  { css: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',            js: 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js' },
+  { css: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css', js: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js' },
+];
 
-    // CSS
+function _carregarLeafletDesde(cdn) {
+  return new Promise((resolve, reject) => {
+    // CSS (no bloqueante — si falla el CSS igual intentamos el JS)
     const css = document.createElement('link');
     css.rel  = 'stylesheet';
-    css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    css.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-    css.crossOrigin = '';
+    css.href = cdn.css;
     document.head.appendChild(css);
 
     // JS
     const script = document.createElement('script');
-    script.src  = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-    script.crossOrigin = '';
-    script.onload  = () => resolve();
-    script.onerror = () => reject(new Error('Leaflet no disponible (sin conexión)'));
+    script.src = cdn.js;
+    const timeoutId = setTimeout(() => {
+      script.remove();
+      reject(new Error('Timeout cargando ' + cdn.js));
+    }, 8000);
+    script.onload = () => { clearTimeout(timeoutId); resolve(); };
+    script.onerror = () => {
+      clearTimeout(timeoutId);
+      script.remove();
+      reject(new Error('Fallo al cargar ' + cdn.js));
+    };
     document.head.appendChild(script);
   });
+}
+
+async function _carregarLeaflet() {
+  if (_leafletDisponible()) return;
+
+  let ultimError = null;
+  for (const cdn of _LEAFLET_CDNS) {
+    try {
+      await _carregarLeafletDesde(cdn);
+      if (_leafletDisponible()) return; // éxito
+    } catch (err) {
+      ultimError = err;
+      console.warn('[Mapa] CDN falló, probando la siguiente:', err.message);
+    }
+  }
+  throw new Error('Leaflet no disponible (todas las CDNs fallaron): ' + (ultimError?.message || ''));
 }
 
 async function iniciarMapa() {
@@ -9174,8 +9207,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 // S'injecta com a blob URL per no dependre de sw.js extern
 // ═══════════════════════════════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  const SW_VERSION = 'pkgeoloc-v2-sw-19'; // BUILD 10/06/2026 — mantener sincronizado con el bloque de garantía del seed
-  console.log('[PK-GEOLOC] BUILD sw-19 · 12/06/2026');
+  const SW_VERSION = 'pkgeoloc-v2-sw-20'; // BUILD 03/07/2026 — fix mapa: CDN Leaflet en cascada sin SRI
+  console.log('[PK-GEOLOC] BUILD sw-20 · 03/07/2026');
   const swCode = `
 const CACHE = '${SW_VERSION}';
 // Recursos locals crítics — tot el necessari per a la detecció PK offline
@@ -9212,7 +9245,7 @@ self.addEventListener('fetch', e => {
     'arcgis.com', 'arcgisonline.com',
     'openstreetmap.org', 'nominatim.openstreetmap',
     'overpass-api.de',
-    'unpkg.com', 'cdnjs.cloudflare.com',
+    'unpkg.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net',
     'tile.openstreetmap', 'tiles.stadiamaps.com',
     'fonts.googleapis.com', 'fonts.gstatic.com',
     'maps.google.com', 'maps.googleapis.com',
@@ -9293,7 +9326,7 @@ if ('caches' in window) {
     if (!navigator.onLine) return;
     setTimeout(async () => {
       try {
-        const c = await caches.open('pkgeoloc-v2-sw-19');
+        const c = await caches.open('pkgeoloc-v2-sw-20');
         const hit = await c.match('./PK_SEED_para_app.js');
         if (!hit) {
           const r = await fetch('./PK_SEED_para_app.js', { cache: 'no-cache' });
