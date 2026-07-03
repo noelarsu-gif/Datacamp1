@@ -2295,6 +2295,8 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 .inf-sel-txt{flex:1;min-width:0;}
 .inf-sel-title{font-size:.78rem;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .inf-sel-sub{font-size:.64rem;color:var(--text-3);}
+.inf-sel-thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);}
+.inf-sel-thumb-empty{display:flex;align-items:center;justify-content:center;background:var(--bg-4);color:var(--text-3);font-size:1rem;}
 
 /* ═══════════════════════════════════════════════════════════
    TOAST
@@ -3234,7 +3236,7 @@ async function _forzarActualizacion() {
     <div class="settings-card">
       <div class="settings-card-title">↕️ Ordenar por</div>
       <select class="pf-select" id="infOrdenSelect" onchange="setOrdenInforme(this.value)" style="margin-bottom:9px;"></select>
-      <div class="inf-segmented">
+      <div class="inf-segmented" id="infDireccionSeg">
         <div class="inf-seg-opt active" data-val="asc" onclick="setDireccionInforme('asc', this)">↑ Ascendente</div>
         <div class="inf-seg-opt" data-val="desc" onclick="setDireccionInforme('desc', this)">↓ Descendente</div>
       </div>
@@ -10106,6 +10108,22 @@ function _scSeleccionar(codi) {
    (window.InformesCore). Aquí solo hay el "pegamento" con el DOM y las
    librerías externas (jsPDF, jsPDF-AutoTable, JSZip, SheetJS).
 ═══════════════════════════════════════════════════════════════════ */
+/* Fallback si informes-core.js no ha cargado (p.ej. no subido al servidor
+   todavía, o CDN externa caída) — así los chips de tipo NUNCA aparecen
+   vacíos, aunque el resto de funciones avanzadas sí lo necesiten. */
+const _INF_TIPOS_FALLBACK = [
+  { value: 'animal',        label: 'Animal',             icon: '🐗' },
+  { value: 'senyalitzacio', label: 'Señalización',       icon: '🛑' },
+  { value: 'averia',        label: 'Avería / Accidente', icon: '🚨' },
+  { value: 'bionda',        label: 'Bionda',             icon: '🛡️' },
+  { value: 'forat',         label: 'Bache / Grieta',     icon: '🕳️' },
+  { value: 'altra',         label: 'Otras',              icon: '⚠️' },
+];
+function _infTiposDisponibles() {
+  return (window.InformesCore && InformesCore.TIPOS_INCIDENCIA && InformesCore.TIPOS_INCIDENCIA.length)
+    ? InformesCore.TIPOS_INCIDENCIA : _INF_TIPOS_FALLBACK;
+}
+
 let informeState = {
   incidenciasTodas: [],
   tipos: ['todas'],
@@ -10134,6 +10152,9 @@ async function obrirInformes() {
     showToast('❌ Error al leer las incidencias: ' + e.message, 'err');
   }
   await _infCargarTecnicoYLogo();
+  if (!window.InformesCore) {
+    showToast('⚠️ informes-core.js no se ha cargado — sube ese archivo junto al index.html. Los filtros básicos funcionan, pero no podrás generar el informe.', 'warn', 6000);
+  }
   _infRenderTiposChips();
   _infRenderOrdenOptions();
   recalcularContadorInforme();
@@ -10252,7 +10273,7 @@ async function borrarLogoInforme() {
 /* ── Tipo de incidencia (chips) ───────────────────────────────────── */
 function _infRenderTiposChips() {
   const wrap = document.getElementById('infTiposChips');
-  const tipos = (window.InformesCore && InformesCore.TIPOS_INCIDENCIA) || [];
+  const tipos = _infTiposDisponibles();
   let html = `<button type="button" class="gal-filter-chip${informeState.tipos.includes('todas') ? ' active' : ''}" onclick="toggleTipoInforme('todas')">Todas</button>`;
   html += tipos.map(t =>
     `<button type="button" class="gal-filter-chip${informeState.tipos.includes(t.value) ? ' active' : ''}" onclick="toggleTipoInforme('${t.value}')">${t.icon} ${t.label}</button>`
@@ -10313,12 +10334,16 @@ function obrirSeleccionInforme() {
       const marcada = (informeState.idsSeleccionados || []).includes(inc.id);
       const info = window.InformesCore ? InformesCore.tipoInfo(inc.tipus) : { icon: '📌', label: inc.tipus };
       const sub = (window.InformesCore ? InformesCore.pkTexto(inc) : '') + ' · ' + (inc.ts_legible || '');
+      const thumbHtml = inc.thumb
+        ? `<img src="${inc.thumb}" class="inf-sel-thumb" alt="">`
+        : `<div class="inf-sel-thumb inf-sel-thumb-empty">📷</div>`;
       return `<div class="inf-sel-item${marcada ? ' checked' : ''}" onclick="_infToggleSeleccion(${inc.id}, this)">
         <div class="inf-sel-check">✓</div>
         <div class="inf-sel-txt">
           <div class="inf-sel-title">${info.icon} ${info.label}</div>
           <div class="inf-sel-sub">${sub}</div>
         </div>
+        ${thumbHtml}
       </div>`;
     }).join('');
   }
@@ -10347,11 +10372,30 @@ function confirmarSeleccionInforme() {
 /* ── Orden ─────────────────────────────────────────────────────────── */
 function _infRenderOrdenOptions() {
   const sel = document.getElementById('infOrdenSelect');
-  const opts = window.InformesCore ? InformesCore.opcionesOrdenParaTipos(informeState.tipos) : [{ value: 'carretera_pk', label: 'Carretera + PK' }];
+  const opts = window.InformesCore
+    ? InformesCore.opcionesOrdenParaTipos(informeState.tipos)
+    : [{ value: 'carretera_pk', label: 'Carretera + PK' }, { value: 'fecha', label: 'Fecha' }];
   if (!opts.some(o => o.value === informeState.orden)) informeState.orden = opts[0].value;
   sel.innerHTML = opts.map(o => `<option value="${o.value}"${o.value === informeState.orden ? ' selected' : ''}>${o.label}</option>`).join('');
+  _infActualizarEtiquetasDireccion();
 }
-function setOrdenInforme(valor) { informeState.orden = valor; recalcularContadorInforme(); }
+function setOrdenInforme(valor) {
+  informeState.orden = valor;
+  _infActualizarEtiquetasDireccion();
+  recalcularContadorInforme();
+}
+function _infActualizarEtiquetasDireccion() {
+  const wrap = document.getElementById('infDireccionSeg');
+  if (!wrap) return;
+  const opts = wrap.querySelectorAll('.inf-seg-opt');
+  if (informeState.orden === 'fecha') {
+    opts[0].textContent = '↑ Antiguos primero';
+    opts[1].textContent = '↓ Recientes primero';
+  } else {
+    opts[0].textContent = '↑ Ascendente';
+    opts[1].textContent = '↓ Descendente';
+  }
+}
 function setDireccionInforme(valor, el) {
   informeState.direccion = valor;
   if (el) el.parentElement.querySelectorAll('.inf-seg-opt').forEach(o => o.classList.toggle('active', o === el));
@@ -10508,11 +10552,30 @@ function _infPiePagina(doc, tecnico) {
   }
 }
 
+/* Dibuja una imagen dentro de una caja de maxW×maxH SIN deformarla —
+   como "object-fit: contain": se escala manteniendo su proporción real
+   y se centra dentro del hueco disponible (deja aire a los lados en vez
+   de estirar la foto). */
+function _infDibujarImagenContain(doc, dataUrl, x, y, maxW, maxH, formato) {
+  let propsW = maxW, propsH = maxH;
+  try {
+    const props = doc.getImageProperties(dataUrl);
+    propsW = props.width; propsH = props.height;
+  } catch (_) { /* si falla, se dibuja a caja completa como fallback */ }
+  const escala = Math.min(maxW / propsW, maxH / propsH);
+  const w = propsW * escala;
+  const h = propsH * escala;
+  const drawX = x + (maxW - w) / 2;
+  const drawY = y + (maxH - h) / 2;
+  doc.addImage(dataUrl, formato, drawX, drawY, w, h, undefined, 'FAST');
+  return { x: drawX, y: drawY, w, h };
+}
+
 function _infCabeceraPagina(doc, logoDataUrl, titulo) {
   const w = doc.internal.pageSize.getWidth();
   let x = 14, y = 15;
   if (logoDataUrl) {
-    try { doc.addImage(logoDataUrl, 'PNG', x, 8, 18, 18, undefined, 'FAST'); } catch (_) {}
+    try { _infDibujarImagenContain(doc, logoDataUrl, x, 8, 18, 18, 'PNG'); } catch (_) {}
   }
   doc.setTextColor(20); doc.setFont(undefined, 'bold'); doc.setFontSize(13);
   doc.text(titulo, w - 14, 13, { align: 'right' });
@@ -10561,7 +10624,7 @@ async function _infGenerarPdfFicha(incidencias, tecnico, logoDataUrl) {
 
     const fotoDataUrl = await _infBlobFotoADataURL(inc.fotoId);
     if (fotoDataUrl) {
-      try { doc.addImage(fotoDataUrl, 'JPEG', w - 14 - 40, y + 4, 40, bloqueAlto - 12, undefined, 'FAST'); } catch (_) {}
+      try { _infDibujarImagenContain(doc, fotoDataUrl, w - 14 - 40, y + 4, 40, bloqueAlto - 12, 'JPEG'); } catch (_) {}
     } else {
       doc.setFontSize(7.5); doc.setTextColor(160);
       doc.text('(sin foto)', w - 14 - 40 + 12, y + (bloqueAlto - 8) / 2);
