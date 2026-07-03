@@ -4586,6 +4586,16 @@ async function _forzarActualizacion() {
   <button type="button" class="bionda-origen-opt cancel" onclick="_biondaCerrarPkgPicker()">✕ Cancelar</button>
 </div>
 
+<!-- Selector Compartir / Descargar para los PDFs generados -->
+<div class="sheet-overlay" id="biondaPdfShareOverlay" onclick="_biondaCerrarPdfSharePicker()"></div>
+<div class="bionda-origen-sheet" id="biondaPdfShareSheet">
+  <div class="sheet-grabber-wrap"><div class="sheet-grabber"></div></div>
+  <div class="bionda-origen-title">📄 PDF generado</div>
+  <button type="button" class="bionda-origen-opt" onclick="_biondaCompartirPdfActual()">📤 Compartir</button>
+  <button type="button" class="bionda-origen-opt" onclick="_biondaDescargarPdfActual()">⬇️ Descargar</button>
+  <button type="button" class="bionda-origen-opt cancel" onclick="_biondaCerrarPdfSharePicker()">✕ Cerrar</button>
+</div>
+
 <!-- ════ TAB BAR ════ -->
 <nav class="tab-bar">
   <button class="tab-btn active" data-tab="screenHome" onclick="canviarTab(this,'screenHome')">
@@ -8284,7 +8294,26 @@ async function guardarBiondaSheet() {
 function _biondaTextoElementos(subtipus) {
   const els = Array.isArray(subtipus.elementos) ? subtipus.elementos : [];
   if (!els.length) return '(sin elementos añadidos)';
-  return els.map(e => `• ${e.label}  ×${e.unidades}`).join('\n');
+  return els.map(e => `- ${e.label}  x${e.unidades}`).join('\n');
+}
+
+/** Obtiene el dataURL de un slot de foto, tanto si ya está en IDB (fotoId) como
+ *  si es un archivo recién capturado que aún no se ha guardado (.file). */
+async function _biondaSlotDataURL(slot) {
+  const f = _biondaState.fotos[slot];
+  if (!f) return null;
+  if (f.fotoId != null) return await _infBlobFotoADataURL(f.fotoId);
+  if (f.file) {
+    try {
+      return await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result);
+        r.onerror = () => reject(new Error('No se pudo leer la foto'));
+        r.readAsDataURL(f.file);
+      });
+    } catch (_) { return null; }
+  }
+  return null;
 }
 
 async function _biondaGenerarPdfBase(titulo, incluirDespues) {
@@ -8329,31 +8358,71 @@ async function _biondaGenerarPdfBase(titulo, incluirDespues) {
   const anchoFoto = (w - 28 - 8) / 2;
   const altoFoto = 62;
   doc.setFont(undefined, 'bold'); doc.setFontSize(9); doc.setTextColor(20);
-  doc.text('📷 Antes', 14, y);
+  doc.text('Antes', 14, y);
   y += 3;
-  const antesA = await _infBlobFotoADataURL(subtipus.fotoId_antesA);
-  const antesB = await _infBlobFotoADataURL(subtipus.fotoId_antesB);
+  const antesA = await _biondaSlotDataURL('antesA');
+  const antesB = await _biondaSlotDataURL('antesB');
   doc.setDrawColor(225);
   doc.roundedRect(14, y, anchoFoto, altoFoto, 2, 2);
   doc.roundedRect(14 + anchoFoto + 8, y, anchoFoto, altoFoto, 2, 2);
-  if (antesA) try { _infDibujarImagenContain(doc, antesA, 14, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {}
-  if (antesB) try { _infDibujarImagenContain(doc, antesB, 14 + anchoFoto + 8, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {}
+  if (antesA) { try { _infDibujarImagenContain(doc, antesA, 14, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {} }
+  else { doc.setFontSize(7.5); doc.setTextColor(160); doc.text('(sin foto)', 14 + anchoFoto / 2, y + altoFoto / 2, { align: 'center' }); doc.setTextColor(20); doc.setFontSize(9); }
+  if (antesB) { try { _infDibujarImagenContain(doc, antesB, 14 + anchoFoto + 8, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {} }
+  else { doc.setFontSize(7.5); doc.setTextColor(160); doc.text('(sin foto)', 14 + anchoFoto + 8 + anchoFoto / 2, y + altoFoto / 2, { align: 'center' }); doc.setTextColor(20); doc.setFontSize(9); }
   y += altoFoto + 10;
 
   if (incluirDespues) {
     doc.setFont(undefined, 'bold'); doc.setFontSize(9); doc.setTextColor(20);
-    doc.text('✅ Después', 14, y);
+    doc.text('Después', 14, y);
     y += 3;
-    const despuesA = await _infBlobFotoADataURL(subtipus.fotoId_despuesA);
-    const despuesB = await _infBlobFotoADataURL(subtipus.fotoId_despuesB);
+    const despuesA = await _biondaSlotDataURL('despuesA');
+    const despuesB = await _biondaSlotDataURL('despuesB');
     doc.roundedRect(14, y, anchoFoto, altoFoto, 2, 2);
     doc.roundedRect(14 + anchoFoto + 8, y, anchoFoto, altoFoto, 2, 2);
-    if (despuesA) try { _infDibujarImagenContain(doc, despuesA, 14, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {}
-    if (despuesB) try { _infDibujarImagenContain(doc, despuesB, 14 + anchoFoto + 8, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {}
+    if (despuesA) { try { _infDibujarImagenContain(doc, despuesA, 14, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {} }
+    else { doc.setFontSize(7.5); doc.setTextColor(160); doc.text('(sin foto)', 14 + anchoFoto / 2, y + altoFoto / 2, { align: 'center' }); doc.setTextColor(20); doc.setFontSize(9); }
+    if (despuesB) { try { _infDibujarImagenContain(doc, despuesB, 14 + anchoFoto + 8, y, anchoFoto, altoFoto, 'JPEG'); } catch (_) {} }
+    else { doc.setFontSize(7.5); doc.setTextColor(160); doc.text('(sin foto)', 14 + anchoFoto + 8 + anchoFoto / 2, y + altoFoto / 2, { align: 'center' }); doc.setTextColor(20); doc.setFontSize(9); }
   }
 
   _infPiePagina(doc, tecnico);
   return doc.output('blob');
+}
+
+/* ── Compartir o descargar el PDF generado (el usuario elige) ── */
+let _biondaPdfPendiente = null; // { blob, nombre }
+function _biondaMostrarPdfSharePicker(blob, nombre) {
+  _biondaPdfPendiente = { blob, nombre };
+  document.getElementById('biondaPdfShareOverlay').classList.add('is-open');
+  document.getElementById('biondaPdfShareSheet').classList.add('is-open');
+}
+function _biondaCerrarPdfSharePicker() {
+  document.getElementById('biondaPdfShareOverlay').classList.remove('is-open');
+  document.getElementById('biondaPdfShareSheet').classList.remove('is-open');
+  _biondaPdfPendiente = null;
+}
+async function _biondaCompartirPdfActual() {
+  if (!_biondaPdfPendiente) return;
+  const { blob, nombre } = _biondaPdfPendiente;
+  _biondaCerrarPdfSharePicker();
+  try {
+    const file = new File([blob], nombre, { type: 'application/pdf' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: nombre });
+      return;
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+  }
+  // Sin Web Share API con ficheros disponible: descarga como alternativa
+  descarregarBlob(blob, nombre);
+  showToast('⬇️ Compartir no disponible — PDF descargado', 'ok', 2500);
+}
+function _biondaDescargarPdfActual() {
+  if (!_biondaPdfPendiente) return;
+  const { blob, nombre } = _biondaPdfPendiente;
+  _biondaCerrarPdfSharePicker();
+  descarregarBlob(blob, nombre);
 }
 
 async function _biondaGenerarPdfReparacion() {
@@ -8361,8 +8430,7 @@ async function _biondaGenerarPdfReparacion() {
   if (btn) btn.disabled = true;
   try {
     const blob = await _biondaGenerarPdfBase('Orden de reparación — Bionda', false);
-    descarregarBlob(blob, `bionda_reparar_${Date.now()}.pdf`);
-    showToast('📄 PDF de reparación generado', 'ok', 2200);
+    _biondaMostrarPdfSharePicker(blob, `bionda_reparar_${Date.now()}.pdf`);
   } catch (e) {
     showToast('❌ No se pudo generar el PDF: ' + e.message, 'err', 4000);
   } finally {
@@ -8379,8 +8447,7 @@ async function _biondaGenerarPdfFinalizado() {
       return;
     }
     const blob = await _biondaGenerarPdfBase('Reparación finalizada — Bionda', true);
-    descarregarBlob(blob, `bionda_finalizado_${Date.now()}.pdf`);
-    showToast('📄 PDF de finalizado generado', 'ok', 2200);
+    _biondaMostrarPdfSharePicker(blob, `bionda_finalizado_${Date.now()}.pdf`);
   } catch (e) {
     showToast('❌ No se pudo generar el PDF: ' + e.message, 'err', 4000);
   } finally {
