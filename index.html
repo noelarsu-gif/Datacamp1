@@ -1760,6 +1760,7 @@ body::before{
   background:var(--bg-3);color:var(--text-2);font-family:var(--font-mono);font-size:.8rem;outline:none;
 }
 .bionda-date-input:disabled{opacity:.5;}
+.bionda-date-hint{font-size:.62rem;color:var(--text-3);margin-top:5px;font-style:italic;}
 
 .bionda-pf-resumen{
   display:flex;align-items:center;gap:8px;padding:9px 11px;margin-bottom:8px;
@@ -4517,7 +4518,8 @@ async function _forzarActualizacion() {
 
     <div class="bionda-form-section">
       <label class="bionda-form-label">🕐 Fecha visualización / comunicación</label>
-      <input type="datetime-local" class="bionda-date-input" id="biondaFechaVisualizacion" disabled>
+      <input type="datetime-local" class="bionda-date-input" id="biondaFechaVisualizacion" onchange="_biondaOnFechaVisualizacionChange(this.value)" style="color:var(--text-1);">
+      <div class="bionda-date-hint">Se rellena sola con la 1ª foto del "antes", pero puedes cambiarla.</div>
     </div>
 
     <div class="bionda-form-section">
@@ -4546,7 +4548,8 @@ async function _forzarActualizacion() {
 
     <div class="bionda-form-section">
       <label class="bionda-form-label">✅ Fecha de reparación</label>
-      <input type="datetime-local" class="bionda-date-input" id="biondaFechaReparacion" disabled>
+      <input type="datetime-local" class="bionda-date-input" id="biondaFechaReparacion" onchange="_biondaOnFechaReparacionChange(this.value)" style="color:var(--text-1);">
+      <div class="bionda-date-hint">Se rellena sola con la 1ª foto del "después", pero puedes cambiarla.</div>
     </div>
 
     <div class="bionda-form-section bionda-pdf-row">
@@ -7890,6 +7893,25 @@ function _biondaFmtDatetimeLocal(iso) {
   const d = new Date(iso);
   const pad = n => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Convierte el valor de un <input type="datetime-local"> (hora local, sin zona)
+ *  a ISO string, o null si el usuario lo ha dejado vacío. */
+function _biondaDatetimeLocalAIso(valor) {
+  if (!valor) return null;
+  const d = new Date(valor);
+  return isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** El usuario edita manualmente la fecha de visualización/comunicación. */
+function _biondaOnFechaVisualizacionChange(valor) {
+  _biondaState.fechaVisualizacion = _biondaDatetimeLocalAIso(valor);
+}
+
+/** El usuario edita manualmente la fecha de reparación. */
+function _biondaOnFechaReparacionChange(valor) {
+  _biondaState.fechaReparacion = _biondaDatetimeLocalAIso(valor);
+  _biondaActualizarBadgeEstado();
 }
 
 function _biondaAntesCompleto() {
