@@ -4726,7 +4726,6 @@ function pkgSetLang(lang){
   });
   pkgApplyStatic();
   // Re-render llistes dinàmiques
-  try { if(typeof renderitzarIncidencies === 'function') renderitzarIncidencies(); } catch(_){}
   try { if(typeof renderitzarFotos === 'function') renderitzarFotos(); } catch(_){}
   // Actualitza el pill de sentit
   try { if(typeof _pkgRefrescaSentit === 'function') _pkgRefrescaSentit(); } catch(_){}
@@ -7294,7 +7293,6 @@ async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
       : `✅ ${nom} — ${inc.carretera} PK ${inc.km}+${String(inc.m).padStart(3,'0')}`;
     showToast(toastPK, 'ok', 2500);
     tancarIncPanel();
-    renderitzarIncidencies();
     if (pos && !ultimaPos) ultimaPos = pos;
     if (res && !ultimResultatObj) { ultimResultatObj = res; mostrarResultatOK(res); }
     // ── Hoja post-guardado: opción de añadir foto en el momento ──────
@@ -7442,7 +7440,6 @@ document.getElementById('inputIncFoto').addEventListener('change', async functio
     await idbPut(CFG.STORE_INC, inc);
 
     renderitzarFotos();
-    renderitzarIncidencies();
     showToast('📸 Foto añadida a la incidencia', 'ok', 2500);
 
     // Actualitza la hoja si encara és oberta
@@ -7533,7 +7530,6 @@ document.getElementById('inputIncGaleria').addEventListener('change', async func
     await idbPut(CFG.STORE_INC, inc);
 
     renderitzarFotos();
-    renderitzarIncidencies();
     showToast(pkgTS('📸 Foto añadida a la incidencia'), 'ok', 2500);
 
     if (_incPostData && _incPostData.id === id) {
@@ -7691,7 +7687,6 @@ async function eliminarIncFotoVisor() {
 
   closeIncFotoViewer();
   showToast('🗑️ Foto eliminada', 'warn', 2000);
-  renderitzarIncidencies();
   renderitzarFotos();
 }
 
@@ -7713,118 +7708,6 @@ async function compartirIncFotoVisor() {
 
 
 
-async function renderitzarIncidencies() {
-  const lista = document.getElementById('incidentsList');
-  const comptador = document.getElementById('incCount');
-  if (!lista || !comptador) return; // pantalla "Incidencias" eliminada — tot viu ja a la galeria
-  try {
-    const incs = await idbGetAll(CFG.STORE_INC);
-    comptador.textContent = `${incs.length} ${pkgT('REGISTROS')}`;
-    if (!incs.length) {
-      lista.innerHTML = `<div class="inc-empty"><div class="inc-empty-icon">📋</div><div class="inc-empty-text">${pkgTS('Sin incidencias registradas')}</div></div>`;
-      return;
-    }
-    const sorted = [...incs].sort((a,b) => b.ts.localeCompare(a.ts));
-    lista.innerHTML = sorted.map(inc => {
-      const sensePK    = !!inc.sensePK;
-      const mStr       = sensePK ? null : String(inc.m||0).padStart(3,'0');
-      const sentitClass = inc.sentit === 'creciente' ? 'creciente' : inc.sentit === 'decreciente' ? 'decreciente' : 'indet';
-      const sentitTxt   = _sentitWAComplet(inc);
-      const coordsStr   = inc.lat ? `${inc.lat.toFixed(5)}, ${inc.lon.toFixed(5)}` : '';
-      const teFoto      = inc.fotoId != null;
-      const teFoto2     = inc.fotoId2 != null;
-      const nFotos      = (teFoto ? 1 : 0) + (teFoto2 ? 1 : 0);
-
-      // Línia PK — omitida si sensePK
-      const pkLine = sensePK
-        ? `<div class="inc-pk" style="color:var(--text-3);font-style:italic;">${pkgT('card_sinpk')}</div>`
-        : `<div class="inc-pk">${inc.carretera} · PK ${inc.km}+${mStr}</div>`;
-
-      // Miniatures (fins a 2) — obren el visor de fotos en tocar-les
-      const thumbHTML = [
-        (teFoto  && inc.thumb)  ? `<img class="inc-thumb" src="${inc.thumb}"  alt="foto"   onclick="obrirFotoIncidencia(${inc.fotoId})">` : '',
-        (teFoto2 && inc.thumb2) ? `<img class="inc-thumb" src="${inc.thumb2}" alt="foto 2" onclick="obrirFotoIncidencia(${inc.fotoId2})">` : '',
-      ].join('');
-
-      // Botons d'acció
-      let accioBtns = '';
-      if (inc.lat && inc.lon) {
-        const mapsUrl = `https://maps.google.com/?q=${inc.lat},${inc.lon}`;
-        const sentitWA = _sentitWAComplet(inc);
-
-        // Construeix missatge WA — la línia PK desapareix si sensePK
-        const pkLinia = sensePK
-          ? `*${pkgT('WA_ubicacion')}* ${pkgT('WA_sinpk')}\n`
-          : `*${pkgT('WA_carretera')}* ${inc.carretera}\n*${pkgT('WA_pk')}* ${inc.km}+${mStr}\n`;
-
-        const waText = encodeURIComponent(
-          `⚠️ *${pkgT('WA_aviso_title')}* ⚠️\n\n` +
-          `*${pkgT('WA_tipo')}* ${nomIncidencia(inc.tipus)}\n` +
-          pkLinia +
-          `*${pkgT('WA_sentido')}* ${sentitWA}\n` +
-          `*${pkgT('WA_fechahora')}* ${inc.ts_legible}\n` +
-          `*${pkgT('WA_ubicacion_gps')}* https://maps.google.com/?q=${inc.lat},${inc.lon}`
-        );
-        const waUrl = `https://api.whatsapp.com/send?text=${waText}`;
-
-        // Si té foto → botó WhatsApp que adjunta la imatge (Web Share v2)
-        // Si no → botó WhatsApp text + botó per afegir foto (fins a 2)
-        const waBtn = teFoto
-          ? `<button class="inc-action-btn whatsapp con-foto" onclick="compartirIncidenciaWA(${inc.id})">${pkgT('card_wa_foto')}</button>`
-          : `<a class="inc-action-btn whatsapp" href="${waUrl}" target="_blank" rel="noopener">${pkgT('card_wa')}</a>`;
-        const fotoBtn = nFotos < 2
-          ? `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`
-          : '';
-
-        accioBtns = `
-          <div class="inc-actions" onclick="event.stopPropagation()">
-            <a class="inc-action-btn maps" href="${mapsUrl}" target="_blank" rel="noopener">${pkgT('card_maps')}</a>
-            ${waBtn}
-            ${fotoBtn}
-          </div>`;
-      } else {
-        // Sense coordenades però encara permetem afegir foto (fins a 2)
-        const fotoBtn = nFotos < 2
-          ? `<button class="inc-action-btn add-foto" onclick="afegirFotoIncidencia(${inc.id})">${pkgT('card_addfoto')}</button>`
-          : '';
-        if (fotoBtn) accioBtns = `<div class="inc-actions" onclick="event.stopPropagation()">${fotoBtn}</div>`;
-      }
-
-      // Bionda: la tarjeta abre el Bottom Sheet de reparación Antes/Después,
-      // apuntando a la foto vinculada (inc.fotoId), que es donde vive el subtipus.
-      const esBionda      = inc.tipus === 'bionda';
-      const biondaEstado  = inc.subtipus?.estado === 'reparada' ? 'reparada' : 'pendiente';
-      const biondaClickAttr = (esBionda && inc.fotoId != null) ? ` onclick="abrirBottomSheetBionda(${inc.fotoId})"` : '';
-      const biondaBadgeHTML = esBionda
-        ? `<span class="inc-bionda-estado ${biondaEstado === 'reparada' ? 'reparada' : ''}">${biondaEstado === 'reparada' ? '✅ Reparada' : '🟠 Pendiente'}</span>`
-        : '';
-
-      return `
-      <div class="incident-card ${inc.tipus}" data-id="${inc.id}"${biondaClickAttr}>
-        <button class="inc-del-btn" title="Eliminar incidencia" onclick="event.stopPropagation();esborrarIncidenciaIndividual(${inc.id})">🗑️</button>
-        <div class="inc-icon">${tipusIcon(inc.tipus)}</div>
-        ${thumbHTML}
-        <div class="inc-body">
-          <div class="inc-title">${nomIncidencia(inc.tipus)}</div>
-          ${pkLine}
-          <div class="inc-datetime">🕐 ${inc.ts_legible}</div>
-          <div class="inc-meta">
-            <span class="inc-meta-row">${coordsStr || (sensePK ? pkgT('card_sincoords') : `${inc.carretera} PK ${inc.km}+${mStr}`)}</span>
-          </div>
-          <span class="inc-sentit ${sentitClass}">${sentitTxt}</span>
-          ${biondaBadgeHTML}
-          ${accioBtns}
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e) { lista.innerHTML = `<div class="inc-empty"><div class="inc-empty-text">${pkgTS('Error leyendo datos')}</div></div>`; }
-}
-
-function tipusIcon(tipus) {
-  const icons = { animal:'🐗', senyalitzacio:'🛑', forat:'🕳️', altra:'⚠️', averia:'🚨' };
-  return icons[tipus] || '❓';
-}
-
 async function esborrarIncidenciaIndividual(id) {
   if (!confirm(pkgTS('¿Eliminar esta incidencia?'))) return;
   try {
@@ -7837,7 +7720,6 @@ async function esborrarIncidenciaIndividual(id) {
       try { await idbDelete(CFG.STORE_PHOTOS, inc.fotoId2); } catch(_) {}
     }
     await idbDelete(CFG.STORE_INC, id);
-    renderitzarIncidencies();
     try { renderitzarFotos(); } catch(_) {}
     showToast(pkgTS('🗑️ Incidencia eliminada'), 'warn', 2000);
   } catch(e) {
@@ -8301,7 +8183,6 @@ async function guardarBiondaSheet() {
     showToast(subtipus.estado === 'reparada' ? '✅ Bionda marcada como Reparada' : '💾 Datos de la Bionda guardados', 'ok', 2200);
     cerrarBottomSheetBionda();
     try { renderitzarFotos(); } catch (_) {}
-    try { renderitzarIncidencies(); } catch (_) {}
     try { if (document.getElementById('biondasManagerBody')?.style.display !== 'none') _biondasManagerLoad(); } catch (_) {}
   } catch (e) {
     showToast('❌ ' + e.message, 'err');
@@ -9001,7 +8882,6 @@ async function eliminarSeleccio() {
   } catch(_) {}
   showToast(pkgF('tpl_fotos_eliminadas_n', ids.length),'warn');
   desactivarSeleccio();
-  renderitzarIncidencies();
   renderitzarFotos();
 }
 
@@ -9724,7 +9604,6 @@ async function eliminarFotoVisor() {
         if (inc.fotoId  === fotoId) { inc.fotoId  = null; inc.thumb  = null; }
         if (inc.fotoId2 === fotoId) { inc.fotoId2 = null; inc.thumb2 = null; }
         await idbPut(CFG.STORE_INC, inc);
-        renderitzarIncidencies();
       }
     }
   } catch(_) {}
@@ -9874,8 +9753,7 @@ document.getElementById('inputImportBackup').addEventListener('change', async fu
     }
 
     // ── Actualitzar la UI ─────────────────────────────────────────────
-    try { renderitzarIncidencies(); } catch(_) {}
-    try { renderitzarFotos();       } catch(_) {}
+    try { renderitzarFotos(); } catch(_) {}
 
     // ── Importar trazas i exclusions si n'hi ha ───────────────────────
     let nTrazas = 0, nExcls = 0;
@@ -10507,7 +10385,6 @@ function canviarTab(btn, screenId) {
     }, 300);
   }
 
-  if (screenId === 'screenInc')    renderitzarIncidencies();
   if (screenId === 'screenPhotos') renderitzarFotos();
 }
 
@@ -11267,6 +11144,42 @@ let informeState = {
 };
 let _infArchivosGenerados = [];
 
+/* Construye un objeto con la MISMA forma que una incidencia de STORE_INC
+   a partir de una foto suelta ya etiquetada por el workflow unificado
+   (cámara → formulario post-foto), que nunca llega a crear fila en
+   STORE_INC. Gracias a esto, filtros, orden, PDF, ZIP y Excel funcionan
+   sin tocar ni una línea más: todos operan sobre "algo con forma de
+   incidencia", venga de donde venga.
+   El id se guarda en NEGATIVO (-foto.id) para que nunca choque con un id
+   real de STORE_INC (autoincrement siempre positivo) dentro de las
+   listas de selección manual del panel de Informes. */
+function _infIncidenciaVirtualDesdeFoto(foto) {
+  return {
+    id: -foto.id,
+    _fotoVirtual: true,
+    tipus: foto.tipus,
+    subtipus: foto.subtipus,
+    nom: (window.InformesCore && InformesCore.tipoInfo)
+      ? InformesCore.tipoInfo(foto.tipus).label
+      : foto.tipus,
+    carretera: foto.carretera ?? null,
+    km: foto.km ?? null,
+    m: foto.m ?? null,
+    sensePK: !!foto.sensePK,
+    lat: foto.lat ?? null,
+    lon: foto.lon ?? null,
+    acc: null,
+    sentit: foto.sentit || 'indeterminado',
+    sentidoFoto: '',
+    ts: foto.ts,
+    ts_legible: foto.ts_legible,
+    fotoId: foto.id,   // el generador de PDF/ZIP la lee de aquí, igual que a las reales
+    thumb: null,
+    fotoId2: null,
+    thumb2: null,
+  };
+}
+
 /* ── Apertura / cierre del panel ──────────────────────────────────── */
 async function obrirInformes() {
   try { closeGalMenu(); } catch (_) {}
@@ -11274,7 +11187,20 @@ async function obrirInformes() {
   document.getElementById('informesPanel').classList.add('open');
   _infSwitchTab('informes');
   try {
-    informeState.incidenciasTodas = await idbGetAll(CFG.STORE_INC);
+    const [incsReales, fotosTodas] = await Promise.all([
+      idbGetAll(CFG.STORE_INC),
+      idbGetAll(CFG.STORE_PHOTOS),
+    ]);
+    // Fotos sueltas del workflow unificado (cámara → formulario post-foto):
+    // llevan su propio "tipus" pero NUNCA generan fila en STORE_INC.
+    // Se convierten aquí en "incidencias virtuales" para que el resto del
+    // motor de informes (filtros, orden, PDF, ZIP, Excel) las trate
+    // exactamente igual que a las incidencias del antiguo panel, sin
+    // duplicar lógica en cada generador.
+    const incsVirtuales = fotosTodas
+      .filter(f => f.tipus && f.incId == null)
+      .map(_infIncidenciaVirtualDesdeFoto);
+    informeState.incidenciasTodas = [...incsReales, ...incsVirtuales];
   } catch (e) {
     informeState.incidenciasTodas = [];
     showToast('❌ Error al leer las incidencias: ' + e.message, 'err');
