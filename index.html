@@ -1651,35 +1651,7 @@ body::before{
 }
 .fab-cam-float:hover,.fab-cam-float:active{transform:scale(1.08);box-shadow:0 6px 24px rgba(168,85,247,.7);}
 
-/* Panel d'incidència ràpida */
-.inc-quick-panel{
-  position:fixed;left:0;right:0;bottom:56px;z-index:250;
-  background:var(--bg-2);border-top:1px solid var(--border-acc);
-  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
-  transform:translateY(100%);transition:transform .35s cubic-bezier(.32,.72,0,1);
-  padding-bottom:env(safe-area-inset-bottom,12px);
-  box-shadow:var(--shadow-lg);
-}
-.inc-quick-panel.open{transform:translateY(0);}
 .panel-handle{width:38px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;}
-.inc-panel-title{text-align:center;font-family:var(--font-cond);font-size:.8rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text-3);padding:10px 0 14px;}
-.inc-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px 16px;}
-.inc-btn{
-  padding:18px 10px;border-radius:var(--radius);border:1px solid var(--border);
-  background:var(--bg-3);color:var(--text-1);font-family:var(--font);
-  font-size:.8rem;font-weight:600;cursor:pointer;transition:var(--tr);
-  display:flex;flex-direction:column;align-items:center;gap:7px;
-  text-align:center;line-height:1.3;
-}
-.inc-btn-icon{font-size:1.8rem;line-height:1;}
-.inc-btn:hover,.inc-btn:active{background:var(--bg-4);border-color:var(--border-acc);transform:scale(.97);}
-.inc-btn.animal:hover,.inc-btn.animal:active{border-color:rgba(255,184,0,.5);background:var(--amber-dim);}
-.inc-btn.senyalitzacio:hover,.inc-btn.senyalitzacio:active{border-color:rgba(255,59,92,.5);background:var(--red-dim);}
-.inc-btn.forat:hover,.inc-btn.forat:active{border-color:rgba(168,85,247,.5);background:var(--purple-dim);}
-.inc-btn.altra:hover,.inc-btn.altra:active{border-color:rgba(0,212,255,.5);background:var(--accent-dim);}
-.inc-btn.averia:hover,.inc-btn.averia:active{border-color:rgba(220,50,50,.6);background:rgba(220,50,50,.12);}
-.inc-btn.inc-pressed{animation:incFlash .3s ease;}
-@keyframes incFlash{0%{transform:scale(.93)}100%{transform:scale(1)}}
 
 /* ═══════════════════════════════════════════════════════════
    BOTTOM SHEET BIONDA — panel deslizable inferior (Antes/Después)
@@ -4772,7 +4744,6 @@ let gpsRunning = false;
 let sentit = 'indeterminado'; // 'creciente' | 'decreciente' | 'indeterminado'
 let historialPos = [];       // últimes posicions per calcular sentit
 let db = null;
-let incPanel_open = false;
 
 // ── Variables mapa integrat ──────────────────────────────────────
 let map = null;
@@ -6974,19 +6945,6 @@ async function copiarResultat() {
 /* ═══════════════════════════════════════════════════════════════════
    INCIDENCIAS
 ═══════════════════════════════════════════════════════════════════ */
-function toggleIncPanel() {
-  incPanel_open = !incPanel_open;
-  document.getElementById('incPanel').classList.toggle('open', incPanel_open);
-  document.getElementById('fabInc').textContent = incPanel_open ? '✕' : '⚡';
-}
-
-function tancarIncPanel() {
-  incPanel_open = false;
-  document.getElementById('incPanel').classList.remove('open');
-  const fab = document.getElementById('fabInc');
-  if (fab) fab.textContent = '⚡';
-}
-
 /* ═══════════════════════════════════════════════════════════════════
    HELPER CENTRAL: captura GPS fresca + càlcul PK immediat
    Crida obligatòria des de fotos I incidències — mai hereda dades antigues
@@ -7216,95 +7174,6 @@ function pkDecisioCancel() {
   if (_pkDecisioResolve) { _pkDecisioResolve(null); _pkDecisioResolve = null; }
 }
 
-async function registrarIncidencia(tipus, nom) {
-  const btn = event?.target?.closest('.inc-btn');
-  if (btn) { btn.classList.add('inc-pressed'); setTimeout(()=>btn.classList.remove('inc-pressed'), 400); }
-
-  tancarIncPanel();
-  showToast('📡 Capturando posición exacta...', 'ok', 4000);
-
-  const { pos, res: resAuto, error } = await obtenirPosicioFrescaAmbPK();
-
-  // ── Detecta si cal decisió manual o selector de carretera ──────
-  let resDefinitiu = resAuto;
-  let sensePK = false;
-
-  if (error || _calDecisioManualPK(resAuto)) {
-    // GPS fallat o fora de trassa → modal estàndard d'error
-    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'incidencia', 'error');
-    if (decisio === null) {
-      showToast('❌ Registro cancelado', 'warn', 2500);
-      return;
-    }
-    resDefinitiu = decisio.res;
-    sensePK      = decisio.sensePK;
-  } else if (_hayMultiplesCandidatas()) {
-    // Detecció vàlida però hi ha rivals a prop → confirmar carretera
-    const decisio = await _mostrarModalDecisioPK(pos, resAuto, 'incidencia', 'selector');
-    if (decisio === null) {
-      showToast('❌ Registro cancelado', 'warn', 2500);
-      return;
-    }
-    resDefinitiu = decisio.res ?? resAuto;  // si cancel·la chips, manté la detecció auto
-    sensePK      = decisio.sensePK;
-  } else if (!sensePK && resDefinitiu) {
-    // Detecció vàlida i única → confirmar carretera igual que al flux de foto
-    const preCarr = resDefinitiu.carretera || '';
-    const preKm   = resDefinitiu.km ?? '';
-    const preM    = resDefinitiu.m  ?? '';
-    const confirmat = await _mostrarModalConfirmPK(preCarr, preKm, preM, { hideChips: true });
-    if (confirmat === null) {
-      showToast('❌ Registro cancelado', 'warn', 2500);
-      return;
-    }
-    resDefinitiu = {
-      ...resDefinitiu,
-      carretera: confirmat.carretera,
-      km: confirmat.km,
-      m:  confirmat.m,
-    };
-    if (!confirmat.carretera || confirmat.carretera === '—') sensePK = true;
-  }
-
-  await _guardarIncidencia(tipus, nom, pos, resDefinitiu, sensePK);
-}
-
-async function _guardarIncidencia(tipus, nom, pos, res, sensePK = false) {
-  const ara = new Date();
-  const inc = {
-    tipus, nom,
-    // Si sensePK=true, guardem null explícit per saber que no hi ha PK
-    carretera: sensePK ? null : (res?.carretera || '—'),
-    km:        sensePK ? null : (res?.km        ?? 0),
-    m:         sensePK ? null : (res?.m         ?? 0),
-    sensePK,          // flag per al renderitzat i el WA
-    lat:       pos?.lat ?? null,
-    lon:       pos?.lon ?? null,
-    acc:       pos?.acc ?? null,
-    sentit,
-    sentidoFoto: '',    // 'izq'|'dcha'|'' — s'omple des del modal de foto
-    ts:         ara.toISOString(),
-    ts_legible: formatarDataHora(ara),
-    fotoId:     null,   // s'omple si l'usuari afegeix foto
-    thumb:      null,   // miniatura base64 per a la targeta
-    fotoId2:    null,   // segona foto (màx. 2 per incidència)
-    thumb2:     null,   // miniatura de la segona foto
-  };
-  try {
-    const newId = await idbAdd(CFG.STORE_INC, inc);
-    const toastPK = sensePK
-      ? `📍 ${nom} — sin PK (coords GPS)`
-      : `✅ ${nom} — ${inc.carretera} PK ${inc.km}+${String(inc.m).padStart(3,'0')}`;
-    showToast(toastPK, 'ok', 2500);
-    tancarIncPanel();
-    if (pos && !ultimaPos) ultimaPos = pos;
-    if (res && !ultimResultatObj) { ultimResultatObj = res; mostrarResultatOK(res); }
-    // ── Hoja post-guardado: opción de añadir foto en el momento ──────
-    _mostrarSheetPostInc(newId, { ...inc, id: newId });
-  } catch(e) {
-    showToast('❌ Error al guardar la incidencia: ' + e.message, 'err');
-  }
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    HOJA POST-INCIDENCIA — añadir foto en el momento (flujo rápido)
@@ -10361,7 +10230,6 @@ function canviarTab(btn, screenId) {
   btn.classList.add('active');
   const screen = document.getElementById(screenId);
   screen.classList.add('active');
-  tancarIncPanel();
 
   // FAB stack: visible a Home i Mapa, ocult a les altres pestanyes
   const showFab = screenId === 'screenHome';
@@ -10577,14 +10445,7 @@ if ('caches' in window) {
     sp.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 80) closeSettings(); },{ passive:true });
   }
 
-  // Swipe down per tancar panell incidències
-  const ip = document.getElementById('incPanel');
-  if (ip) {
-    ip.addEventListener('touchstart', e=>{ startY=e.touches[0].clientY; },{ passive:true });
-    ip.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 60) tancarIncPanel(); },{ passive:true });
-  }
-
-  window.addEventListener('popstate', ()=>{ closeSettings(); tancarIncPanel(); });
+  window.addEventListener('popstate', ()=>{ closeSettings(); });
 
   // ── Banner offline ──────────────────────────────────────────────
   function _actualitzarBannerOffline() {
@@ -10603,11 +10464,6 @@ if ('caches' in window) {
     }
   });
 
-  // Clic fora del panel d'incidències el tanca
-  document.addEventListener('click', e => {
-    if (incPanel_open && !e.target.closest('.inc-quick-panel') && !e.target.closest('.fab-stack'))
-      tancarIncPanel();
-  });
 });
 
 /* ═══════════════════════════════════════════════════════════════════
