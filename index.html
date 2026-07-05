@@ -1975,19 +1975,19 @@ body::before{
 
 /* Filtres de galeria: ordre (recents/antics) + tipus d'incidència */
 .gal-filters{
-  display:flex;align-items:center;gap:8px;padding:8px 14px;
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
   border-bottom:1px solid var(--border);flex-wrap:wrap;
 }
 .gal-filter-chip{
-  padding:6px 12px;border-radius:20px;border:1px solid var(--border);
+  padding:10px 18px;border-radius:24px;border:1px solid var(--border);
   background:var(--bg-3);color:var(--text-2);font-family:var(--font-cond);
-  font-size:.68rem;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:var(--tr);
+  font-size:.92rem;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:var(--tr);
 }
 .gal-filter-chip.active{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);}
 .gal-filter-select{
-  padding:6px 10px;border-radius:20px;border:1px solid var(--border);
+  padding:10px 14px;border-radius:24px;border:1px solid var(--border);
   background:var(--bg-3);color:var(--text-2);font-family:var(--font-cond);
-  font-size:.68rem;font-weight:700;letter-spacing:.3px;
+  font-size:.92rem;font-weight:700;letter-spacing:.3px;
 }
 
 /* Grid de 3 columnes */
@@ -1999,6 +1999,7 @@ body::before{
 .photo-card{
   position:relative;height:0;padding-bottom:100%;overflow:hidden;cursor:pointer;
   background:var(--bg-3);border-radius:8px;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;
 }
 .photo-card.selected::after{
   content:'';position:absolute;inset:0;background:rgba(0,212,255,.22);
@@ -2618,7 +2619,6 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
   display:inline-flex;align-items:center;gap:8px;background:rgba(168,85,247,.15);
   border:1px solid rgba(168,85,247,.4);border-radius:10px;padding:6px 10px;
 }
-.sc-selected-chip img{width:32px;height:28px;object-fit:contain;background:#fff;border-radius:4px;}
 .sc-selected-chip .sc-code{font-size:13px;-webkit-text-stroke:.25px currentColor;}
 .sc-selected-chip .sc-name{font-size:11px;max-width:140px;text-align:left;}
 .sc-selected-chip .sc-chip-del{margin-left:2px;color:var(--red,#ff3b5c);font-weight:900;padding:0 4px;}
@@ -8680,8 +8680,34 @@ async function renderitzarFotos() {
         ${badge}
         <div class="photo-pk-overlay">${pkLabel}</div>`;
 
+      // ── Mantener pulsada una foto: activa selección múltiple ────────
+      let lpTimer = null, lpFired = false, lpStartX = 0, lpStartY = 0;
+      const LP_MS = 450, LP_TOLERANCIA = 10;
+      const _lpCancelar = () => { clearTimeout(lpTimer); lpTimer = null; };
+      card.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        lpFired  = false;
+        lpStartX = e.clientX; lpStartY = e.clientY;
+        _lpCancelar();
+        lpTimer = setTimeout(() => {
+          lpFired = true;
+          if (!modeSeleccio) activarSeleccio();
+          toggleFotoSeleccionada(foto.id, card);
+          try { navigator.vibrate && navigator.vibrate(20); } catch(_) {}
+        }, LP_MS);
+      });
+      card.addEventListener('pointermove', e => {
+        if (!lpTimer) return;
+        if (Math.abs(e.clientX - lpStartX) > LP_TOLERANCIA || Math.abs(e.clientY - lpStartY) > LP_TOLERANCIA) _lpCancelar();
+      });
+      card.addEventListener('pointerup',     _lpCancelar);
+      card.addEventListener('pointercancel', _lpCancelar);
+      card.addEventListener('pointerleave',  _lpCancelar);
+      card.addEventListener('contextmenu',   e => e.preventDefault());
+
       // Clic foto: mode selecció o visor únic (permet editar tipus també si ve d'incidència)
       card.querySelector('.photo-thumb').addEventListener('click', () => {
+        if (lpFired) { lpFired = false; return; }
         if (modeSeleccio) { toggleFotoSeleccionada(foto.id, card); return; }
         obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
       });
@@ -9152,7 +9178,9 @@ function _pfObrirCataleg() {
   const codisActuals = _pfSenyalsSeleccionades.filter(s => s.c).map(s => s.c);
   obrirCatalegSenyals((senyal, afegida) => {
     if (afegida) {
-      if (!_pfSenyalsSeleccionades.some(s => s.c === senyal.c)) _pfSenyalsSeleccionades.push(senyal);
+      if (!_pfSenyalsSeleccionades.some(s => s.c === senyal.c)) {
+        _pfSenyalsSeleccionades.push({ c: senyal.c, n: senyal.n, nEs: senyal.nEs, manual: false });
+      }
     } else {
       _pfSenyalsSeleccionades = _pfSenyalsSeleccionades.filter(s => s.c !== senyal.c);
     }
@@ -9179,14 +9207,13 @@ function _pfRenderSenyalsChips() {
     return;
   }
   wrap.style.display = 'flex';
-  wrap.innerHTML = _pfSenyalsSeleccionades.map((senyal, i) => senyal.manual
+  wrap.innerHTML = _pfSenyalsSeleccionades.map((senyal, i) => (senyal.manual || !senyal.c)
     ? `<div class="sc-selected-chip manual">
         <span class="sc-manual-icon">✏️</span>
         <span class="sc-name">${senyal.nEs || senyal.n}</span>
         <span class="sc-chip-del" onclick="_pfEsborrarSenyal(${i})">✕</span>
       </div>`
     : `<div class="sc-selected-chip">
-        <img src="data:image/png;base64,${senyal.img}" alt="${senyal.c}">
         <span class="sc-code">${senyal.c}</span>
         <span class="sc-name">${_scNomSenyal(senyal)}</span>
         <span class="sc-chip-del" onclick="_pfEsborrarSenyal(${i})">✕</span>
@@ -9233,7 +9260,7 @@ async function _pfGuardar() {
     subtipus = { especie: esp, especieLabel };
   } else if (tipus === 'senyalitzacio') {
     if (_pfSenyalsSeleccionades.length) {
-      subtipus = { senyals: _pfSenyalsSeleccionades.map(s => ({ c: s.c, n: s.n, nEs: s.nEs })) };
+      subtipus = { senyals: _pfSenyalsSeleccionades.map(s => ({ c: s.c, n: s.n, nEs: s.nEs, manual: !!s.manual })) };
     }
   } else if (tipus === 'altra') {
     subtipus = { texto: document.getElementById('pfAltraTexto').value.trim() };
