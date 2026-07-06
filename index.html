@@ -997,6 +997,38 @@ body::before{
 }
 .gps-error-btn.cancel:hover{background:var(--bg-4);}
 
+/* ── Modal recordatori setmanal de còpia de seguretat ── */
+.backup-reminder-modal{
+  position:fixed;inset:0;z-index:905;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(6px);
+  display:none;align-items:center;justify-content:center;
+  padding:24px;
+}
+.backup-reminder-modal.open{display:flex;}
+.backup-reminder-box{
+  background:var(--bg-2);border:1px solid var(--border-acc);
+  border-radius:var(--radius-xl);padding:28px 24px;max-width:340px;width:100%;
+  text-align:center;box-shadow:var(--shadow-lg);
+}
+.backup-reminder-icon{font-size:2.4rem;margin-bottom:10px;}
+.backup-reminder-title{font-family:var(--font-cond);font-size:1rem;font-weight:900;
+  letter-spacing:1.5px;color:var(--text-1);margin-bottom:8px;}
+.backup-reminder-msg{font-size:.8rem;color:var(--text-2);line-height:1.55;margin-bottom:20px;}
+.backup-reminder-btns{display:flex;flex-direction:column;gap:10px;}
+.backup-reminder-btn{
+  padding:13px 10px;border-radius:var(--radius);
+  font-family:var(--font-cond);font-size:.85rem;font-weight:700;
+  letter-spacing:1px;cursor:pointer;transition:var(--tr);
+}
+.backup-reminder-btn.accept{
+  border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);
+}
+.backup-reminder-btn.accept:hover{background:rgba(0,212,255,.28);}
+.backup-reminder-btn.cancel{
+  border:1px solid var(--border);background:var(--bg-3);color:var(--text-2);
+}
+.backup-reminder-btn.cancel:hover{background:var(--bg-4);}
+
 /* ── Modal decisió PK (fora de trassa / sense cobertura) ── */
 .pk-decision-modal{
   position:fixed;inset:0;z-index:910;
@@ -3187,6 +3219,44 @@ function _compartirWhatsApp() {
 function _mostrarApp() {
   document.getElementById('accessWall').style.display = 'none';
   document.getElementById('appContent').style.display = 'block';
+  // Comprova si toca mostrar el recordatori setmanal de còpia de seguretat
+  setTimeout(_comprovarRecordatoriBackup, 1500);
+}
+
+/* ── Recordatori setmanal de còpia de seguretat ── */
+const BACKUP_REMINDER_KEY = 'pkgeoloc_backup_reminder_last_ts';
+const BACKUP_REMINDER_MS  = 7 * 24 * 60 * 60 * 1000; // 7 dies
+
+function _comprovarRecordatoriBackup() {
+  try {
+    const last = +(localStorage.getItem(BACKUP_REMINDER_KEY) || 0);
+    if (Date.now() - last >= BACKUP_REMINDER_MS) {
+      document.getElementById('backupReminderModal').classList.add('open');
+    }
+  } catch(_) {}
+}
+
+/** Marca "ara" com l'última vegada que s'ha vist/fet el recordatori */
+function _backupReminderMarcarAra() {
+  try { localStorage.setItem(BACKUP_REMINDER_KEY, String(Date.now())); } catch(_) {}
+}
+
+/** Botó "Cerrar" del recordatori: es tanca i no torna a sortir fins d'aquí 7 dies */
+function _backupReminderCerrar() {
+  document.getElementById('backupReminderModal').classList.remove('open');
+  _backupReminderMarcarAra();
+}
+
+/** Botó "Hacer backup ahora": tanca el modal, obre Ajustes i llança l'exportació */
+function _backupReminderIrABackup() {
+  document.getElementById('backupReminderModal').classList.remove('open');
+  _backupReminderMarcarAra();
+  openSettings();
+  setTimeout(() => {
+    const card = document.getElementById('backupStatus');
+    if (card) card.scrollIntoView({ behavior:'smooth', block:'center' });
+    exportarBackup();
+  }, 350);
 }
 
 /* ── Forçar actualització de l'app (buida caché SW + reload) ── */
@@ -3815,6 +3885,19 @@ async function _forzarActualizacion() {
       <button class="gps-error-btn accept" onclick="acceptarManualGPS()">✏️ Sí, introducir manual</button>
     </div>
   </div>
+
+<!-- ════ MODAL RECORDATORI SETMANAL DE CÒPIA DE SEGURETAT ════ -->
+<div class="backup-reminder-modal" id="backupReminderModal">
+  <div class="backup-reminder-box">
+    <div class="backup-reminder-icon">💾</div>
+    <div class="backup-reminder-title">HAZ UNA COPIA DE SEGURIDAD</div>
+    <div class="backup-reminder-msg">Ha pasado una semana desde tu último aviso.<br>Recuerda hacer un backup para no perder tus incidencias y fotos.</div>
+    <div class="backup-reminder-btns">
+      <button class="backup-reminder-btn accept" onclick="_backupReminderIrABackup()">📤 Hacer backup ahora</button>
+      <button class="backup-reminder-btn cancel" onclick="_backupReminderCerrar()">Cerrar</button>
+    </div>
+  </div>
+</div>
 </div>
 
 <!-- ════ MODAL DECISIÓ PK — Fora de trassa / Sense cobertura ════ -->
@@ -9761,6 +9844,7 @@ async function exportarBackup() {
       try {
         await navigator.share({ files: [file], title: 'PK-GEOLOC backup', text: nom });
         status.textContent = `✅ Backup compartido (${incs.length} incidencias, ${fotos.length} fotos, ${trazas.length} trazas)`;
+        _backupReminderMarcarAra();
         return;
       } catch (err) {
         if (err.name === 'AbortError') { status.textContent = ''; return; }
@@ -9771,6 +9855,7 @@ async function exportarBackup() {
     // Intent 2: descàrrega directa
     descarregarBlob(blob, nom);
     status.textContent = `✅ Backup descargado (${incs.length} incidencias, ${fotos.length} fotos, ${trazas.length} trazas)`;
+    _backupReminderMarcarAra();
 
   } catch(e) {
     status.textContent = '❌ Error al exportar: ' + e.message;
