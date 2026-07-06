@@ -1927,30 +1927,32 @@ body::before{
 /* Barra de selecció múltiple — bottom sheet que puja des de baix (estil Samsung) */
 .sel-toolbar{
   position:fixed;left:0;right:0;bottom:0;z-index:400;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:12px 14px calc(12px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;align-items:stretch;
+  padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px));
   background:var(--bg-3);border-top:1px solid var(--border-acc);
-  gap:8px;box-shadow:0 -6px 20px rgba(0,0,0,.35);
+  gap:14px;box-shadow:0 -6px 20px rgba(0,0,0,.35);
   transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);
   pointer-events:none;
 }
 .sel-toolbar.visible{transform:translateY(0);pointer-events:auto;}
+.sel-toolbar-top{display:flex;align-items:center;gap:12px;}
 .sel-btn-close{
-  flex-shrink:0;width:30px;height:30px;border-radius:50%;
+  flex-shrink:0;width:34px;height:34px;border-radius:50%;
   border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);
-  color:rgba(255,255,255,.7);font-weight:900;font-size:.85rem;
+  color:rgba(255,255,255,.7);font-weight:900;font-size:.9rem;
 }
-.sel-count{font-family:var(--font-cond);font-size:.82rem;font-weight:700;color:var(--accent);letter-spacing:1px;}
-.sel-actions{display:flex;gap:8px;}
+.sel-count{font-family:var(--font-cond);font-size:.85rem;font-weight:700;color:var(--accent);letter-spacing:1px;}
+.sel-actions{display:flex;gap:10px;}
 .sel-btn{
-  padding:7px 13px;border-radius:var(--radius-sm);font-family:var(--font-cond);
-  font-size:.72rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);
+  flex:1;min-width:0;padding:12px 10px;border-radius:var(--radius-sm);font-family:var(--font-cond);
+  font-size:.74rem;font-weight:700;letter-spacing:.8px;cursor:pointer;transition:var(--tr);
+  display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;
 }
-.sel-btn-share{border:1px solid rgba(0,212,255,.4);background:var(--accent-dim);color:var(--accent);display:inline-flex;align-items:center;gap:5px;}
+.sel-btn-share{border:1px solid rgba(0,212,255,.4);background:var(--accent-dim);color:var(--accent);}
 .sel-btn-share:hover{background:rgba(0,212,255,.22);}
 .sel-btn-del{border:1px solid rgba(255,59,92,.4);background:var(--red-dim);color:var(--red);}
 .sel-btn-del:hover{background:rgba(255,59,92,.25);}
-.sel-btn-save{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:var(--text-2);display:inline-flex;align-items:center;gap:5px;}
+.sel-btn-save{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:var(--text-2);}
 .sel-btn-save:hover{background:rgba(255,255,255,.16);}
 
 /* Menú de tres puntets (⋮) de la capçalera de Fotos */
@@ -2146,6 +2148,7 @@ body::before{
 
 /* Zona imatge — sempre gran i ben visible, alçada fixa (no competeix pel formulari) */
 .photo-viewer-img-wrap{
+  position:relative;
   flex:0 0 auto;
   height:50vh;min-height:280px;max-height:480px;
   display:flex;align-items:center;justify-content:center;
@@ -2160,6 +2163,19 @@ body::before{
   background-color:#1a1a1a;
   border-radius:var(--radius-sm);
 }
+/* ── Fletxes de navegació anterior/següent dins del visor ── */
+.pv-nav-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);
+  width:44px;height:44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.25);
+  color:#fff;font-size:1.3rem;line-height:1;cursor:pointer;
+  backdrop-filter:blur(4px);transition:var(--tr);z-index:5;
+}
+.pv-nav-arrow:active{background:rgba(0,0,0,.7);}
+.pv-nav-arrow.pv-nav-prev{left:10px;}
+.pv-nav-arrow.pv-nav-next{right:10px;}
+.pv-nav-arrow[hidden]{display:none;}
 
 /* Barra inferior: botons grans Amb avís / Sense avís + llegenda + Maps */
 .photo-viewer-botbar{
@@ -3670,7 +3686,9 @@ async function _forzarActualizacion() {
   <div class="pv-scroll-mid" id="pvScrollMid">
   <!-- Imatge principal -->
   <div class="photo-viewer-img-wrap">
+    <button type="button" class="pv-nav-arrow pv-nav-prev" id="pvNavPrev" onclick="pvNavAnterior()" title="Foto anterior" hidden>‹</button>
     <img id="photoViewerImg" src="" alt="Foto">
+    <button type="button" class="pv-nav-arrow pv-nav-next" id="pvNavNext" onclick="pvNavSeguent()" title="Foto siguiente" hidden>›</button>
   </div>
   <!-- Formulario post-foto: carretera/PK + tipo de incidencia -->
   <div class="pf-form" id="pfForm">
@@ -4413,8 +4431,10 @@ async function _forzarActualizacion() {
 <!-- Barra selecció múltiple (bottom sheet) — fora de .screen perquè no la
      recorti el overflow-y:auto de la pantalla i quedi per sota del tab-bar -->
 <div class="sel-toolbar" id="selToolbar">
-  <button class="sel-btn-close" onclick="desactivarSeleccio()" title="Cancelar selección">✕</button>
-  <span class="sel-count" id="selCount">0 seleccionadas</span>
+  <div class="sel-toolbar-top">
+    <button class="sel-btn-close" onclick="desactivarSeleccio()" title="Cancelar selección">✕</button>
+    <span class="sel-count" id="selCount">0 seleccionadas</span>
+  </div>
   <div class="sel-actions">
     <button class="sel-btn sel-btn-share" id="selBtnShare" onclick="compartirSeleccio()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0;">
@@ -8699,8 +8719,10 @@ async function renderitzarFotos() {
     }
     const iconsTipus = { animal:'🐗', senyalitzacio:'🛑', averia:'🚨', bionda:'🛡️', forat:'🕳️', altra:'⚠️' };
     lista.innerHTML = '';
-    sorted.forEach(foto => {
+    _galVisorList = [];
+    sorted.forEach((foto, idxGal) => {
       const url     = URL.createObjectURL(foto.blob);
+      _galVisorList.push({ foto, url });
       const sensePK = !!foto.sensePK;
       const mStr    = sensePK ? '000' : String(foto.m||0).padStart(3,'0');
       const inc     = foto.incId != null ? incsById[foto.incId] : null;
@@ -8750,7 +8772,7 @@ async function renderitzarFotos() {
       card.querySelector('.photo-thumb').addEventListener('click', () => {
         if (lpFired) { lpFired = false; return; }
         if (modeSeleccio) { toggleFotoSeleccionada(foto.id, card); return; }
-        obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
+        obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto, false, idxGal);
       });
       card.querySelector('.photo-checkbox').addEventListener('click', e => {
         e.stopPropagation();
@@ -8938,6 +8960,12 @@ let _pfReparada = false;            // estat del switch "Reparada"
 let _pfFechaReparacion = null;      // ISO string — fecha en que se marcó como reparada
 let _pfRelocLat = null, _pfRelocLon = null; // noves coordenades si l'usuari torna a localitzar
 
+/* ── NAVEGACIÓ ANTERIOR/SEGÜENT DINS LA GALERIA ──────────────────── */
+// Llista { foto, url } de les fotos mostrades actualment a la galeria
+// (mateix ordre que es veu en pantalla) i índex de la foto oberta al visor.
+let _galVisorList = [];
+let _galVisorIdx  = -1;
+
 /* ── SESSIÓ MULTI-FOTO ───────────────────────────────────────────── */
 // Array de { blob, nom, url } de totes les fotos de la sessió actual (màx 5)
 let sessionFotos = [];
@@ -8945,12 +8973,16 @@ const MAX_SESSION_FOTOS = 5;
 // Indica si estem esperant una nova foto per afegir al strip (no és la foto inicial)
 let _esperantFotoAddicional = false;
 
-function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture) {
+function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture, galIdx) {
   // Si ve d'una nova foto de càmera/galeria (captura nova), reinicia la sessió
   if (isNewCapture || id === null) {
     // Nova sessió: la primera foto
     sessionFotos = [{ blob, nom, url }];
   }
+
+  // Índex dins la llista de la galeria (per a les fletxes anterior/següent).
+  // Si no s'indica, la foto no forma part de la navegació de galeria.
+  _galVisorIdx = (typeof galIdx === 'number') ? galIdx : -1;
 
   viewerBlobUrl   = url;
   viewerNomFitxer = nom;
@@ -8976,6 +9008,52 @@ function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture) {
 
   // Actualitza el strip de miniatures
   _actualitzarPvStrip();
+  // Mostra/amaga les fletxes anterior/següent segons la posició a la galeria
+  _pvActualitzarFletxes();
+}
+
+/** Mostra/amaga les fletxes de navegació segons si hi ha foto anterior/següent a la galeria */
+function _pvActualitzarFletxes() {
+  const prevBtn = document.getElementById('pvNavPrev');
+  const nextBtn = document.getElementById('pvNavNext');
+  if (!prevBtn || !nextBtn) return;
+  const hiHaLlista = _galVisorIdx >= 0 && _galVisorList.length > 1;
+  prevBtn.hidden = !hiHaLlista;
+  nextBtn.hidden = !hiHaLlista;
+}
+
+/** Navega a la foto anterior de la galeria (amb bucle: de la primera passa a la última) */
+function pvNavAnterior() { _pvNavegarGaleria(-1); }
+/** Navega a la foto següent de la galeria (amb bucle: de l'última torna a la primera) */
+function pvNavSeguent()  { _pvNavegarGaleria(1); }
+
+function _pvNavegarGaleria(delta) {
+  if (_galVisorIdx < 0 || !_galVisorList.length) return;
+  const nouIdx = (_galVisorIdx + delta + _galVisorList.length) % _galVisorList.length;
+  const item = _galVisorList[nouIdx];
+  if (!item) return;
+  const foto = item.foto;
+
+  _galVisorIdx    = nouIdx;
+  viewerBlobUrl   = item.url;
+  viewerNomFitxer = foto.nom;
+  viewerFotoId    = foto.id;
+  viewerBlob      = foto.blob;
+  viewerLat       = foto.lat   ?? null;
+  viewerLon       = foto.lon   ?? null;
+  viewerCarretera = foto.carretera ?? null;
+  viewerKm        = foto.km    ?? null;
+  viewerM         = foto.m     ?? null;
+  _pfActiveFotoId = foto.id;
+  closePvMenu();
+
+  document.getElementById('photoViewerImg').src = item.url;
+  const nomCurt = foto.nom.replace('.jpg','').replace(/_/g,' ');
+  document.getElementById('photoViewerTitle').textContent = nomCurt;
+
+  _pfCarregarDades().then(() => {
+    document.getElementById('pfForm').classList.add('open');
+  });
 }
 
 /** Actualitza la gaveta de miniatures */
@@ -9061,6 +9139,8 @@ function closePhotoViewer() {
   // Neteja la sessió multi-foto quan es tanca el visor
   sessionFotos = [];
   _esperantFotoAddicional = false;
+  // Neteja l'estat de navegació de galeria
+  _galVisorIdx = -1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
