@@ -2026,6 +2026,12 @@ body::before{
   background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;
   font-size:.7rem;z-index:2;pointer-events:none;
 }
+/* Badge de reparada (tic verde) sobre la miniatura */
+.photo-reparada-badge{
+  position:absolute;bottom:26px;right:5px;width:19px;height:19px;border-radius:50%;
+  background:var(--green);color:#04150c;display:flex;align-items:center;justify-content:center;
+  font-size:.62rem;font-weight:900;z-index:2;pointer-events:none;box-shadow:0 1px 4px rgba(0,0,0,.4);
+}
 /* Badge pk sobre la foto */
 .photo-pk-overlay{
   position:absolute;bottom:0;left:0;right:0;
@@ -2277,6 +2283,7 @@ body::before{
 }
 .pf-switch-text{display:flex;flex-direction:column;gap:2px;}
 .pf-switch-label{font-family:var(--font-cond);font-size:.78rem;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.3px;}
+.pf-switch-sub{font-family:var(--font-cond);font-size:.64rem;font-weight:700;color:var(--green);letter-spacing:.2px;}
 .pf-switch{
   position:relative;flex:0 0 46px;width:46px;height:26px;border-radius:14px;
   background:rgba(255,255,255,.18);border:none;cursor:pointer;transition:var(--tr);padding:0;
@@ -3476,6 +3483,15 @@ async function _forzarActualizacion() {
     </div>
 
     <div class="settings-card">
+      <div class="settings-card-title">✅ Estado de reparación</div>
+      <div class="inf-segmented" id="infEstadoRepSeg">
+        <div class="inf-seg-opt active" data-val="todas" onclick="setEstadoReparacionInforme('todas', this)">Todas</div>
+        <div class="inf-seg-opt" data-val="pendiente" onclick="setEstadoReparacionInforme('pendiente', this)">🟠 Pendientes</div>
+        <div class="inf-seg-opt" data-val="reparada" onclick="setEstadoReparacionInforme('reparada', this)">✅ Reparadas</div>
+      </div>
+    </div>
+
+    <div class="settings-card">
       <div class="settings-card-title">🎯 Alcance</div>
       <div class="inf-segmented" id="infAlcanceSeg">
         <div class="inf-seg-opt active" data-val="todas" onclick="setAlcanceInforme('todas', this)">Todas del tipo</div>
@@ -3720,6 +3736,14 @@ async function _forzarActualizacion() {
       <label class="pf-label">Reparación Bionda</label>
       <div class="bionda-pf-resumen" id="biondaPfResumen" style="display:none;"></div>
       <button type="button" class="pf-catalog-btn" onclick="abrirBottomSheetBionda()">🛡️ Configurar Antes/Después</button>
+    </div>
+    <!-- Switch: marcar foto como reparada -->
+    <div class="pf-switch-row" id="pfReparadaRow">
+      <div class="pf-switch-text">
+        <span class="pf-switch-label" id="pfReparadaLabel">REPARADA: NO</span>
+        <span class="pf-switch-sub" id="pfReparadaFecha" style="display:none;"></span>
+      </div>
+      <button type="button" class="pf-switch" id="pfReparadaSwitch" onclick="_pfToggleReparada()"></button>
     </div>
     <!-- Switch: avisar al CCC al compartir -->
     <div class="pf-switch-row">
@@ -8052,7 +8076,12 @@ async function guardarBiondaSheet() {
     // Sincroniza la incidencia vinculada, si existe (mismo patrón que _pfGuardar)
     if (foto.incId != null) {
       const inc = await idbGet(CFG.STORE_INC, foto.incId);
-      if (inc) { inc.tipus = 'bionda'; inc.subtipus = subtipus; await idbPut(CFG.STORE_INC, inc); }
+      if (inc) {
+        inc.tipus = 'bionda'; inc.subtipus = subtipus;
+        inc.reparada = subtipus.estado === 'reparada';
+        inc.fechaReparacion = subtipus.fechaReparacion || null;
+        await idbPut(CFG.STORE_INC, inc);
+      }
     }
 
     _pfBiondaSubtipus = subtipus;
@@ -8672,6 +8701,7 @@ async function renderitzarFotos() {
       const inc     = foto.incId != null ? incsById[foto.incId] : null;
       const tipus   = foto.tipus || (inc ? inc.tipus : null);
       const badge   = tipus && iconsTipus[tipus] ? `<div class="photo-tipus-badge">${iconsTipus[tipus]}</div>` : '';
+      const reparadaBadge = _fotoEstaReparada(foto) ? `<div class="photo-reparada-badge" title="Reparada">✓</div>` : '';
       const pkLabel = sensePK
         ? (foto.lat ? `📍 ${foto.lat.toFixed(4)}, ${foto.lon.toFixed(4)}` : pkgT('post_sinpk'))
         : `${foto.carretera||'—'} PK ${foto.km||0}+${mStr}`;
@@ -8683,6 +8713,7 @@ async function renderitzarFotos() {
         <img class="photo-thumb" src="${url}" alt="${foto.nom}" loading="lazy">
         <div class="photo-checkbox">✓</div>
         ${badge}
+        ${reparadaBadge}
         <div class="photo-pk-overlay">${pkLabel}</div>`;
 
       // ── Mantener pulsada una foto: activa selección múltiple ────────
@@ -8898,6 +8929,8 @@ let _pfActiveFotoId = null;         // id real a IndexedDB de la foto mostrada (
 let _pfSenyalsSeleccionades = [];   // [{c,n,nEs,img}] senyals triades al catàleg (poden ser diverses)
 let _pfCandidats = [];              // carreteres properes detectades (per als xips ràpids)
 let _pfAvisoCCC = false;            // estat del switch "Avisar al CCC"
+let _pfReparada = false;            // estat del switch "Reparada"
+let _pfFechaReparacion = null;      // ISO string — fecha en que se marcó como reparada
 let _pfRelocLat = null, _pfRelocLon = null; // noves coordenades si l'usuari torna a localitzar
 
 /* ── SESSIÓ MULTI-FOTO ───────────────────────────────────────────── */
@@ -9068,6 +9101,9 @@ async function _pfCarregarDades() {
   _pfAvisoCCC = false;
   document.getElementById('pfAvisoSwitch').classList.remove('on');
   document.getElementById('pfAvisoLabel').textContent = pkgTS('AVISO: NO');
+  _pfReparada = false;
+  _pfFechaReparacion = null;
+  _pfActualitzarReparadaUI();
   _pfRelocLat = null; _pfRelocLon = null;
   _pfSenyalsSeleccionades = [];
   document.getElementById('pfSenyalManual').style.display = 'none';
@@ -9112,6 +9148,9 @@ async function _pfCarregarDades() {
           _pfBiondaSubtipus = subtipus;
           _pfBiondaRenderResumen(subtipus);
         }
+        _pfReparada = !!foto.reparada;
+        _pfFechaReparacion = foto.fechaReparacion || null;
+        _pfActualitzarReparadaUI();
       }
     } catch(_) {}
   }
@@ -9171,6 +9210,7 @@ function _pfActualitzarSubtipus(userTriggered) {
   document.getElementById('pfSubSenyal').style.display = tipus === 'senyalitzacio' ? '' : 'none';
   document.getElementById('pfSubAltra').style.display  = tipus === 'altra'         ? '' : 'none';
   document.getElementById('pfSubBionda').style.display = tipus === 'bionda'        ? '' : 'none';
+  document.getElementById('pfReparadaRow').style.display = tipus === 'bionda'      ? 'none' : '';
   if (tipus === 'bionda' && userTriggered) abrirBottomSheetBionda();
 }
 
@@ -9285,12 +9325,22 @@ async function _pfGuardar() {
       foto.lat = _pfRelocLat;
       foto.lon = _pfRelocLon;
     }
+    // Estado de reparación (no aplica al tipo bionda, que gestiona el suyo propio)
+    if (tipus !== 'bionda') {
+      foto.reparada = _pfReparada;
+      foto.fechaReparacion = _pfFechaReparacion;
+    }
     await idbPut(CFG.STORE_PHOTOS, foto);
 
     // Fotos vinculades a una incidència antiga: sincronitza el tipus també allà
     if (foto.incId != null) {
       const inc = await idbGet(CFG.STORE_INC, foto.incId);
-      if (inc) { inc.tipus = tipus; inc.subtipus = subtipus; await idbPut(CFG.STORE_INC, inc); }
+      if (inc) {
+        inc.tipus = tipus; inc.subtipus = subtipus;
+        inc.reparada = foto.reparada;
+        inc.fechaReparacion = foto.fechaReparacion;
+        await idbPut(CFG.STORE_INC, inc);
+      }
     }
 
     viewerCarretera = foto.carretera;
@@ -9310,6 +9360,37 @@ function _pfToggleAviso() {
   _pfAvisoCCC = !_pfAvisoCCC;
   document.getElementById('pfAvisoSwitch').classList.toggle('on', _pfAvisoCCC);
   document.getElementById('pfAvisoLabel').textContent = _pfAvisoCCC ? pkgTS('AVISO: SÍ') : pkgTS('AVISO: NO');
+}
+
+/* Switch "Reparada" — marca la foto como reparada y guarda la fecha de reparación */
+function _pfToggleReparada() {
+  _pfReparada = !_pfReparada;
+  if (_pfReparada && !_pfFechaReparacion) _pfFechaReparacion = new Date().toISOString();
+  _pfActualitzarReparadaUI();
+}
+function _pfActualitzarReparadaUI() {
+  document.getElementById('pfReparadaSwitch').classList.toggle('on', _pfReparada);
+  document.getElementById('pfReparadaLabel').textContent = _pfReparada ? pkgTS('REPARADA: SÍ') : pkgTS('REPARADA: NO');
+  const fechaEl = document.getElementById('pfReparadaFecha');
+  if (_pfReparada && _pfFechaReparacion) {
+    fechaEl.style.display = '';
+    fechaEl.textContent = '✅ ' + formatarDataHora(new Date(_pfFechaReparacion));
+  } else {
+    fechaEl.style.display = 'none';
+  }
+}
+
+/* Devuelve si una foto/incidencia está reparada, unificando el criterio
+   general (foto.reparada) con el específico de Bionda (subtipus.estado) */
+function _fotoEstaReparada(foto) {
+  if (!foto) return false;
+  if (foto.tipus === 'bionda' && foto.subtipus) return foto.subtipus.estado === 'reparada';
+  return !!foto.reparada;
+}
+function _fotoFechaReparacion(foto) {
+  if (!foto) return null;
+  if (foto.tipus === 'bionda' && foto.subtipus) return foto.subtipus.fechaReparacion || null;
+  return foto.fechaReparacion || null;
 }
 
 /* Comparteix respectant l'estat actual del switch "Avisar al CCC" */
@@ -11023,6 +11104,7 @@ function _infTiposDisponibles() {
 let informeState = {
   incidenciasTodas: [],
   tipos: ['todas'],
+  estadoReparacion: 'todas',
   alcance: 'todas',
   idsSeleccionados: null,
   orden: 'carretera_pk',
@@ -11069,6 +11151,8 @@ function _infIncidenciaVirtualDesdeFoto(foto) {
     thumb: null,
     fotoId2: null,
     thumb2: null,
+    reparada: _fotoEstaReparada(foto),
+    fechaReparacion: _fotoFechaReparacion(foto),
   };
 }
 
@@ -11092,6 +11176,18 @@ async function obrirInformes() {
     const incsVirtuales = fotosTodas
       .filter(f => f.tipus && f.incId == null)
       .map(_infIncidenciaVirtualDesdeFoto);
+    // Rellena el estado de reparación en las incidencias reales por si no
+    // se sincronizó en su momento (p.ej. datos antiguos), usando la foto
+    // vinculada (fotoId) como fuente de verdad.
+    const fotosById = {};
+    fotosTodas.forEach(f => { fotosById[f.id] = f; });
+    incsReales.forEach(inc => {
+      if (inc.reparada == null) {
+        const fotoRef = inc.fotoId != null ? fotosById[inc.fotoId] : null;
+        inc.reparada = fotoRef ? _fotoEstaReparada(fotoRef) : (inc.tipus === 'bionda' && inc.subtipus ? inc.subtipus.estado === 'reparada' : false);
+        inc.fechaReparacion = fotoRef ? _fotoFechaReparacion(fotoRef) : (inc.subtipus?.fechaReparacion || null);
+      }
+    });
     informeState.incidenciasTodas = [...incsReales, ...incsVirtuales];
   } catch (e) {
     informeState.incidenciasTodas = [];
@@ -11335,6 +11431,13 @@ function toggleTipoInforme(valor) {
   recalcularContadorInforme();
 }
 
+/* ── Estado de reparación: todas / pendientes / reparadas ─────────── */
+function setEstadoReparacionInforme(valor, el) {
+  informeState.estadoReparacion = valor;
+  if (el) el.parentElement.querySelectorAll('.inf-seg-opt').forEach(o => o.classList.toggle('active', o === el));
+  recalcularContadorInforme();
+}
+
 /* ── Alcance: todas del tipo / selección manual ──────────────────── */
 function setAlcanceInforme(valor, el) {
   informeState.alcance = valor;
@@ -11482,7 +11585,10 @@ function _infObtenerIncidenciasFiltradas() {
     fechaHastaISO: rango.hasta,
     idsSeleccionados: informeState.alcance === 'manual' ? (informeState.idsSeleccionados || []) : null,
   };
-  return InformesCore.filtrarYOrdenar(informeState.incidenciasTodas, filtros, informeState.orden, informeState.direccion);
+  let lista = InformesCore.filtrarYOrdenar(informeState.incidenciasTodas, filtros, informeState.orden, informeState.direccion);
+  if (informeState.estadoReparacion === 'reparada') lista = lista.filter(inc => !!inc.reparada);
+  if (informeState.estadoReparacion === 'pendiente') lista = lista.filter(inc => !inc.reparada);
+  return lista;
 }
 
 function recalcularContadorInforme() {
@@ -11621,6 +11727,17 @@ function _infCabeceraPagina(doc, logoDataUrl, titulo) {
 }
 
 /* ── Generación del PDF — modo "ficha detallada" ─────────────────── */
+/* Texto legible del estado de reparación, incluyendo la fecha si está reparada */
+function _infEstadoTexto(inc) {
+  if (!inc.reparada) return '🟠 Pendiente';
+  return '✅ Reparada (' + _infFechaReparacionCorta(inc) + ')';
+}
+/* Fecha de reparación en formato corto (dd/mm/aaaa), o '—' si no hay */
+function _infFechaReparacionCorta(inc) {
+  if (!inc.reparada || !inc.fechaReparacion) return '—';
+  try { return new Date(inc.fechaReparacion).toLocaleDateString('es-ES'); } catch (_) { return '—'; }
+}
+
 async function _infGenerarPdfFicha(incidencias, tecnico, logoDataUrl) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -11655,7 +11772,8 @@ async function _infGenerarPdfFicha(incidencias, tecnico, logoDataUrl) {
     if (subTxt) linea2 += '  ·  ' + subTxt;
     doc.text(linea2, 18, y + 13);
     doc.text('Fecha: ' + (inc.ts_legible || ''), 18, y + 18);
-    if (inc.sentit && inc.sentit !== 'indeterminado') doc.text('Sentido: ' + inc.sentit, 18, y + 23);
+    doc.text('Estado: ' + _infEstadoTexto(inc), 18, y + 23);
+    if (inc.sentit && inc.sentit !== 'indeterminado') doc.text('Sentido: ' + inc.sentit, 18, y + 28);
 
     const fotoDataUrl = await _infBlobFotoADataURL(inc.fotoId);
     if (fotoDataUrl) {
@@ -11681,12 +11799,12 @@ async function _infGenerarPdfTabla(incidencias, tecnico, logoDataUrl) {
     const info = window.InformesCore ? InformesCore.tipoInfo(inc.tipus) : { label: inc.tipus };
     const pkTxt = window.InformesCore ? InformesCore.pkTexto(inc) : '';
     const subTxt = window.InformesCore ? InformesCore.subtipoTexto(inc) : '';
-    return [String(i + 1), info.label, pkTxt, subTxt || '—', inc.ts_legible || ''];
+    return [String(i + 1), info.label, pkTxt, subTxt || '—', inc.ts_legible || '', _infEstadoTexto(inc)];
   });
 
   doc.autoTable({
     startY: 30,
-    head: [['#', 'Tipo', 'Carretera / PK', 'Detalle', 'Fecha']],
+    head: [['#', 'Tipo', 'Carretera / PK', 'Detalle', 'Fecha', 'Estado']],
     body: filas,
     styles: { fontSize: 8, cellPadding: 2.5 },
     headStyles: { fillColor: [0, 60, 80], textColor: 255, fontStyle: 'bold' },
@@ -11736,7 +11854,7 @@ async function _infGenerarExcel(incidencias, tecnico) {
     ['Informe generado por: ' + (tecnico.nombre || '—') + (tecnico.sector ? ' — ' + tecnico.sector : '')],
     ['Fecha de generación: ' + formatarDataHora(new Date())],
     [],
-    ['Tipo', 'Carretera', 'PK', 'Fecha', 'Hora', 'Detalle', 'Sentido', 'Latitud', 'Longitud'],
+    ['Tipo', 'Carretera', 'PK', 'Fecha', 'Hora', 'Detalle', 'Sentido', 'Latitud', 'Longitud', 'Estado'],
   ];
   const filas = incidencias.map(inc => {
     const info = window.InformesCore ? InformesCore.tipoInfo(inc.tipus) : { label: inc.tipus };
@@ -11752,10 +11870,11 @@ async function _infGenerarExcel(incidencias, tecnico) {
       inc.sentit && inc.sentit !== 'indeterminado' ? inc.sentit : '',
       inc.lat ?? '',
       inc.lon ?? '',
+      inc.reparada ? 'Reparada (' + _infFechaReparacionCorta(inc) + ')' : 'Pendiente',
     ];
   });
   const ws = XLSX.utils.aoa_to_sheet(cabecera.concat(filas));
-  ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 11 }, { wch: 9 }, { wch: 28 }, { wch: 12 }, { wch: 11 }, { wch: 11 }];
+  ws['!cols'] = [{ wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 11 }, { wch: 9 }, { wch: 28 }, { wch: 12 }, { wch: 11 }, { wch: 11 }, { wch: 20 }];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Incidencias');
   const arrayBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
