@@ -2831,11 +2831,10 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
   </div>
 </div>
 
-<!-- ════ PANEL INFORMES (generación de PDF/ZIP/Excel) ════ -->
-<div class="settings-panel" id="informesPanel" style="z-index:460;max-height:100dvh;height:100dvh;border-radius:0;">
+<!-- ════ SCREEN INFORMES (generación de PDF/ZIP/Excel) — pantalla más, como las demás ════ -->
+<div class="screen" id="screenInformes">
   <div class="panel-header">
     <span class="panel-title" id="informesPanelTitle">📄 Generar informe</span>
-    <button class="icon-btn" onclick="closeInformes()">✕</button>
   </div>
   <div class="inf-tabs-switch" id="infTabsSwitch">
     <button type="button" class="inf-tab-btn active" id="infTabBtnInformes" onclick="_infSwitchTab('informes')">📄 Informes</button>
@@ -4017,7 +4016,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
     <svg viewBox="0 0 24 24"><path d="M12 15.2A3.2 3.2 0 0 1 8.8 12 3.2 3.2 0 0 1 12 8.8 3.2 3.2 0 0 1 15.2 12 3.2 3.2 0 0 1 12 15.2M20 4h-3.17L15 2H9L7.17 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>
     <span class="tab-label">Fotos</span>
   </button>
-  <button class="tab-btn" id="tabInformes" onclick="obrirInformes()">
+  <button class="tab-btn" id="tabInformes" data-tab="screenInformes" onclick="canviarTab(this,'screenInformes')">
     <svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm5 12H7v-2h10v2zm0-4H7V9h10v2zm-3-4H7V5h7v2z"/></svg>
     <span class="tab-label">Informes</span>
   </button>
@@ -9798,6 +9797,10 @@ function canviarTab(btn, screenId) {
   // calculi el layout real ABANS de cridar invalidateSize.
   // Solució: iniciem el mapa (si cal) i llavors delegem a _forcarMesuraMap()
   // que usa requestAnimationFrame×2 + setTimeout per garantir el repaint.
+  if (screenId === 'screenInformes') {
+    obrirInformes();
+  }
+
   if (screenId === 'screenMap') {
     iniciarMapa();
     setTimeout(() => { try { const pk=document.getElementById('mapSheetPeek'), sc=document.getElementById('screenMap'); if(pk&&sc) sc.style.setProperty('--map-peek', Math.min(pk.offsetHeight+8, Math.round(innerHeight*0.55))+'px'); } catch(_){} }, 150);
@@ -9821,7 +9824,6 @@ function closeSettings() {
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('settingsPanel').classList.remove('open');
   document.getElementById('trazasDetailPanel').classList.remove('open');
-  document.getElementById('informesPanel').classList.remove('open');
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -9998,7 +10000,58 @@ if ('caches' in window) {
     sp.addEventListener('touchend',   e=>{ if(e.changedTouches[0].clientY - startY > 80) closeSettings(); },{ passive:true });
   }
 
-  window.addEventListener('popstate', ()=>{ closeSettings(); });
+  /* ── Botón "Atrás" físico de Android ──────────────────────────────
+     En una PWA sin este manejo, el botón atrás nativo cierra la app
+     directamente (no hay historial de navegación real). Aquí lo
+     interceptamos: si hay algún panel/modal/sheet abierto, lo cierra
+     (uno por pulsación, empezando por el más "encima"); si no hay nada
+     abierto pero no estamos en la pantalla de inicio, vuelve a inicio;
+     solo si ya estamos en inicio sin nada abierto, deja que Android
+     haga su acción por defecto (salir de la app). */
+  function _capaAndroidBackAbierta() {
+    const capas = [
+      ['galMenuDropdown', closeGalMenu],
+      ['incFotoViewer', closeIncFotoViewer],
+      ['photoViewer', closePhotoViewer],
+      ['pvAddFotoSrcSheet', tancarSheetPvAddFoto],
+      ['incPostSheet', tancarSheetPostInc],
+      ['incFotoSrcSheet', tancarSheetFotoSrc],
+      ['infResultSheet', tancarResultInforme],
+      ['infSeleccionSheet', tancarSeleccionInforme],
+      ['pkConfirmModal', ()=>document.getElementById('pkConfirmModal').classList.remove('open')],
+      ['pkDecisionModal', ()=>document.getElementById('pkDecisionModal').classList.remove('open')],
+      ['gpsErrorModal', tancarModalGPS],
+      ['scOverlay', tancarCatalegSenyals],
+      ['mapSheet', tancarMapSheet],
+      ['trazasDetailPanel', ()=>{ document.getElementById('trazasDetailPanel').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }],
+      ['trazaPanel', ()=>{ document.getElementById('trazaPanel').classList.remove('open'); }],
+      ['settingsPanel', closeSettings],
+    ];
+    for (const [id, fn] of capas) {
+      const el = document.getElementById(id);
+      if (el && el.classList && el.classList.contains('open') && typeof fn === 'function') return fn;
+    }
+    return null;
+  }
+  function _pushAndroidBackTrap() { try { history.pushState({ pkTrap: true }, '', location.href); } catch (_) {} }
+  _pushAndroidBackTrap(); // deja un peldaño extra para poder capturar el primer "atrás"
+
+  window.addEventListener('popstate', () => {
+    const cerrar = _capaAndroidBackAbierta();
+    if (cerrar) {
+      cerrar();
+      _pushAndroidBackTrap();
+      return;
+    }
+    const home = document.getElementById('screenHome');
+    if (home && !home.classList.contains('active')) {
+      const btnHome = document.querySelector('.tab-btn[data-tab="screenHome"]');
+      if (btnHome) canviarTab(btnHome, 'screenHome');
+      _pushAndroidBackTrap();
+      return;
+    }
+    // Ya estamos en Inicio y no hay nada abierto: se deja salir de la app.
+  });
 
   // ── Banner offline ──────────────────────────────────────────────
   function _actualitzarBannerOffline() {
@@ -10599,8 +10652,6 @@ function _infIncidenciaVirtualDesdeFoto(foto) {
 /* ── Apertura / cierre del panel ──────────────────────────────────── */
 async function obrirInformes() {
   try { closeGalMenu(); } catch (_) {}
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('informesPanel').classList.add('open');
   _infSwitchTab('informes');
   try {
     const [incsReales, fotosTodas] = await Promise.all([
@@ -10727,14 +10778,6 @@ function _biondasManagerRender() {
 function _biondasManagerAbrir(fotoId) {
   abrirBottomSheetBionda(fotoId);
 }
-function closeInformes() {
-  document.getElementById('informesPanel').classList.remove('open');
-  if (!document.getElementById('settingsPanel').classList.contains('open') &&
-      !document.getElementById('trazasDetailPanel').classList.contains('open')) {
-    document.getElementById('overlay').classList.remove('open');
-  }
-}
-
 /* ── Datos del técnico (persistentes, como el logo) ──────────────── */
 async function _infCargarTecnicoYLogo() {
   try {
