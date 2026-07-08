@@ -9882,6 +9882,7 @@ function formatarDataHora(data) {
    TABS
 ═══════════════════════════════════════════════════════════════════ */
 function canviarTab(btn, screenId) {
+  try { if (typeof modeSeleccio !== 'undefined' && modeSeleccio) desactivarSeleccio(); } catch (_) {}
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');
@@ -10114,6 +10115,7 @@ if ('caches' in window) {
      solo si ya estamos en inicio sin nada abierto, deja que Android
      haga su acción por defecto (salir de la app). */
   function _capaAndroidBackAbierta() {
+    if (typeof modeSeleccio !== 'undefined' && modeSeleccio) return desactivarSeleccio;
     const capas = [
       ['galMenuDropdown', closeGalMenu],
       ['incFotoViewer', closeIncFotoViewer],
