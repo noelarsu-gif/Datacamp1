@@ -2635,12 +2635,145 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 <script src="PK_SEED_para_app.js" defer></script>
 <script src="senales_catalogo.js" defer></script>
 <script src="informes-core.js" defer></script>
+<script src="licencias-core.js" defer></script>
 </head>
 <body>
 
 
+<!-- ════ MURO DE ACCESO — Prueba Piloto (licencias externas en licencias.json) ════ -->
+<div id="accessWall" style="
+  position:fixed;inset:0;z-index:99999;
+  background:#111214;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px 20px;font-family:'Barlow',sans-serif;
+">
+  <div style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+    <!-- Logo -->
+    <div style="text-align:center;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;
+                  letter-spacing:3px;color:#00D4FF;text-shadow:0 0 24px rgba(0,212,255,.4);">
+        PK-GEOLOC
+      </div>
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:2px;color:rgba(0,212,255,.6);
+                  text-transform:uppercase;margin-top:3px;">
+        Prueba Piloto — Acceso Restringido
+      </div>
+      <div style="font-size:.52rem;color:rgba(255,255,255,.25);letter-spacing:.5px;margin-top:6px;text-align:center;line-height:1.5;">
+        © N.Arroyo · Obra registrada en el Registro de la Propiedad Intelectual · Todos los derechos reservados
+      </div>
+    </div>
+    <!-- Card -->
+    <div style="background:#1C1D20;border:1px solid rgba(255,255,255,.1);
+                border-radius:20px;padding:28px 22px;width:100%;box-sizing:border-box;">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+                  color:#8A909E;margin-bottom:6px;">
+        Código de activación
+      </div>
+      <input id="accessCodeInput" type="text"
+        placeholder="Introduce tu código..."
+        autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+        style="
+          width:100%;box-sizing:border-box;
+          padding:14px 12px;border-radius:10px;
+          border:1.5px solid rgba(255,255,255,.12);
+          background:#27282C;color:#fff;
+          font-family:'Roboto Mono',monospace;font-size:1rem;font-weight:600;
+          letter-spacing:3px;text-transform:uppercase;text-align:center;
+          outline:none;transition:border-color .2s;
+          -webkit-appearance:none;
+        "
+        oninput="this.value=this.value.toUpperCase();_ocultarPaneles();"
+        onkeydown="if(event.key==='Enter')validarAcceso();"
+      >
+      <!-- Panel error genérico (rojo) -->
+      <div id="accessError" style="
+        display:none;margin-top:10px;padding:10px 12px;border-radius:8px;
+        background:rgba(255,90,110,.1);border:1px solid rgba(255,90,110,.35);
+        color:#FF5A6E;font-size:.78rem;font-weight:600;text-align:center;line-height:1.6;
+        word-break:break-word;
+      "></div>
+      <!-- Panel aviso dispositivo (ámbar) -->
+      <div id="accessWarn" style="
+        display:none;margin-top:10px;padding:14px 14px 12px;border-radius:10px;
+        background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.45);
+        text-align:center;
+      ">
+        <div style="font-size:.75rem;font-weight:700;color:#F5A623;line-height:1.6;margin-bottom:10px;">
+          ⚠️ Para activar el acceso en este móvil, envía este código a Noel por WhatsApp:
+        </div>
+        <div id="warnCodigo" style="
+          font-family:'Roboto Mono',monospace;font-size:1.25rem;font-weight:700;
+          letter-spacing:4px;color:#fff;background:#27282C;
+          border-radius:8px;padding:10px 12px;margin-bottom:10px;
+          border:1px solid rgba(245,166,35,.3);word-break:break-all;
+        "></div>
+        <div style="display:flex;gap:8px;">
+          <button id="btnCopiarCodigo" onclick="_copiarCodigoWarn()" style="
+            flex:1;padding:10px 6px;border-radius:8px;cursor:pointer;transition:all .2s;
+            border:1.5px solid rgba(255,255,255,.2);background:#27282C;
+            color:#C4C9D4;font-family:'Barlow Condensed',sans-serif;
+            font-size:.8rem;font-weight:700;letter-spacing:1px;
+          ">📋 COPIAR</button>
+          <button onclick="_compartirWhatsApp()" style="
+            flex:2;padding:10px 6px;border-radius:8px;cursor:pointer;transition:all .2s;
+            border:1.5px solid rgba(37,211,102,.5);background:rgba(37,211,102,.12);
+            color:#25D366;font-family:'Barlow Condensed',sans-serif;
+            font-size:.8rem;font-weight:700;letter-spacing:1px;
+          ">💬 ENVIAR POR WHATSAPP</button>
+        </div>
+      </div>
+      <button onclick="validarAcceso()" style="
+        margin-top:16px;width:100%;padding:15px;border-radius:10px;
+        border:2px solid rgba(0,212,255,.5);
+        background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.07));
+        color:#00D4FF;font-family:'Barlow Condensed',sans-serif;
+        font-size:.95rem;font-weight:900;letter-spacing:3px;text-transform:uppercase;
+        cursor:pointer;transition:all .2s;
+      "
+      onmouseover="this.style.background='rgba(0,212,255,.22)'"
+      onmouseout="this.style.background='linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.07))'">
+        ACCEDER
+      </button>
+    </div>
+    <!-- Instrucciones para usuarios noveles -->
+    <div style="background:#1C1D20;border:1px solid rgba(255,255,255,.07);
+                border-radius:14px;padding:14px 16px;width:100%;box-sizing:border-box;">
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+                  color:#8A909E;margin-bottom:8px;">
+        ❓ ¿Código no funciona o es nuevo?
+      </div>
+      <div style="font-size:.72rem;color:#8A909E;line-height:1.7;">
+        1. Escribe tu nombre clave (ej: <span style="color:#C4C9D4;font-family:'Roboto Mono',monospace;">SACYR</span>) y pulsa <b style="color:#C4C9D4;">ACCEDER</b>.<br>
+        2. Copia el código que aparece y <b style="color:#C4C9D4;">envíaselo a Noel</b> por WhatsApp.<br>
+        3. Cuando Noel te confirme, pulsa <b style="color:#C4C9D4;">🔄 ACTUALIZAR APP</b> aquí abajo<br>
+        &nbsp;&nbsp;&nbsp;y vuelve a introducir el código completo.
+      </div>
+    </div>
+
+    <!-- Botón actualización forzada -->
+    <button id="btnForceUpdate" onclick="_forzarActualizacion()" style="
+      width:100%;padding:13px;border-radius:10px;cursor:pointer;transition:all .2s;
+      border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);
+      color:#8A909E;font-family:'Barlow Condensed',sans-serif;
+      font-size:.82rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    "
+    onmouseover="this.style.borderColor='rgba(0,212,255,.35)';this.style.color='#00D4FF';"
+    onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.color='#8A909E';">
+      🔄 ACTUALIZAR APP
+    </button>
+
+    <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
+      🔒 Acceso restringido a participantes de la prueba piloto.<br>
+    </div>
+    <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
+      📴 Sin conexión — la validación funciona igualmente
+    </div>
+  </div>
+</div>
+
 <!-- Contenido real de la app (oculto hasta validar) -->
-<div id="appContent">
+<div id="appContent" style="display:none;">
 
 <div class="toast-container" id="toastContainer"></div>
 

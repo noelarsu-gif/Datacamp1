@@ -1,9 +1,16 @@
-const CACHE_VERSION = 'v3'; // <-- SUBE ESTE NÚMERO EN CADA RELEASE (v3, v4, v5...)
+const CACHE_VERSION = 'v4'; // <-- SUBE ESTE NÚMERO EN CADA RELEASE (v4, v5, v6...)
 const CACHE_NAME = `pk-geoloc-cache-${CACHE_VERSION}`;
 
 const ASSETS = [
   './index.html',
   './manifest.json',
+  './PK_SEED_para_app.js',
+  './senales_catalogo.js',
+  './informes-core.js',
+  './licencias-core.js',
+  './licencias.json',
+  './icon-192.png',
+  './icon-512.png',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'
 ];
 
@@ -48,6 +55,21 @@ self.addEventListener('fetch', (e) => {
           return networkResponse;
         })
         .catch(() => caches.match(e.request).then((r) => r || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Para licencias.json: red primero (para reflejar altas/bajas nuevas cuanto antes),
+  // caché como respaldo offline. Igual que el HTML principal.
+  if (e.request.url.endsWith('/licencias.json')) {
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          return networkResponse;
+        })
+        .catch(() => caches.match(e.request))
     );
     return;
   }
