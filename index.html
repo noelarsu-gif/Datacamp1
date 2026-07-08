@@ -2142,7 +2142,9 @@ body::before{
   flex:1;min-height:0;overflow-y:auto;
   display:flex;flex-direction:column;
   -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
 }
+.pv-scroll-mid.pv-swipe-anim{transition:transform .22s cubic-bezier(.22,.61,.36,1);}
 
 /* Zona imatge — sempre gran i ben visible, alçada fixa (no competeix pel formulari) */
 .photo-viewer-img-wrap{
@@ -8097,6 +8099,7 @@ document.addEventListener('click', (e) => {
 /* ── Filtres de galeria: ordre + tipus d'incidència ── */
 let _galOrdre = 'recent';   // 'recent' | 'old'
 let _galFiltreTipo = '';    // '' = tots
+let _galFotosArray = [];    // fotos en el orden actual mostrado en la galería (para el arrastre lateral del visor)
 
 function galeriaSetOrdre(ordre) {
   _galOrdre = ordre;
@@ -8129,8 +8132,10 @@ async function renderitzarFotos() {
 
     if (!sorted.length) {
       lista.innerHTML = `<div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">${pkgTS('Sin fotos capturadas')}</div></div>`;
+      _galFotosArray = [];
       return;
     }
+    _galFotosArray = sorted;
     const iconsTipus = { animal:'🐗', senyalitzacio:'🛑', averia:'🚨', bionda:'🛡️', forat:'🕳️', altra:'⚠️' };
     lista.innerHTML = '';
     sorted.forEach(foto => {
@@ -8402,6 +8407,9 @@ function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture) {
   const nomCurt = nom.replace('.jpg','').replace(/_/g,' ');
   document.getElementById('photoViewerTitle').textContent = nomCurt;
   document.getElementById('photoViewer').classList.add('open');
+  const _pvMid = document.getElementById('pvScrollMid');
+  if (_pvMid) { _pvMid.classList.remove('pv-swipe-anim'); _pvMid.style.transform = ''; }
+  _pvSwipeInit();
 
   // El formulari s'obre sempre automàticament — ja no cal el botó "Editar"
   _pfCarregarDades().then(() => {
@@ -8492,10 +8500,107 @@ function closePhotoViewer() {
   document.getElementById('photoViewer').classList.remove('open');
   document.getElementById('pfForm').classList.remove('open');
   closePvMenu();
+  const _pvMid = document.getElementById('pvScrollMid');
+  if (_pvMid) { _pvMid.classList.remove('pv-swipe-anim'); _pvMid.style.transform = ''; }
   // Neteja la sessió multi-foto quan es tanca el visor
   sessionFotos = [];
   _esperantFotoAddicional = false;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVEGACIÓN POR ARRASTRE LATERAL EN EL VISOR (fotos de la galería)
+   Permite pasar a la foto anterior/siguiente de la galería arrastrando
+   el dedo hacia los lados, sin tener que cerrar el visor y volver a
+   entrar. Arrastra consigo toda la info (imagen + formulario), como
+   si fuera un carrusel. Solo se activa si la foto abierta pertenece
+   al listado actual de la galería (_galFotosArray).
+═══════════════════════════════════════════════════════════════════ */
+let _pvSwipe = { startX: 0, startY: 0, axis: null, dragging: false, active: false };
+
+function _pvGetIndex() {
+  return _galFotosArray.findIndex(f => f.id === viewerFotoId);
+}
+
+async function _pvIrFoto(nuevoIndex) {
+  const foto = _galFotosArray[nuevoIndex];
+  if (!foto) return false;
+  const url = URL.createObjectURL(foto.blob);
+  obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
+  return true;
+}
+
+function _pvSwipeInit() {
+  const wrap = document.querySelector('.photo-viewer-img-wrap');
+  if (!wrap || wrap._pvSwipeBound) return;
+  wrap._pvSwipeBound = true;
+
+  const UMBRAL = 70;
+
+  wrap.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (_pvGetIndex() < 0) return; // solo si la foto pertenece a la galería actual
+    _pvSwipe.startX = e.clientX; _pvSwipe.startY = e.clientY;
+    _pvSwipe.axis = null; _pvSwipe.dragging = false; _pvSwipe.active = true;
+    const mid = document.getElementById('pvScrollMid');
+    if (mid) mid.classList.remove('pv-swipe-anim');
+  });
+
+  wrap.addEventListener('pointermove', e => {
+    if (!_pvSwipe.active) return;
+    const dx = e.clientX - _pvSwipe.startX;
+    const dy = e.clientY - _pvSwipe.startY;
+    if (!_pvSwipe.axis) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        _pvSwipe.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      } else { return; }
+    }
+    if (_pvSwipe.axis !== 'x') return;
+    _pvSwipe.dragging = true;
+    const idx = _pvGetIndex();
+    let dxLimitado = dx;
+    // Resistencia en los extremos: no hay foto anterior/siguiente
+    if ((dx > 0 && idx <= 0) || (dx < 0 && idx >= _galFotosArray.length - 1)) {
+      dxLimitado = dx * 0.3;
+    }
+    const mid = document.getElementById('pvScrollMid');
+    if (mid) mid.style.transform = `translateX(${dxLimitado}px)`;
+  });
+
+  const finalizar = e => {
+    if (!_pvSwipe.active) return;
+    _pvSwipe.active = false;
+    const mid = document.getElementById('pvScrollMid');
+    if (!_pvSwipe.dragging) return;
+    _pvSwipe.dragging = false;
+    const dx = (e.clientX !== undefined) ? e.clientX - _pvSwipe.startX : 0;
+    const idx = _pvGetIndex();
+    let destino = -1, sentidoSalida = 0;
+    if (dx <= -UMBRAL && idx < _galFotosArray.length - 1) { destino = idx + 1; sentidoSalida = -1; }
+    else if (dx >= UMBRAL && idx > 0) { destino = idx - 1; sentidoSalida = 1; }
+
+    if (!mid) return;
+    mid.classList.add('pv-swipe-anim');
+    if (destino >= 0) {
+      mid.style.transform = `translateX(${sentidoSalida * -100}%)`;
+      setTimeout(async () => {
+        await _pvIrFoto(destino);
+        const midNou = document.getElementById('pvScrollMid');
+        if (!midNou) return;
+        midNou.classList.remove('pv-swipe-anim');
+        midNou.style.transform = `translateX(${sentidoSalida * 100}%)`;
+        void midNou.offsetWidth; // força el reflow perquè la transició s'apliqui
+        midNou.classList.add('pv-swipe-anim');
+        midNou.style.transform = 'translateX(0)';
+      }, 220);
+    } else {
+      mid.style.transform = 'translateX(0)';
+    }
+  };
+  wrap.addEventListener('pointerup', finalizar);
+  wrap.addEventListener('pointercancel', finalizar);
+  wrap.addEventListener('pointerleave', () => { if (_pvSwipe.active && !_pvSwipe.dragging) _pvSwipe.active = false; });
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    MENÚ ⋮ DEL VISOR DE FOTOS
