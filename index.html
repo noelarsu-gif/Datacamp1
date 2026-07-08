@@ -2640,80 +2640,14 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 <body>
 
 
-<!-- ════ PANTALLA DE ARRANQUE — se ve mientras se comprueba si ya hay sesión
-     válida guardada, para no hacer parpadear el muro de acceso un instante
-     antes de entrar directamente a la app ════ -->
-<div id="appBootLoading" style="
-  position:fixed;inset:0;z-index:100000;
-  background:#111214;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:14px;
-">
-  <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;
-              letter-spacing:3px;color:#00D4FF;text-shadow:0 0 24px rgba(0,212,255,.4);">
-    PK-GEOLOC
-  </div>
-  <div id="appBootGreeting" style="font-family:'Barlow',sans-serif;font-size:.85rem;font-weight:600;
-              letter-spacing:.5px;color:#C4C9D4;text-align:center;"></div>
-  <div id="appBootSpinner" style="width:26px;height:26px;border-radius:50%;
-              border:3px solid rgba(0,212,255,.2);border-top-color:#00D4FF;
-              animation:pkBootSpin .8s linear infinite;"></div>
-  <div id="appBootError" style="display:none;max-width:300px;text-align:center;padding:0 16px;">
-    <div style="font-size:.78rem;color:#FF5A6E;font-weight:600;line-height:1.6;margin-bottom:14px;">
-      ⚠️ No se ha podido cargar el sistema de acceso.<br>Revisa tu conexión e inténtalo de nuevo.
-    </div>
-    <button onclick="location.reload(true)" style="
-      padding:11px 18px;border-radius:10px;cursor:pointer;
-      border:1.5px solid rgba(0,212,255,.4);background:rgba(0,212,255,.1);
-      color:#00D4FF;font-family:'Barlow Condensed',sans-serif;
-      font-size:.85rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;
-    ">🔄 Reintentar</button>
-  </div>
-</div>
-<style>@keyframes pkBootSpin{to{transform:rotate(360deg);}}</style>
-<script>
-/* Saludo según la hora del día — se ejecuta al vuelo, sin esperar a
-   los scripts diferidos, para que se vea desde el primer instante. */
-(function () {
-  const h = new Date().getHours();
-  let saludo;
-  if (h >= 5 && h < 12) saludo = '☀️ Buenos días';
-  else if (h >= 12 && h < 20) saludo = '🌤️ Buenas tardes';
-  else saludo = '🌙 Buenas noches';
-  const el = document.getElementById('appBootGreeting');
-  if (el) el.textContent = saludo;
-
-  /* ── Red de seguridad, independiente de licencias-core.js ──────────
-     Si a los 4s seguimos en el arranque, algo ha ido mal cargando el
-     sistema de acceso (archivo no encontrado, red caída, etc.). En vez
-     de dejar a la persona con el spinner girando para siempre, se
-     muestra un aviso claro con un botón para reintentar. */
-  setTimeout(function () {
-    const boot = document.getElementById('appBootLoading');
-    if (!boot || boot.style.display === 'none') return; // ya se resolvió normalmente
-    document.getElementById('appBootSpinner').style.display = 'none';
-    if (typeof window.validarAcceso === 'function') {
-      // El script sí cargó, solo iba lento (red mala) — muestra el muro igualmente
-      boot.style.display = 'none';
-      const wall = document.getElementById('accessWall');
-      if (wall) wall.style.display = 'flex';
-    } else {
-      // licencias-core.js no ha llegado a ejecutarse en absoluto
-      document.getElementById('appBootError').style.display = 'block';
-    }
-  }, 4000);
-})();
-</script>
-
 <!-- ════ MURO DE ACCESO — Prueba Piloto (licencias externas en licencias.json) ════ -->
 <div id="accessWall" style="
   position:fixed;inset:0;z-index:99999;
   background:#111214;
-  display:none;flex-direction:column;align-items:center;justify-content:center;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:28px 20px;font-family:'Barlow',sans-serif;
 ">
   <div style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:20px;">
-
     <!-- Logo -->
     <div style="text-align:center;">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;
