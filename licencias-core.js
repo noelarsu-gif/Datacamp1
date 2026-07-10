@@ -164,15 +164,8 @@ function _compartirWhatsApp() {
 }
 
 function _mostrarApp() {
-  document.getElementById('appBootLoading').style.display = 'none';
   document.getElementById('accessWall').style.display = 'none';
   document.getElementById('appContent').style.display = 'block';
-}
-
-function _mostrarAccessWall() {
-  const boot = document.getElementById('appBootLoading');
-  if (boot) boot.style.display = 'none';
-  document.getElementById('accessWall').style.display = 'flex';
 }
 
 /* ── Forçar actualització de l'app (buida caché SW + reload) ── */
@@ -220,87 +213,38 @@ async function _forzarActualizacion() {
   }
 }
 
-/* ── Detecta si este dispositivo YA tenía la app en uso de verdad
-   (fotos, incidencias o trazas guardadas) antes de que existiera el
-   muro de acceso. Si es así, se le deja entrar automáticamente sin
-   pedirle ningún código — no tiene sentido pedírselo a quien ya era
-   usuario real. Solo se le pedirá código a quien de verdad sea nuevo.
-   Se abre la IndexedDB SIN indicar versión para no interferir con el
-   `onupgradeneeded` del resto de la app (que crea los object stores
-   la primera vez que se abre con la versión real, CFG.IDB_VER). ── */
-function _existeUsoPrevioEnDispositivo() {
-  return new Promise((resolve) => {
-    if (!('indexedDB' in window)) { resolve(false); return; }
-    try {
-      const req = indexedDB.open('pkgeoloc_v2');
-      req.onupgradeneeded = () => {
-        // La BD no existía todavía → dispositivo nuevo de verdad
-        resolve(false);
-      };
-      req.onerror = () => resolve(false);
-      req.onsuccess = (e) => {
-        const db = e.target.result;
-        const stores = ['fotos', 'incidencies', 'trazas_propias'].filter(s => db.objectStoreNames.contains(s));
-        if (!stores.length) { db.close(); resolve(false); return; }
-        let pendientes = stores.length;
-        let encontrado = false;
-        const acabar = () => { if (--pendientes <= 0) { db.close(); resolve(encontrado); } };
-        try {
-          const tx = db.transaction(stores, 'readonly');
-          stores.forEach(s => {
-            const cReq = tx.objectStore(s).count();
-            cReq.onsuccess = () => { if (cReq.result > 0) encontrado = true; acabar(); };
-            cReq.onerror = () => acabar();
-          });
-        } catch (_) {
-          db.close(); resolve(false);
-        }
-      };
-    } catch (_) {
-      resolve(false);
-    }
-  });
-}
-
 /* ── Comprovació automàtica en carregar (si ja hi ha sessió guardada) ── */
 (async function comprobarSesionGuardada() {
   try {
     await _licenciasCargadasPromise;
     const session = JSON.parse(localStorage.getItem(LS_SESSION) || 'null');
-    if (session?.codigo && session?.caducidad && session?.deviceId) {
-      const hoy = new Date().toISOString().slice(0, 10);
-      const caducidadActual = (session.codigo === '__LEGACY_AUTO__') ? session.caducidad : licenciasPiloto[session.codigo];
-      const deviceIdActual  = localStorage.getItem(LS_DEVICE) || null;
-      const sesionValida = hoy <= session.caducidad
-        && caducidadActual && hoy <= caducidadActual
-        && deviceIdActual === session.deviceId;
-      if (sesionValida) { _mostrarApp(); return; }
-      localStorage.removeItem(LS_SESSION);
-    }
+    if (!session?.codigo || !session?.caducidad || !session?.deviceId) return;
 
-    /* No hay sesión válida — antes de pedir código, comprueba si este
-       dispositivo ya era un usuario real de la app (datos guardados
-       de campo). Si es así, se le da acceso automáticamente. */
-    const yaEraUsuario = await _existeUsoPrevioEnDispositivo();
-    if (yaEraUsuario) {
-      const hoy = new Date().toISOString().slice(0, 10);
-      const caducidadAuto = new Date();
-      caducidadAuto.setDate(caducidadAuto.getDate() + 90);
-      const deviceId = _getOrCreateDeviceId();
-      localStorage.setItem(LS_SESSION, JSON.stringify({
-        codigo: '__LEGACY_AUTO__',
-        caducidad: caducidadAuto.toISOString().slice(0, 10),
-        deviceId,
-        validadoEl: hoy,
-      }));
-      console.log('[PK-GEOLOC] Acceso automático concedido: dispositivo con uso previo detectado.');
-      _mostrarApp();
+    const hoy = new Date().toISOString().slice(0, 10);
+
+    /* Caducada? */
+    if (hoy > session.caducidad) {
+      localStorage.removeItem(LS_SESSION);
       return;
     }
 
-    _mostrarAccessWall();
+    /* El codi segueix al diccionari i vigent? */
+    const caducidadActual = licenciasPiloto[session.codigo];
+    if (!caducidadActual || hoy > caducidadActual) {
+      localStorage.removeItem(LS_SESSION);
+      return;
+    }
+
+    /* El deviceId d'aquesta sessió coincideix amb el del dispositiu actual? */
+    const deviceIdActual = localStorage.getItem(LS_DEVICE) || null;
+    if (!deviceIdActual || deviceIdActual !== session.deviceId) {
+      localStorage.removeItem(LS_SESSION);
+      return;
+    }
+
+    /* Tot OK → obre l'app directament */
+    _mostrarApp();
   } catch (_) {
     localStorage.removeItem(LS_SESSION);
-    _mostrarAccessWall();
   }
 })();
