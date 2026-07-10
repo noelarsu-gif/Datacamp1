@@ -2142,7 +2142,9 @@ body::before{
   flex:1;min-height:0;overflow-y:auto;
   display:flex;flex-direction:column;
   -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
 }
+.pv-scroll-mid.pv-swipe-anim{transition:transform .22s cubic-bezier(.22,.61,.36,1);}
 
 /* Zona imatge — sempre gran i ben visible, alçada fixa (no competeix pel formulari) */
 .photo-viewer-img-wrap{
@@ -2630,6 +2632,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 .sc-selected-chip .sc-name{font-size:11px;max-width:140px;text-align:left;}
 .sc-selected-chip .sc-chip-del{margin-left:2px;color:var(--red,#ff3b5c);font-weight:900;padding:0 4px;}
 </style>
+<script src="licencias-core.js" defer></script>
 <script src="PK_SEED_para_app.js" defer></script>
 <script src="senales_catalogo.js" defer></script>
 <script src="informes-core.js" defer></script>
@@ -2637,8 +2640,194 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:19px;hei
 <body>
 
 
+<!-- ════ PANTALLA DE ARRANQUE — se ve mientras se comprueba si ya hay sesión
+     válida guardada, para no hacer parpadear el muro de acceso un instante
+     antes de entrar directamente a la app ════ -->
+<div id="appBootLoading" style="
+  position:fixed;inset:0;z-index:100000;
+  background:#111214;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;
+">
+  <div style="font-family:'Barlow Condensed',sans-serif;font-size:1.6rem;font-weight:900;
+              letter-spacing:3px;color:#00D4FF;text-shadow:0 0 24px rgba(0,212,255,.4);">
+    PK-GEOLOC
+  </div>
+  <div id="appBootSpinner" style="width:26px;height:26px;border-radius:50%;
+              border:3px solid rgba(0,212,255,.2);border-top-color:#00D4FF;
+              animation:pkBootSpin .8s linear infinite;"></div>
+  <div id="appBootError" style="display:none;max-width:300px;text-align:center;padding:0 16px;">
+    <div style="font-size:.78rem;color:#FF5A6E;font-weight:600;line-height:1.6;margin-bottom:14px;">
+      ⚠️ No se ha podido cargar el sistema de acceso.<br>Revisa tu conexión e inténtalo de nuevo.
+    </div>
+    <button onclick="location.reload(true)" style="
+      padding:11px 18px;border-radius:10px;cursor:pointer;
+      border:1.5px solid rgba(0,212,255,.4);background:rgba(0,212,255,.1);
+      color:#00D4FF;font-family:'Barlow Condensed',sans-serif;
+      font-size:.85rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;
+    ">🔄 Reintentar</button>
+  </div>
+</div>
+<style>@keyframes pkBootSpin{to{transform:rotate(360deg);}}</style>
+<script>
+(function () {
+  /* ── Red de seguridad, independiente de licencias-core.js ──────────
+     Si a los 4s seguimos en el arranque, algo ha ido mal cargando el
+     sistema de acceso (archivo no encontrado, red caída, etc.). En vez
+     de dejar a la persona con el spinner girando para siempre, se
+     muestra un aviso claro con un botón para reintentar. */
+  setTimeout(function () {
+    const boot = document.getElementById('appBootLoading');
+    if (!boot || boot.style.display === 'none') return; // ya se resolvió normalmente
+    document.getElementById('appBootSpinner').style.display = 'none';
+    if (typeof window.validarAcceso === 'function') {
+      // El script sí cargó, solo iba lento (red mala) — muestra el muro igualmente
+      boot.style.display = 'none';
+      const wall = document.getElementById('accessWall');
+      if (wall) wall.style.display = 'flex';
+    } else {
+      // licencias-core.js no ha llegado a ejecutarse en absoluto
+      document.getElementById('appBootError').style.display = 'block';
+    }
+  }, 4000);
+})();
+</script>
+
+<!-- ════ MURO DE ACCESO — Prueba Piloto (licencias externas en licencias.json) ════ -->
+<div id="accessWall" style="
+  position:fixed;inset:0;z-index:99999;
+  background:#111214;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px 20px;font-family:'Barlow',sans-serif;
+">
+  <div style="width:100%;max-width:360px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+
+    <!-- Logo -->
+    <div style="text-align:center;">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:2rem;font-weight:900;
+                  letter-spacing:3px;color:#00D4FF;text-shadow:0 0 24px rgba(0,212,255,.4);">
+        PK-GEOLOC
+      </div>
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:2px;color:rgba(0,212,255,.6);
+                  text-transform:uppercase;margin-top:3px;">
+        Prueba Piloto — Acceso Restringido
+      </div>
+      <div style="font-size:.52rem;color:rgba(255,255,255,.25);letter-spacing:.5px;margin-top:6px;text-align:center;line-height:1.5;">
+        © N.Arroyo · Obra registrada en el Registro de la Propiedad Intelectual · Todos los derechos reservados
+      </div>
+    </div>
+    <!-- Card -->
+    <div style="background:#1C1D20;border:1px solid rgba(255,255,255,.1);
+                border-radius:20px;padding:28px 22px;width:100%;box-sizing:border-box;">
+      <div style="font-size:.72rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+                  color:#8A909E;margin-bottom:6px;">
+        Código de activación
+      </div>
+      <input id="accessCodeInput" type="text"
+        placeholder="Introduce tu código..."
+        autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+        style="
+          width:100%;box-sizing:border-box;
+          padding:14px 12px;border-radius:10px;
+          border:1.5px solid rgba(255,255,255,.12);
+          background:#27282C;color:#fff;
+          font-family:'Roboto Mono',monospace;font-size:1rem;font-weight:600;
+          letter-spacing:3px;text-transform:uppercase;text-align:center;
+          outline:none;transition:border-color .2s;
+          -webkit-appearance:none;
+        "
+        oninput="this.value=this.value.toUpperCase();_ocultarPaneles();"
+        onkeydown="if(event.key==='Enter')validarAcceso();"
+      >
+      <!-- Panel error genérico (rojo) -->
+      <div id="accessError" style="
+        display:none;margin-top:10px;padding:10px 12px;border-radius:8px;
+        background:rgba(255,90,110,.1);border:1px solid rgba(255,90,110,.35);
+        color:#FF5A6E;font-size:.78rem;font-weight:600;text-align:center;line-height:1.6;
+        word-break:break-word;
+      "></div>
+      <!-- Panel aviso dispositivo (ámbar) -->
+      <div id="accessWarn" style="
+        display:none;margin-top:10px;padding:14px 14px 12px;border-radius:10px;
+        background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.45);
+        text-align:center;
+      ">
+        <div style="font-size:.75rem;font-weight:700;color:#F5A623;line-height:1.6;margin-bottom:10px;">
+          ⚠️ Para activar el acceso en este móvil, envía este código a Noel por WhatsApp:
+        </div>
+        <div id="warnCodigo" style="
+          font-family:'Roboto Mono',monospace;font-size:1.25rem;font-weight:700;
+          letter-spacing:4px;color:#fff;background:#27282C;
+          border-radius:8px;padding:10px 12px;margin-bottom:10px;
+          border:1px solid rgba(245,166,35,.3);word-break:break-all;
+        "></div>
+        <div style="display:flex;gap:8px;">
+          <button id="btnCopiarCodigo" onclick="_copiarCodigoWarn()" style="
+            flex:1;padding:10px 6px;border-radius:8px;cursor:pointer;transition:all .2s;
+            border:1.5px solid rgba(255,255,255,.2);background:#27282C;
+            color:#C4C9D4;font-family:'Barlow Condensed',sans-serif;
+            font-size:.8rem;font-weight:700;letter-spacing:1px;
+          ">📋 COPIAR</button>
+          <button onclick="_compartirWhatsApp()" style="
+            flex:2;padding:10px 6px;border-radius:8px;cursor:pointer;transition:all .2s;
+            border:1.5px solid rgba(37,211,102,.5);background:rgba(37,211,102,.12);
+            color:#25D366;font-family:'Barlow Condensed',sans-serif;
+            font-size:.8rem;font-weight:700;letter-spacing:1px;
+          ">💬 ENVIAR POR WHATSAPP</button>
+        </div>
+      </div>
+      <button onclick="validarAcceso()" style="
+        margin-top:16px;width:100%;padding:15px;border-radius:10px;
+        border:2px solid rgba(0,212,255,.5);
+        background:linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.07));
+        color:#00D4FF;font-family:'Barlow Condensed',sans-serif;
+        font-size:.95rem;font-weight:900;letter-spacing:3px;text-transform:uppercase;
+        cursor:pointer;transition:all .2s;
+      "
+      onmouseover="this.style.background='rgba(0,212,255,.22)'"
+      onmouseout="this.style.background='linear-gradient(135deg,rgba(0,212,255,.14),rgba(0,212,255,.07))'">
+        ACCEDER
+      </button>
+    </div>
+    <!-- Instrucciones para usuarios noveles -->
+    <div style="background:#1C1D20;border:1px solid rgba(255,255,255,.07);
+                border-radius:14px;padding:14px 16px;width:100%;box-sizing:border-box;">
+      <div style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+                  color:#8A909E;margin-bottom:8px;">
+        ❓ ¿Código no funciona o es nuevo?
+      </div>
+      <div style="font-size:.72rem;color:#8A909E;line-height:1.7;">
+        1. Escribe tu nombre clave (ej: <span style="color:#C4C9D4;font-family:'Roboto Mono',monospace;">SACYR</span>) y pulsa <b style="color:#C4C9D4;">ACCEDER</b>.<br>
+        2. Copia el código que aparece y <b style="color:#C4C9D4;">envíaselo a Noel</b> por WhatsApp.<br>
+        3. Cuando Noel te confirme, pulsa <b style="color:#C4C9D4;">🔄 ACTUALIZAR APP</b> aquí abajo<br>
+        &nbsp;&nbsp;&nbsp;y vuelve a introducir el código completo.
+      </div>
+    </div>
+
+    <!-- Botón actualización forzada -->
+    <button id="btnForceUpdate" onclick="_forzarActualizacion()" style="
+      width:100%;padding:13px;border-radius:10px;cursor:pointer;transition:all .2s;
+      border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.04);
+      color:#8A909E;font-family:'Barlow Condensed',sans-serif;
+      font-size:.82rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;
+      display:flex;align-items:center;justify-content:center;gap:8px;
+    "
+    onmouseover="this.style.borderColor='rgba(0,212,255,.35)';this.style.color='#00D4FF';"
+    onmouseout="this.style.borderColor='rgba(255,255,255,.15)';this.style.color='#8A909E';">
+      🔄 ACTUALIZAR APP
+    </button>
+
+    <div style="font-size:.58rem;color:#8A909E;text-align:center;line-height:1.6;opacity:.7;">
+      🔒 Acceso restringido a participantes de la prueba piloto.<br>
+    </div>
+    <div id="accessWallOfflineBadge" style="display:none;font-size:.62rem;color:#F5A623;font-weight:700;letter-spacing:.8px;text-align:center;padding:5px 10px;border-radius:6px;background:rgba(245,166,35,.1);border:1px solid rgba(245,166,35,.25);">
+      📴 Sin conexión — la validación funciona igualmente
+    </div>
+  </div>
+</div>
+
 <!-- Contenido real de la app (oculto hasta validar) -->
-<div id="appContent">
+<div id="appContent" style="display:none;">
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -8097,6 +8286,7 @@ document.addEventListener('click', (e) => {
 /* ── Filtres de galeria: ordre + tipus d'incidència ── */
 let _galOrdre = 'recent';   // 'recent' | 'old'
 let _galFiltreTipo = '';    // '' = tots
+let _galFotosArray = [];    // fotos en el orden actual mostrado en la galería (para el arrastre lateral del visor)
 
 function galeriaSetOrdre(ordre) {
   _galOrdre = ordre;
@@ -8129,8 +8319,10 @@ async function renderitzarFotos() {
 
     if (!sorted.length) {
       lista.innerHTML = `<div class="photo-empty"><div class="photo-empty-icon">📸</div><div class="inc-empty-text">${pkgTS('Sin fotos capturadas')}</div></div>`;
+      _galFotosArray = [];
       return;
     }
+    _galFotosArray = sorted;
     const iconsTipus = { animal:'🐗', senyalitzacio:'🛑', averia:'🚨', bionda:'🛡️', forat:'🕳️', altra:'⚠️' };
     lista.innerHTML = '';
     sorted.forEach(foto => {
@@ -8402,6 +8594,9 @@ function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture) {
   const nomCurt = nom.replace('.jpg','').replace(/_/g,' ');
   document.getElementById('photoViewerTitle').textContent = nomCurt;
   document.getElementById('photoViewer').classList.add('open');
+  const _pvMid = document.getElementById('pvScrollMid');
+  if (_pvMid) { _pvMid.classList.remove('pv-swipe-anim'); _pvMid.style.transform = ''; }
+  _pvSwipeInit();
 
   // El formulari s'obre sempre automàticament — ja no cal el botó "Editar"
   _pfCarregarDades().then(() => {
@@ -8492,10 +8687,107 @@ function closePhotoViewer() {
   document.getElementById('photoViewer').classList.remove('open');
   document.getElementById('pfForm').classList.remove('open');
   closePvMenu();
+  const _pvMid = document.getElementById('pvScrollMid');
+  if (_pvMid) { _pvMid.classList.remove('pv-swipe-anim'); _pvMid.style.transform = ''; }
   // Neteja la sessió multi-foto quan es tanca el visor
   sessionFotos = [];
   _esperantFotoAddicional = false;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NAVEGACIÓN POR ARRASTRE LATERAL EN EL VISOR (fotos de la galería)
+   Permite pasar a la foto anterior/siguiente de la galería arrastrando
+   el dedo hacia los lados, sin tener que cerrar el visor y volver a
+   entrar. Arrastra consigo toda la info (imagen + formulario), como
+   si fuera un carrusel. Solo se activa si la foto abierta pertenece
+   al listado actual de la galería (_galFotosArray).
+═══════════════════════════════════════════════════════════════════ */
+let _pvSwipe = { startX: 0, startY: 0, axis: null, dragging: false, active: false };
+
+function _pvGetIndex() {
+  return _galFotosArray.findIndex(f => f.id === viewerFotoId);
+}
+
+async function _pvIrFoto(nuevoIndex) {
+  const foto = _galFotosArray[nuevoIndex];
+  if (!foto) return false;
+  const url = URL.createObjectURL(foto.blob);
+  obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
+  return true;
+}
+
+function _pvSwipeInit() {
+  const wrap = document.querySelector('.photo-viewer-img-wrap');
+  if (!wrap || wrap._pvSwipeBound) return;
+  wrap._pvSwipeBound = true;
+
+  const UMBRAL = 70;
+
+  wrap.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (_pvGetIndex() < 0) return; // solo si la foto pertenece a la galería actual
+    _pvSwipe.startX = e.clientX; _pvSwipe.startY = e.clientY;
+    _pvSwipe.axis = null; _pvSwipe.dragging = false; _pvSwipe.active = true;
+    const mid = document.getElementById('pvScrollMid');
+    if (mid) mid.classList.remove('pv-swipe-anim');
+  });
+
+  wrap.addEventListener('pointermove', e => {
+    if (!_pvSwipe.active) return;
+    const dx = e.clientX - _pvSwipe.startX;
+    const dy = e.clientY - _pvSwipe.startY;
+    if (!_pvSwipe.axis) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        _pvSwipe.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      } else { return; }
+    }
+    if (_pvSwipe.axis !== 'x') return;
+    _pvSwipe.dragging = true;
+    const idx = _pvGetIndex();
+    let dxLimitado = dx;
+    // Resistencia en los extremos: no hay foto anterior/siguiente
+    if ((dx > 0 && idx <= 0) || (dx < 0 && idx >= _galFotosArray.length - 1)) {
+      dxLimitado = dx * 0.3;
+    }
+    const mid = document.getElementById('pvScrollMid');
+    if (mid) mid.style.transform = `translateX(${dxLimitado}px)`;
+  });
+
+  const finalizar = e => {
+    if (!_pvSwipe.active) return;
+    _pvSwipe.active = false;
+    const mid = document.getElementById('pvScrollMid');
+    if (!_pvSwipe.dragging) return;
+    _pvSwipe.dragging = false;
+    const dx = (e.clientX !== undefined) ? e.clientX - _pvSwipe.startX : 0;
+    const idx = _pvGetIndex();
+    let destino = -1, sentidoSalida = 0;
+    if (dx <= -UMBRAL && idx < _galFotosArray.length - 1) { destino = idx + 1; sentidoSalida = -1; }
+    else if (dx >= UMBRAL && idx > 0) { destino = idx - 1; sentidoSalida = 1; }
+
+    if (!mid) return;
+    mid.classList.add('pv-swipe-anim');
+    if (destino >= 0) {
+      mid.style.transform = `translateX(${sentidoSalida * -100}%)`;
+      setTimeout(async () => {
+        await _pvIrFoto(destino);
+        const midNou = document.getElementById('pvScrollMid');
+        if (!midNou) return;
+        midNou.classList.remove('pv-swipe-anim');
+        midNou.style.transform = `translateX(${sentidoSalida * 100}%)`;
+        void midNou.offsetWidth; // força el reflow perquè la transició s'apliqui
+        midNou.classList.add('pv-swipe-anim');
+        midNou.style.transform = 'translateX(0)';
+      }, 220);
+    } else {
+      mid.style.transform = 'translateX(0)';
+    }
+  };
+  wrap.addEventListener('pointerup', finalizar);
+  wrap.addEventListener('pointercancel', finalizar);
+  wrap.addEventListener('pointerleave', () => { if (_pvSwipe.active && !_pvSwipe.dragging) _pvSwipe.active = false; });
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    MENÚ ⋮ DEL VISOR DE FOTOS
@@ -9777,6 +10069,7 @@ function formatarDataHora(data) {
    TABS
 ═══════════════════════════════════════════════════════════════════ */
 function canviarTab(btn, screenId) {
+  try { if (typeof modeSeleccio !== 'undefined' && modeSeleccio) desactivarSeleccio(); } catch (_) {}
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');
@@ -10009,6 +10302,7 @@ if ('caches' in window) {
      solo si ya estamos en inicio sin nada abierto, deja que Android
      haga su acción por defecto (salir de la app). */
   function _capaAndroidBackAbierta() {
+    if (typeof modeSeleccio !== 'undefined' && modeSeleccio) return desactivarSeleccio;
     const capas = [
       ['galMenuDropdown', closeGalMenu],
       ['incFotoViewer', closeIncFotoViewer],
