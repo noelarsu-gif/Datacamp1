@@ -2154,6 +2154,7 @@ body::before{
   overflow:hidden;
   padding:6px;
   background:#111214;
+  touch-action:none; /* deixa que el JS gestioni pinça i doble tap sense zoom natiu del navegador */
 }
 .photo-viewer-img-wrap img{
   width:100%;
@@ -2161,6 +2162,10 @@ body::before{
   object-fit:contain;      /* sempre es veu completa, sense retallar */
   background-color:#1a1a1a;
   border-radius:var(--radius-sm);
+  transform-origin:center center;
+  will-change:transform;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
 }
 
 /* Barra inferior: botons grans Amb avís / Sense avís + llegenda + Maps */
@@ -8575,6 +8580,7 @@ function obrirFotoVisor(url, nom, id, blob, fotoObj, isNewCapture) {
   closePvMenu();
 
   document.getElementById('photoViewerImg').src = url;
+  _pvZoomReset(false);
   const nomCurt = nom.replace('.jpg','').replace(/_/g,' ');
   document.getElementById('photoViewerTitle').textContent = nomCurt;
   document.getElementById('photoViewer').classList.add('open');
@@ -8618,6 +8624,7 @@ function _actualitzarPvStrip() {
       viewerNomFitxer = f.nom;
       viewerBlob      = f.blob;
       document.getElementById('photoViewerImg').src = f.url;
+      _pvZoomReset(false);
       document.getElementById('photoViewerTitle').textContent = f.nom.replace('.jpg','').replace(/_/g,' ');
       _actualitzarPvStrip(); // refresca la classe active
     });
@@ -8673,6 +8680,7 @@ function closePhotoViewer() {
   closePvMenu();
   const _pvMid = document.getElementById('pvScrollMid');
   if (_pvMid) { _pvMid.classList.remove('pv-swipe-anim'); _pvMid.style.transform = ''; }
+  _pvZoomReset(false);
   // Neteja la sessió multi-foto quan es tanca el visor
   sessionFotos = [];
   _esperantFotoAddicional = false;
@@ -8700,23 +8708,109 @@ async function _pvIrFoto(nuevoIndex) {
   return true;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   ZOOM AL VISOR DE FOTOS (pinça amb dos dits + doble tap)
+   Coexisteix amb l'arrossegament lateral de canvi de foto: mentre la
+   imatge no està ampliada (scale===1) un dit fa swipe; en quant s'ha
+   ampliat (pinça o doble tap), un dit passa a desplaçar la imatge
+   (pan) i el swipe de canvi de foto es desactiva fins tornar a 1x.
+═══════════════════════════════════════════════════════════════════ */
+let _pvZoom = { scale: 1, x: 0, y: 0 };
+const _PV_ZOOM_MAX = 4;
+const _PV_ZOOM_DOUBLETAP = 2.5;
+
+function _pvZoomApply(animate) {
+  const img = document.getElementById('photoViewerImg');
+  if (!img) return;
+  img.style.transition = animate ? 'transform .2s ease' : 'none';
+  img.style.transform = `translate(${_pvZoom.x}px, ${_pvZoom.y}px) scale(${_pvZoom.scale})`;
+}
+
+function _pvZoomClampPan() {
+  const wrap = document.querySelector('.photo-viewer-img-wrap');
+  if (!wrap) return;
+  const maxX = (wrap.clientWidth  * (_pvZoom.scale - 1)) / 2;
+  const maxY = (wrap.clientHeight * (_pvZoom.scale - 1)) / 2;
+  _pvZoom.x = Math.max(-maxX, Math.min(maxX, _pvZoom.x));
+  _pvZoom.y = Math.max(-maxY, Math.min(maxY, _pvZoom.y));
+}
+
+function _pvZoomReset(animate) {
+  _pvZoom.scale = 1; _pvZoom.x = 0; _pvZoom.y = 0;
+  _pvZoomApply(animate);
+}
+
 function _pvSwipeInit() {
   const wrap = document.querySelector('.photo-viewer-img-wrap');
   if (!wrap || wrap._pvSwipeBound) return;
   wrap._pvSwipeBound = true;
 
   const UMBRAL = 70;
+  const pointers  = new Map();      // pointerId -> {x,y} (per detectar pinça)
+  let pinch       = null;           // {startDist, startScale} durant una pinça
+  let panStart    = null;           // {x,y,zx,zy} durant un pan amb la imatge ampliada
+  let lastTap     = { time: 0, x: 0, y: 0 };
+
+  const dist = (p1, p2) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
 
   wrap.addEventListener('pointerdown', e => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
-    if (_pvGetIndex() < 0) return; // solo si la foto pertenece a la galería actual
-    _pvSwipe.startX = e.clientX; _pvSwipe.startY = e.clientY;
-    _pvSwipe.axis = null; _pvSwipe.dragging = false; _pvSwipe.active = true;
-    const mid = document.getElementById('pvScrollMid');
-    if (mid) mid.classList.remove('pv-swipe-anim');
+    try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.size === 2) {
+      // Comença la pinça: cancel·la qualsevol swipe/pan en curs
+      _pvSwipe.active = false; _pvSwipe.dragging = false;
+      panStart = null;
+      const [p1, p2] = [...pointers.values()];
+      pinch = { startDist: dist(p1, p2), startScale: _pvZoom.scale };
+      const mid = document.getElementById('pvScrollMid');
+      if (mid) { mid.classList.remove('pv-swipe-anim'); mid.style.transform = ''; }
+      return;
+    }
+
+    if (pointers.size === 1) {
+      if (_pvZoom.scale > 1.01) {
+        // Imatge ampliada: un dit despaça la imatge, no canvia de foto
+        panStart = { x: e.clientX, y: e.clientY, zx: _pvZoom.x, zy: _pvZoom.y };
+        _pvSwipe.active = false;
+        return;
+      }
+      if (_pvGetIndex() < 0) return; // solo si la foto pertenece a la galería actual
+      _pvSwipe.startX = e.clientX; _pvSwipe.startY = e.clientY;
+      _pvSwipe.axis = null; _pvSwipe.dragging = false; _pvSwipe.active = true;
+      const mid = document.getElementById('pvScrollMid');
+      if (mid) mid.classList.remove('pv-swipe-anim');
+    }
   });
 
   wrap.addEventListener('pointermove', e => {
+    if (!pointers.has(e.pointerId)) return;
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    if (pointers.size === 2 && pinch) {
+      const [p1, p2] = [...pointers.values()];
+      const newDist = dist(p1, p2);
+      if (pinch.startDist > 0) {
+        let nouScale = pinch.startScale * (newDist / pinch.startDist);
+        nouScale = Math.max(1, Math.min(_PV_ZOOM_MAX, nouScale));
+        _pvZoom.scale = nouScale;
+        if (_pvZoom.scale <= 1.01) { _pvZoom.x = 0; _pvZoom.y = 0; }
+        _pvZoomClampPan();
+        _pvZoomApply(false);
+      }
+      return;
+    }
+
+    if (panStart) {
+      _pvZoom.x = panStart.zx + (e.clientX - panStart.x);
+      _pvZoom.y = panStart.zy + (e.clientY - panStart.y);
+      _pvZoomClampPan();
+      _pvZoomApply(false);
+      return;
+    }
+
+    // ── swipe horitzontal per canviar de foto (només sense zoom) ──
     if (!_pvSwipe.active) return;
     const dx = e.clientX - _pvSwipe.startX;
     const dy = e.clientY - _pvSwipe.startY;
@@ -8738,7 +8832,38 @@ function _pvSwipeInit() {
   });
 
   const finalizar = e => {
-    if (!_pvSwipe.active) return;
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+
+    if (pointers.size === 0) {
+      const eraPanOZoom = !!panStart;
+      panStart = null;
+
+      // Detecció de doble tap — només si no hi ha hagut pan, pinça ni swipe
+      if (!eraPanOZoom && !_pvSwipe.dragging) {
+        const now = Date.now();
+        const dxTap = Math.abs(e.clientX - lastTap.x), dyTap = Math.abs(e.clientY - lastTap.y);
+        if (now - lastTap.time < 300 && dxTap < 30 && dyTap < 30) {
+          if (_pvZoom.scale > 1.01) {
+            _pvZoomReset(true); // ja estava ampliada → torna a mida normal
+          } else {
+            const rect = wrap.getBoundingClientRect();
+            const offX = (e.clientX - rect.left - rect.width / 2);
+            const offY = (e.clientY - rect.top - rect.height / 2);
+            _pvZoom.scale = _PV_ZOOM_DOUBLETAP;
+            _pvZoom.x = -offX * (_PV_ZOOM_DOUBLETAP - 1);
+            _pvZoom.y = -offY * (_PV_ZOOM_DOUBLETAP - 1);
+            _pvZoomClampPan();
+            _pvZoomApply(true);
+          }
+          lastTap = { time: 0, x: 0, y: 0 };
+        } else {
+          lastTap = { time: now, x: e.clientX, y: e.clientY };
+        }
+      }
+    }
+
+    if (!_pvSwipe.active || pointers.size > 0) return;
     _pvSwipe.active = false;
     const mid = document.getElementById('pvScrollMid');
     if (!_pvSwipe.dragging) return;
@@ -8769,7 +8894,12 @@ function _pvSwipeInit() {
   };
   wrap.addEventListener('pointerup', finalizar);
   wrap.addEventListener('pointercancel', finalizar);
-  wrap.addEventListener('pointerleave', () => { if (_pvSwipe.active && !_pvSwipe.dragging) _pvSwipe.active = false; });
+  wrap.addEventListener('pointerleave', e => {
+    if (pointers.has(e.pointerId) && pointers.size <= 1 && !_pvSwipe.dragging && !panStart) {
+      pointers.delete(e.pointerId);
+    }
+    if (_pvSwipe.active && !_pvSwipe.dragging) _pvSwipe.active = false;
+  });
 }
 
 
