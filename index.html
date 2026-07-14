@@ -7225,7 +7225,40 @@ async function compartirIncFotoVisor() {
    els chips de dalt (Recientes/Antiguos + tipo)
 ═══════════════════════════════════════════════════════════════════ */
 
+/* ── Cache de blob URLs per fotoId ──────────────────────────────────
+   FIX memòria: abans es feia URL.createObjectURL(foto.blob) a cada
+   renderitzarFotos() (cada edició, cada canvi de filtre Recientes/
+   Antiguos, cada obertura de galeria) sense revocar mai les anteriors.
+   En sessions llargues (una jornada sencera fent fotos) s'acumulaven
+   centenars de blob URLs vius, i sota pressió de memòria el WebView
+   Android acaba invalidant-ne alguns → icona "?" intermitent a les
+   miniatures i al visor.
+   El blob d'una foto no canvia mai un cop creada (només es modifiquen
+   camps de metadades: tipus, carretera, km, m, reparada...), així que
+   és segur reutilitzar sempre la mateixa URL per a un mateix fotoId
+   en lloc de regenerar-la. Només es revoca quan la foto desapareix
+   de la base de dades (eliminada). */
+const _galThumbUrlCache = new Map(); // fotoId -> objectURL
 
+function _galGetThumbUrl(foto) {
+  let url = _galThumbUrlCache.get(foto.id);
+  if (!url) {
+    url = URL.createObjectURL(foto.blob);
+    _galThumbUrlCache.set(foto.id, url);
+  }
+  return url;
+}
+
+/** Revoca i esborra del cache les entrades de fotos que ja no existeixen a IDB. */
+function _galPodarThumbUrlCache(idsValids) {
+  const validSet = new Set(idsValids);
+  for (const [id, url] of _galThumbUrlCache) {
+    if (!validSet.has(id)) {
+      URL.revokeObjectURL(url);
+      _galThumbUrlCache.delete(id);
+    }
+  }
+}
 
 async function esborrarIncidenciaIndividual(id) {
   if (!confirm(pkgTS('¿Eliminar esta incidencia?'))) return;
@@ -8293,6 +8326,10 @@ async function renderitzarFotos() {
   fotosSeleccionades.clear();
   try {
     fotosDB = await idbGetAll(CFG.STORE_PHOTOS);
+    // Poda el cache de blob URLs: només es revoquen les fotos que ja no
+    // existeixen a IDB (eliminades). Les vigents reutilitzen sempre la
+    // mateixa URL, evitant l'acumulació sense control d'abans.
+    _galPodarThumbUrlCache(fotosDB.map(f => f.id));
     // Galeria única: fotos normals + fotos d'incidència (join per obtenir tipus)
     const incsAll  = await idbGetAll(CFG.STORE_INC);
     const incsById = {};
@@ -8315,7 +8352,7 @@ async function renderitzarFotos() {
     const iconsTipus = { animal:'🐗', senyalitzacio:'🛑', averia:'🚨', bionda:'🛡️', forat:'🕳️', altra:'⚠️' };
     lista.innerHTML = '';
     sorted.forEach(foto => {
-      const url     = URL.createObjectURL(foto.blob);
+      const url     = _galGetThumbUrl(foto);
       const sensePK = !!foto.sensePK;
       const mStr    = sensePK ? '000' : String(foto.m||0).padStart(3,'0');
       const inc     = foto.incId != null ? incsById[foto.incId] : null;
@@ -8703,7 +8740,7 @@ function _pvGetIndex() {
 async function _pvIrFoto(nuevoIndex) {
   const foto = _galFotosArray[nuevoIndex];
   if (!foto) return false;
-  const url = URL.createObjectURL(foto.blob);
+  const url = _galGetThumbUrl(foto);
   obrirFotoVisor(url, foto.nom, foto.id, foto.blob, foto);
   return true;
 }
