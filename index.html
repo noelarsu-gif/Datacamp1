@@ -2999,6 +2999,14 @@ setTimeout(function () {
     </div>
     <div class="divider"></div>
     <div class="settings-card">
+      <div class="settings-card-title" style="color:var(--red);">🧹 Restaurar de Fábrica</div>
+      <div class="settings-card-body">
+        Borra fotos, incidencias, trazas propias y configuración de informes guardadas en <strong>este dispositivo</strong> (incluidos restos de fotos ya "borradas" que puedan haber quedado). No afecta a tu acceso ni a la base de datos de PKs descargada. Exporta antes una copia de seguridad si no estás seguro.
+      </div>
+      <button id="btnRestaurarFabrica" onclick="restaurarFabrica()" style="width:100%;padding:11px;border-radius:var(--radius-sm);border:1px solid rgba(255,90,110,.5);background:rgba(255,90,110,.10);color:var(--red);font-family:var(--font-cond);font-size:.8rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:var(--tr);">🧹 RESTAURAR DE FÁBRICA (BORRA DATOS)</button>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-card">
       <div class="settings-card-title">ℹ️ PK-GEOLOC v2.0</div>
       <div class="settings-card-body">
         Mapa satélite · Incidencias Waze · Fotos con marca de agua<br>
@@ -6157,6 +6165,56 @@ async function clearCache() {
   actualitzarUICache();
   showToast('🗑️ Caché borrada', 'warn');
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESTAURAR DE FÁBRICA — borra datos de usuario (fotos, incidencias,
+   trazas propias, config. de informes), incluidos restos huérfanos
+   que puedan quedar en IndexedDB tras borrados individuales.
+   NO TOCA: CFG.STORE_CACHE (base de datos de PKs, cara de redescargar)
+   ni ninguna clave de acceso/sesión — eso vive en licencias-core.js
+   y esta función no lo conoce ni lo modifica.
+═══════════════════════════════════════════════════════════════════ */
+async function restaurarFabrica() {
+  const ok = confirm(
+    '¿Restaurar de fábrica?\n\n' +
+    'Se borrarán TODAS las fotos, incidencias, trazas propias y la ' +
+    'configuración de informes guardadas en este dispositivo. ' +
+    'Esta acción no se puede deshacer.\n\n' +
+    'No afecta a tu acceso ni a la base de datos de PKs descargada.'
+  );
+  if (!ok) return;
+
+  const btn = document.getElementById('btnRestaurarFabrica');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Restaurando...'; }
+
+  try {
+    // 1) IndexedDB: solo los stores de "datos de trabajo". STORE_CACHE (PKs) se conserva.
+    await idbClear(CFG.STORE_INC);
+    await idbClear(CFG.STORE_PHOTOS);
+    await idbClear(CFG.STORE_TRAZAS);
+    await idbClear(CFG.STORE_EXCLUSIONS);
+    await idbClear(CFG.STORE_CONFIG);
+
+    // 2) localStorage: solo preferencias/datos operativos propios de esta app.
+    //    Deliberadamente NO se toca nada de idioma (pkgeoloc_lang) ni de
+    //    acceso/sesión (gestionado aparte, fuera de este archivo).
+    [LS_LLISTA_NEGRA, LS_DAY_MODE, ODO_LS, ODO_LS_MARKS, 'pkgeoloc_ts']
+      .forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+
+    showToast('🧹 Restauración completada. Reiniciando la app…', 'ok', 2500);
+  } catch (e) {
+    showToast('❌ Error al restaurar: ' + e.message, 'err', 4000);
+    if (btn) { btn.disabled = false; btn.textContent = '🧹 RESTAURAR DE FÁBRICA (BORRA DATOS)'; }
+    return;
+  }
+
+  // Recarga completa: la forma más fiable de garantizar que TODO el estado
+  // en memoria (odómetro, lista negra, informes, galería...) queda limpio
+  // y coherente con lo que acabamos de borrar, sin tener que resetear
+  // variable a variable.
+  setTimeout(() => location.reload(), 1200);
+}
+
 
 /* ═══════════════════════════════════════════════════════════════════
    ARCGIS — consulta en temps real (per clics al mapa)
