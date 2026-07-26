@@ -4852,12 +4852,6 @@ async function mapAnarACoords() {
   await mapCalcPK(lat, lon, true);
 }
 
-/* Acordió panell manual a la Home */
-function toggleManualPanel() {
-  const panel = document.getElementById('manualPanel');
-  panel.classList.toggle('open');
-}
-
 /* Acordió coordenades del mapa */
 function toggleMcoordAccordion() {
   document.getElementById('mcoordAccordion').classList.toggle('open');
@@ -5542,13 +5536,6 @@ function mapEsborrarAmidament(silent=false) {
   if (!silent) showToast('Medición borrada','ok',2000);
 }
 
-/* ── HAVERSINE (reutilitzem la del motor si existeix) ── */
-function haversineM(lat1,lon1,lat2,lon2){
-  const R=6371000,r=d=>d*Math.PI/180;
-  const dLat=r(lat2-lat1),dLon=r(lon2-lon1);
-  const a=Math.sin(dLat/2)**2+Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
-  return R*2*Math.asin(Math.sqrt(a));
-}
 function _debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -9783,15 +9770,6 @@ async function pkIncorrecte() {
 
   // Obrir modal per marcar el punt correcte
   await _marcarPuntTrazaModal(carretera, km, m);
-}
-
-/* ════════════════════════════════════════════════════════════════
-   BOTÓ "📍 MARCAR PUNTO" — apareix a mostrarResultatFora/Error
-   Obre el modal de confirmació PK i guarda el punt a STORE_TRAZAS
-════════════════════════════════════════════════════════════════ */
-async function marcarPuntTraza() {
-  if (!ultimaPos) { showToast('⚠️ Sin posición GPS. Pulsa ¿DÓNDE ESTOY? primero.', 'warn', 3000); return; }
-  await _marcarPuntTrazaModal('', '', '');
 }
 
 /* ════════════════════════════════════════════════════════════════
